@@ -5,14 +5,18 @@ const jwtConfig = require('../config/jwt');
 class AuthService {
   /**
    * Login user with credential validation
+   * Requirement 19.10: Log all authentication attempts with success or failure status
    * @param {string} email - User email
    * @param {string} password - User password
    * @returns {Object} Token and user data
    * @throws {Error} 401 for invalid credentials, 403 for inactive account
    */
   async login(email, password) {
+    const timestamp = new Date().toISOString();
+    
     // Validate password minimum length
     if (!password || password.length < 6) {
+      console.log(`🔒 [${timestamp}] Authentication FAILED: Invalid password length for email: ${email}`);
       const error = new Error('Credenciales inválidas');
       error.statusCode = 401;
       throw error;
@@ -25,6 +29,7 @@ class AuthService {
     );
 
     if (result.rows.length === 0) {
+      console.log(`🔒 [${timestamp}] Authentication FAILED: User not found - email: ${email}`);
       const error = new Error('Credenciales inválidas');
       error.statusCode = 401;
       throw error;
@@ -34,6 +39,7 @@ class AuthService {
 
     // Check if user is active (403 for inactive accounts)
     if (!user.activo) {
+      console.log(`🔒 [${timestamp}] Authentication FAILED: Inactive account - email: ${email}, user_id: ${user.id}`);
       const error = new Error('Cuenta inactiva');
       error.statusCode = 403;
       throw error;
@@ -42,6 +48,7 @@ class AuthService {
     // Verify password using bcrypt comparison
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      console.log(`🔒 [${timestamp}] Authentication FAILED: Invalid password - email: ${email}, user_id: ${user.id}`);
       const error = new Error('Credenciales inválidas');
       error.statusCode = 401;
       throw error;
@@ -54,6 +61,9 @@ class AuthService {
       rol: user.rol,
       nombre: user.nombre,
     });
+
+    // Log successful authentication
+    console.log(`✅ [${timestamp}] Authentication SUCCESS - email: ${email}, user_id: ${user.id}, rol: ${user.rol}`);
 
     // Return user data (without password) and token
     return {

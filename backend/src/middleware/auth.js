@@ -35,11 +35,20 @@ const verifyToken = (req, res, next) => {
 };
 
 /**
- * Middleware to check if user has required role(s)
- * @param {string|string[]} roles - Required role(s)
+ * Middleware factory function to check if user has required role(s)
+ * Implements Requirements 2.4, 2.5, 2.6
+ * 
+ * Role hierarchy:
+ * - admin: Can access all routes
+ * - empleado: Can access empleado routes (admin can also access)
+ * - duena: Can access duena routes (admin can also access)
+ * 
+ * @param {string|string[]} roles - Required role(s) for the route
+ * @returns {Function} Express middleware function
  */
 const requireRole = (roles) => {
   return (req, res, next) => {
+    // Requirement 2.2: Check if user is authenticated
     if (!req.user) {
       return res.status(401).json({
         error: true,
@@ -47,16 +56,20 @@ const requireRole = (roles) => {
       });
     }
 
+    // Convert to array for consistent handling
     const allowedRoles = Array.isArray(roles) ? roles : [roles];
     
-    if (!allowedRoles.includes(req.user.rol)) {
-      return res.status(403).json({
-        error: true,
-        mensaje: 'No tienes permisos para acceder a este recurso',
-      });
+    // Requirement 2.4, 2.5, 2.6: Admin can access everything
+    // Otherwise, check if user role is in allowed roles
+    if (req.user.rol === 'admin' || allowedRoles.includes(req.user.rol)) {
+      return next();
     }
 
-    next();
+    // Requirement 2.4: Return 403 for insufficient permissions
+    return res.status(403).json({
+      error: true,
+      mensaje: 'No tienes permisos para acceder a este recurso',
+    });
   };
 };
 

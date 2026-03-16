@@ -30,13 +30,60 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(helmet()); // Security headers
-app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || '*',
-  credentials: true,
+// Security Middleware Configuration
+// Configure helmet with specific security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for API
+  xContentTypeOptions: true, // X-Content-Type-Options: nosniff
+  xFrameOptions: { action: 'deny' }, // X-Frame-Options: DENY
+  xXssProtection: true, // X-XSS-Protection: 1; mode=block
+  strictTransportSecurity: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true
+  }
 }));
-app.use(morgan('dev')); // Logging
+
+// Configure CORS with allowed origins from environment
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map(origin => origin.trim()) || [];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      // Reject unauthorized origins with 403
+      callback(new Error('Origen no autorizado por política CORS'), false);
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+// Logging Middleware Configuration
+// Requirement 19.8: Log all incoming requests with method, path, and timestamp
+// Morgan format: :method :url :status :response-time ms - :res[content-length]
+if (process.env.NODE_ENV === 'production') {
+  // Production: Use combined format (Apache style)
+  app.use(morgan('combined'));
+} else {
+  // Development: Use dev format with colors
+  app.use(morgan('dev'));
+}
+
+// Custom logging for additional request details
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${req.method} ${req.path}`);
+  next();
+});
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
@@ -79,6 +126,17 @@ app.use('/api/eventos', eventosRoutes);
 
 // 404 handler
 app.use(notFound);
+
+// CORS error handler - must come before general error handler
+app.use((err, req, res, next) => {
+  if (err.message === 'Origen no autorizado por política CORS') {
+    return res.status(403).json({
+      error: true,
+      mensaje: 'Origen no autorizado por política CORS'
+    });
+  }
+  next(err);
+});
 
 // Error handler
 app.use(errorHandler);

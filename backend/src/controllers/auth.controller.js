@@ -8,13 +8,6 @@ class AuthController {
     try {
       const { email, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({
-          error: true,
-          mensaje: 'Email y contraseña son requeridos',
-        });
-      }
-
       const result = await authService.login(email, password);
 
       res.json({

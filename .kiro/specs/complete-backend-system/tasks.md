@@ -25,21 +25,21 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Return appropriate error messages for invalid credentials (401) and inactive accounts (403)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-  - [-] 2.2 Implement authentication middleware
+  - [x] 2.2 Implement authentication middleware
     - Extract and validate JWT token from Authorization header
     - Verify token signature and expiration
     - Attach decoded user data to request object
     - Return 401 for missing or invalid tokens
     - _Requirements: 2.1, 2.2, 2.3, 2.7_
 
-  - [~] 2.3 Implement role-based authorization middleware
+  - [x] 2.3 Implement role-based authorization middleware
     - Create middleware factory function accepting allowed roles array
     - Check authenticated user role against allowed roles
     - Return 403 for insufficient permissions
     - Support multiple role combinations (admin, empleado, duena)
     - _Requirements: 2.4, 2.5, 2.6_
 
-  - [~] 2.4 Implement authentication controller and routes
+  - [x] 2.4 Implement authentication controller and routes
     - Create POST /api/auth/login endpoint
     - Create GET /api/auth/me endpoint (returns current user info)
     - Create POST /api/auth/logout endpoint (client-side token removal)
@@ -47,11 +47,11 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Return standardized success responses with token and user data
     - _Requirements: 1.1, 1.2, 1.3, 20.1, 20.2, 20.3, 20.6_
 
-- [~] 3. Checkpoint - Test authentication system
+- [x] 3. Checkpoint - Test authentication system
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 4. Implement middleware infrastructure
-  - [~] 4.1 Implement request validation middleware
+  - [x] 4.1 Implement request validation middleware
     - Create validation middleware using express-validator
     - Validate required fields presence
     - Validate data types and formats
@@ -62,7 +62,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Return 400 errors with detailed validation messages
     - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7_
 
-  - [~] 4.2 Implement error handling middleware
+  - [x] 4.2 Implement error handling middleware
     - Create centralized error handler
     - Return standardized error responses (error: true, mensaje, detalles)
     - Handle 400, 401, 403, 404, 500 errors with appropriate messages
@@ -70,7 +70,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Prevent internal details exposure in production
     - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7_
 
-  - [~] 4.3 Implement security middleware
+  - [x] 4.3 Implement security middleware
     - Configure helmet for security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Strict-Transport-Security)
     - Configure CORS with allowed origins from environment
     - Set allowed HTTP methods (GET, POST, PUT, DELETE, OPTIONS)
@@ -78,7 +78,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Reject requests from unauthorized origins with 403
     - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.5, 18.6, 18.7, 18.8_
 
-  - [~] 4.4 Implement logging middleware
+  - [-] 4.4 Implement logging middleware
     - Configure morgan for request logging
     - Log all incoming requests with method, path, timestamp
     - Log authentication attempts with success/failure status

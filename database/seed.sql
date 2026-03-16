@@ -11,11 +11,11 @@ TRUNCATE TABLE arreglos_inventario, arreglos, ventas_productos, ventas, pedidos,
 -- Password for all users: "password123" (hashed with bcrypt)
 -- =============================================
 INSERT INTO usuarios (nombre, email, password, telefono, cargo, rol, fecha_ingreso, activo) VALUES
-('María Rodríguez', 'maria@floreria.com', '$2a$10$rZ5YvqZ5YvqZ5YvqZ5YvqOeKKx8xKx8xKx8xKx8xKx8xKx8xKx8xK', '987654321', 'Administrador/a', 'admin', '2024-01-15', true),
-('Ana López', 'ana@floreria.com', '$2a$10$rZ5YvqZ5YvqZ5YvqZ5YvqOeKKx8xKx8xKx8xKx8xKx8xKx8xKx8xK', '987111222', 'Vendedor/a', 'empleado', '2024-01-15', true),
-('Carmen Quispe', 'carmen@floreria.com', '$2a$10$rZ5YvqZ5YvqZ5YvqZ5YvqOeKKx8xKx8xKx8xKx8xKx8xKx8xKx8xK', '987333444', 'Florista', 'empleado', '2024-03-01', true),
-('Rosa Flores', 'rosa@floreria.com', '$2a$10$rZ5YvqZ5YvqZ5YvqZ5YvqOeKKx8xKx8xKx8xKx8xKx8xKx8xKx8xK', '987555666', 'Delivery', 'empleado', '2025-06-01', true),
-('Patricia Dueña', 'patricia@floreria.com', '$2a$10$rZ5YvqZ5YvqZ5YvqZ5YvqOeKKx8xKx8xKx8xKx8xKx8xKx8xKx8xK', '987777888', 'Dueña', 'duena', '2024-01-01', true);
+('María Rodríguez', 'maria@floreria.com', '$2a$10$cRtuHtu71ujx6aVmCe2sre90Qz7jZ3rZ6o/wPuFRnJYduDd9FbKrm', '987654321', 'Administrador/a', 'admin', '2024-01-15', true),
+('Ana López', 'ana@floreria.com', '$2a$10$noZVSwZHGiA4X/6VkhPy2OX8GqMZob4AA0ndaa6rNiJIRmqN6dDCW', '987111222', 'Vendedor/a', 'empleado', '2024-01-15', true),
+('Carmen Quispe', 'carmen@floreria.com', '$2a$10$pGK/rKmzCBV9HCB0mlV4MOubrwRpJZgEyNQ7rA5UhFwumgUpBdi92', '987333444', 'Florista', 'empleado', '2024-03-01', true),
+('Rosa Flores', 'rosa@floreria.com', '$2a$10$u1vrGCcMWT0B2fZ4f4.e/..U1p/A9piN9MbF8ssX1nhQPWXZwXuJW', '987555666', 'Delivery', 'empleado', '2025-06-01', true),
+('Patricia Dueña', 'patricia@floreria.com', '$2a$10$.6P8Kpj1lh8uEE1FiB2..u7LGd24k65IRKnpuhXvGnHu7zunobPzK', '987777888', 'Dueña', 'duena', '2024-01-01', true);
 
 -- =============================================
 -- PRODUCTOS (Products)

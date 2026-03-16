@@ -25,15 +25,28 @@ pool.on('error', (err) => {
 });
 
 // Helper function to execute queries
+// Requirement 19.9: Log all database queries in development mode
 const query = async (text, params) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
+    
+    // Log queries in development mode
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📊 Database Query:', {
+        query: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+        params: params,
+        duration: `${duration}ms`,
+        rows: res.rowCount
+      });
+    }
+    
     return res;
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('❌ Database query error:', error.message);
+    console.error('Query:', text);
+    console.error('Params:', params);
     throw error;
   }
 };
