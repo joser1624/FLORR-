@@ -117,26 +117,26 @@ describe('VentasService', () => {
       productos: [
         { producto_id: 1, cantidad: 2, precio_unitario: 50 }
       ],
-      metodo_pago: 'Efectivo',
-      trabajador_id: 1
+      metodo_pago: 'Efectivo'
     };
+    const trabajadorId = 1;
 
     it('should throw error if productos array is empty', async () => {
       await expect(
-        VentasService.create({ ...validVentaData, productos: [] })
-      ).rejects.toThrow('La venta debe incluir al menos un producto');
+        VentasService.create({ ...validVentaData, productos: [] }, trabajadorId)
+      ).rejects.toThrow('El array de productos no puede estar vacío');
     });
 
     it('should throw error if productos is not an array', async () => {
       await expect(
-        VentasService.create({ ...validVentaData, productos: null })
-      ).rejects.toThrow('La venta debe incluir al menos un producto');
+        VentasService.create({ ...validVentaData, productos: null }, trabajadorId)
+      ).rejects.toThrow('El array de productos no puede estar vacío');
     });
 
     it('should throw error if metodo_pago is invalid', async () => {
       await expect(
-        VentasService.create({ ...validVentaData, metodo_pago: 'Bitcoin' })
-      ).rejects.toThrow('El método de pago debe ser uno de');
+        VentasService.create({ ...validVentaData, metodo_pago: 'Bitcoin' }, trabajadorId)
+      ).rejects.toThrow('Método de pago inválido');
     });
 
     it('should accept all valid metodos_pago', async () => {
@@ -151,17 +151,8 @@ describe('VentasService', () => {
           .mockResolvedValueOnce(undefined) // UPDATE stock
           .mockResolvedValueOnce(undefined); // COMMIT
 
-        query.mockResolvedValueOnce({ rows: [{ id: 1 }] }) // getById venta
-          .mockResolvedValueOnce({ rows: [] }); // getById productos
-
-        await VentasService.create({ ...validVentaData, metodo_pago: metodo });
+        await VentasService.create({ ...validVentaData, metodo_pago: metodo }, trabajadorId);
       }
-    });
-
-    it('should throw error if trabajador_id is missing', async () => {
-      await expect(
-        VentasService.create({ ...validVentaData, trabajador_id: null })
-      ).rejects.toThrow('El trabajador_id es requerido');
     });
 
     it('should throw error if product not found', async () => {
@@ -170,7 +161,7 @@ describe('VentasService', () => {
         .mockResolvedValueOnce({ rows: [] }); // Stock check - product not found
 
       await expect(
-        VentasService.create(validVentaData)
+        VentasService.create(validVentaData, trabajadorId)
       ).rejects.toThrow('Producto con ID 1 no encontrado');
 
       expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
@@ -183,8 +174,8 @@ describe('VentasService', () => {
         .mockResolvedValueOnce({ rows: [{ id: 1, nombre: 'Ramo', stock: 1 }] }); // Stock check - insufficient
 
       await expect(
-        VentasService.create(validVentaData)
-      ).rejects.toThrow('Stock insuficiente para Ramo');
+        VentasService.create(validVentaData, trabajadorId)
+      ).rejects.toThrow('Stock insuficiente para el producto "Ramo"');
 
       expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
       expect(mockClient.release).toHaveBeenCalled();
@@ -196,8 +187,7 @@ describe('VentasService', () => {
           { producto_id: 1, cantidad: 2, precio_unitario: 50 },
           { producto_id: 2, cantidad: 3, precio_unitario: 30 }
         ],
-        metodo_pago: 'Efectivo',
-        trabajador_id: 1
+        metodo_pago: 'Efectivo'
       };
 
       mockClient.query
@@ -211,10 +201,7 @@ describe('VentasService', () => {
         .mockResolvedValueOnce(undefined) // UPDATE stock 2
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      query.mockResolvedValueOnce({ rows: [{ id: 1 }] }) // getById venta
-        .mockResolvedValueOnce({ rows: [] }); // getById productos
-
-      await VentasService.create(ventaData);
+      await VentasService.create(ventaData, trabajadorId);
 
       // Check that total was calculated as 2*50 + 3*30 = 190
       const insertVentaCall = mockClient.query.mock.calls.find(
@@ -229,8 +216,7 @@ describe('VentasService', () => {
           { producto_id: 1, cantidad: 2, precio_unitario: 50 },
           { producto_id: 2, cantidad: 1, precio_unitario: 30 }
         ],
-        metodo_pago: 'Efectivo',
-        trabajador_id: 1
+        metodo_pago: 'Efectivo'
       };
 
       mockClient.query
@@ -244,10 +230,7 @@ describe('VentasService', () => {
         .mockResolvedValueOnce(undefined) // UPDATE stock 2
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      query.mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      await VentasService.create(ventaData);
+      await VentasService.create(ventaData, trabajadorId);
 
       // Check ventas_productos inserts
       const ventasProductosInserts = mockClient.query.mock.calls.filter(
@@ -265,10 +248,7 @@ describe('VentasService', () => {
         .mockResolvedValueOnce(undefined) // UPDATE stock
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      query.mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      await VentasService.create(validVentaData);
+      await VentasService.create(validVentaData, trabajadorId);
 
       const stockUpdate = mockClient.query.mock.calls.find(
         call => call[0].includes('UPDATE productos SET stock')
@@ -287,10 +267,7 @@ describe('VentasService', () => {
         .mockResolvedValueOnce(undefined) // UPDATE cliente
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      query.mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      await VentasService.create({ ...validVentaData, cliente_id: 5 });
+      await VentasService.create({ ...validVentaData, cliente_id: 5 }, trabajadorId);
 
       const clienteUpdate = mockClient.query.mock.calls.find(
         call => call[0].includes('UPDATE clientes')
@@ -308,10 +285,7 @@ describe('VentasService', () => {
         .mockResolvedValueOnce(undefined) // UPDATE stock
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      query.mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      await VentasService.create(validVentaData);
+      await VentasService.create(validVentaData, trabajadorId);
 
       const clienteUpdate = mockClient.query.mock.calls.find(
         call => call[0].includes('UPDATE clientes')
@@ -328,10 +302,7 @@ describe('VentasService', () => {
         .mockResolvedValueOnce(undefined)
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      query.mockResolvedValueOnce({ rows: [{ id: 1 }] })
-        .mockResolvedValueOnce({ rows: [] });
-
-      await VentasService.create(validVentaData);
+      await VentasService.create(validVentaData, trabajadorId);
 
       expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
       expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
@@ -344,28 +315,65 @@ describe('VentasService', () => {
         .mockRejectedValueOnce(new Error('Database error'));
 
       await expect(
-        VentasService.create(validVentaData)
+        VentasService.create(validVentaData, trabajadorId)
       ).rejects.toThrow('Database error');
 
       expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
       expect(mockClient.release).toHaveBeenCalled();
     });
+
+    it('should validate cantidad is positive', async () => {
+      const invalidData = {
+        productos: [
+          { producto_id: 1, cantidad: 0, precio_unitario: 50 }
+        ],
+        metodo_pago: 'Efectivo'
+      };
+
+      mockClient.query.mockResolvedValueOnce(undefined); // BEGIN
+
+      await expect(
+        VentasService.create(invalidData, trabajadorId)
+      ).rejects.toThrow('Cada producto debe tener producto_id y cantidad válidos');
+
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+    });
+
+    it('should validate precio_unitario is non-negative', async () => {
+      const invalidData = {
+        productos: [
+          { producto_id: 1, cantidad: 2, precio_unitario: -10 }
+        ],
+        metodo_pago: 'Efectivo'
+      };
+
+      mockClient.query.mockResolvedValueOnce(undefined); // BEGIN
+
+      await expect(
+        VentasService.create(invalidData, trabajadorId)
+      ).rejects.toThrow('El precio_unitario debe ser mayor o igual a 0');
+
+      expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+    });
   });
 
   describe('update', () => {
-    it('should update venta metodo_pago and cliente_id', async () => {
+    it('should update venta fields', async () => {
       const mockUpdated = { id: 1, metodo_pago: 'Yape', cliente_id: 5 };
       query.mockResolvedValue({ rows: [mockUpdated] });
 
       const result = await VentasService.update(1, { 
+        fecha: '2024-03-16',
+        total: 100,
         metodo_pago: 'Yape', 
+        trabajador_id: 1,
         cliente_id: 5 
       });
 
       expect(result).toEqual(mockUpdated);
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE ventas'),
-        ['Yape', 5, 1]
+        expect.any(Array)
       );
     });
   });

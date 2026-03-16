@@ -25,7 +25,7 @@ async function testVentasService() {
       console.log('\nTest 3: Get venta by ID with details');
       const venta = await VentasService.getById(allVentas[0].id);
       console.log(`✅ Retrieved venta #${venta.id} with ${venta.productos.length} productos`);
-      console.log(`   Total: $${venta.total}, Método: ${venta.metodo_pago}`);
+      console.log(`   Total: ${venta.total}, Método: ${venta.metodo_pago}`);
     }
 
     // Test 4: Create a new venta (with transaction)
@@ -43,30 +43,34 @@ async function testVentasService() {
       if (trabajadores.rows.length === 0) {
         console.log('⚠️  No active trabajadores available, skipping create test');
       } else {
+        const trabajadorId = trabajadores.rows[0].id;
+        
         const ventaData = {
           productos: productos.rows.map(p => ({
             producto_id: p.id,
             cantidad: 1,
             precio_unitario: parseFloat(p.precio)
           })),
-          metodo_pago: 'Efectivo',
-          trabajador_id: trabajadores.rows[0].id
+          metodo_pago: 'Efectivo'
         };
 
         console.log(`   Creating venta with ${ventaData.productos.length} productos...`);
-        const newVenta = await VentasService.create(ventaData);
+        const newVenta = await VentasService.create(ventaData, trabajadorId);
         console.log(`✅ Created venta #${newVenta.id}`);
-        console.log(`   Total: $${newVenta.total}`);
-        console.log(`   Productos: ${newVenta.productos.length}`);
+        console.log(`   Total: ${newVenta.total}`);
+
+        // Get full venta details
+        const fullVenta = await VentasService.getById(newVenta.id);
+        console.log(`   Productos in venta: ${fullVenta.productos.length}`);
 
         // Verify stock was deducted
         console.log('\nTest 5: Verify stock deduction');
         for (const item of ventaData.productos) {
           const producto = await query('SELECT stock FROM productos WHERE id = $1', [item.producto_id]);
-          console.log(`✅ Product #${item.producto_id} stock updated`);
+          console.log(`✅ Product #${item.producto_id} stock: ${producto.rows[0].stock}`);
         }
 
-        // Test 6: Verify transaction rollback on error
+        // Test 6: Verify transaction rollback on insufficient stock
         console.log('\nTest 6: Test transaction rollback on insufficient stock');
         try {
           const invalidVenta = {
@@ -75,10 +79,9 @@ async function testVentasService() {
               cantidad: 999999, // Insufficient stock
               precio_unitario: 100
             }],
-            metodo_pago: 'Efectivo',
-            trabajador_id: trabajadores.rows[0].id
+            metodo_pago: 'Efectivo'
           };
-          await VentasService.create(invalidVenta);
+          await VentasService.create(invalidVenta, trabajadorId);
           console.log('❌ Should have thrown error for insufficient stock');
         } catch (error) {
           console.log(`✅ Correctly rejected: ${error.message}`);
@@ -93,10 +96,9 @@ async function testVentasService() {
               cantidad: 1,
               precio_unitario: 100
             }],
-            metodo_pago: 'Bitcoin', // Invalid
-            trabajador_id: trabajadores.rows[0].id
+            metodo_pago: 'Bitcoin' // Invalid
           };
-          await VentasService.create(invalidVenta);
+          await VentasService.create(invalidVenta, trabajadorId);
           console.log('❌ Should have thrown error for invalid metodo_pago');
         } catch (error) {
           console.log(`✅ Correctly rejected: ${error.message}`);
@@ -107,10 +109,9 @@ async function testVentasService() {
         try {
           const invalidVenta = {
             productos: [],
-            metodo_pago: 'Efectivo',
-            trabajador_id: trabajadores.rows[0].id
+            metodo_pago: 'Efectivo'
           };
-          await VentasService.create(invalidVenta);
+          await VentasService.create(invalidVenta, trabajadorId);
           console.log('❌ Should have thrown error for empty productos');
         } catch (error) {
           console.log(`✅ Correctly rejected: ${error.message}`);
@@ -128,14 +129,35 @@ async function testVentasService() {
               precio_unitario: parseFloat(productos.rows[0].precio)
             }],
             metodo_pago: 'Yape',
-            trabajador_id: trabajadores.rows[0].id,
             cliente_id: clientes.rows[0].id
           };
 
-          const ventaConCliente = await VentasService.create(ventaWithCliente);
+          const ventaConCliente = await VentasService.create(ventaWithCliente, trabajadorId);
           console.log(`✅ Created venta #${ventaConCliente.id} with cliente_id`);
+          
+          // Verify cliente was updated
+          const cliente = await query('SELECT updated_at FROM clientes WHERE id = $1', [clientes.rows[0].id]);
+          console.log(`   Cliente updated_at: ${cliente.rows[0].updated_at}`);
         } else {
           console.log('⚠️  No clientes available, skipping cliente test');
+        }
+
+        // Test 10: Test all valid metodos_pago
+        console.log('\nTest 10: Test all valid metodos_pago');
+        const metodosPermitidos = ['Efectivo', 'Yape', 'Plin', 'Tarjeta', 'Transferencia bancaria'];
+        
+        for (const metodo of metodosPermitidos) {
+          const ventaMetodo = {
+            productos: [{
+              producto_id: productos.rows[0].id,
+              cantidad: 1,
+              precio_unitario: parseFloat(productos.rows[0].precio)
+            }],
+            metodo_pago: metodo
+          };
+          
+          const venta = await VentasService.create(ventaMetodo, trabajadorId);
+          console.log(`✅ Created venta with ${metodo}: #${venta.id}`);
         }
       }
     }

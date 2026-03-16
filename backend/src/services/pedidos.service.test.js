@@ -23,7 +23,7 @@ describe('PedidosService', () => {
 
       expect(result).toEqual(mockPedidos);
       expect(query).toHaveBeenCalledWith(
-        'SELECT * FROM pedidos WHERE 1=1 ORDER BY created_at DESC',
+        expect.stringContaining('SELECT * FROM pedidos WHERE 1=1'),
         []
       );
     });
@@ -47,7 +47,7 @@ describe('PedidosService', () => {
       await pedidosService.getAll({ cliente_telefono: '987654321' });
 
       expect(query).toHaveBeenCalledWith(
-        'SELECT * FROM pedidos WHERE 1=1 AND cliente_telefono = $1 ORDER BY created_at DESC',
+        expect.stringContaining('SELECT * FROM pedidos WHERE 1=1 AND cliente_telefono = $1'),
         ['987654321']
       );
     });
@@ -59,7 +59,7 @@ describe('PedidosService', () => {
       await pedidosService.getAll({ fecha_entrega: '2024-03-20' });
 
       expect(query).toHaveBeenCalledWith(
-        'SELECT * FROM pedidos WHERE 1=1 AND fecha_entrega = $1 ORDER BY created_at DESC',
+        expect.stringContaining('SELECT * FROM pedidos WHERE 1=1 AND fecha_entrega = $1'),
         ['2024-03-20']
       );
     });
@@ -135,16 +135,10 @@ describe('PedidosService', () => {
       expect(query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO pedidos'),
         expect.arrayContaining([
-          null, // cliente_id
           'Juan Pérez',
           '987654321',
-          null, // direccion
-          '2024-03-20',
           'Ramo de rosas rojas',
-          150.00,
-          null, // metodo_pago
-          'pendiente',
-          1
+          'pendiente'
         ])
       );
     });

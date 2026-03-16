@@ -10,7 +10,7 @@ class InventarioController {
       
       res.json({
         success: true,
-        items
+        data: items
       });
     } catch (error) {
       next(error);
@@ -33,7 +33,7 @@ class InventarioController {
 
       res.json({
         success: true,
-        item
+        data: item
       });
     } catch (error) {
       next(error);
@@ -49,7 +49,7 @@ class InventarioController {
       
       res.status(201).json({
         success: true,
-        item,
+        data: item,
         mensaje: 'Item creado correctamente'
       });
     } catch (error) {
@@ -73,7 +73,7 @@ class InventarioController {
 
       res.json({
         success: true,
-        item,
+        data: item,
         mensaje: 'Item actualizado correctamente'
       });
     } catch (error) {

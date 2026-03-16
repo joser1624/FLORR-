@@ -122,7 +122,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries for all operations
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9_
 
-  - [-] 6.2 Implement inventory controller and routes
+  - [x] 6.2 Implement inventory controller and routes
     - Create GET /api/inventario with optional stock_bajo query parameter
     - Create GET /api/inventario/:id
     - Create POST /api/inventario
@@ -133,7 +133,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - _Requirements: 20.1, 20.2, 20.7, 20.8_
 
 - [~] 7. Implement Sales module
-  - [~] 7.1 Implement sales service with transaction support
+  - [x] 7.1 Implement sales service with transaction support
     - Create create function with database transaction
     - Validate productos array not empty
     - Validate metodo_pago in allowed list (Efectivo, Yape, Plin, Tarjeta, Transferencia bancaria)
@@ -147,13 +147,13 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 6.14, 24.1, 24.2_
 
-  - [~] 7.2 Implement sales query service
+  - [x] 7.2 Implement sales query service
     - Create getAll function with filtering by fecha, metodo_pago, trabajador_id
     - Create getById function with ventas_productos details
     - Use parameterized queries
     - _Requirements: 6.11, 6.12, 6.13, 6.14_
 
-  - [~] 7.3 Implement sales controller and routes
+  - [x] 7.3 Implement sales controller and routes
     - Create POST /api/ventas (empleado, admin roles)
     - Create GET /api/ventas with query parameters
     - Create GET /api/ventas/:id
@@ -162,11 +162,11 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Return 201 for successful creation
     - _Requirements: 2.5, 20.1, 20.2, 20.6, 20.7_
 
-- [~] 8. Checkpoint - Test core modules
+- [x] 8. Checkpoint - Test core modules
   - Ensure all tests pass, ask the user if questions arise.
 
 - [~] 9. Implement Orders module
-  - [~] 9.1 Implement orders service
+  - [x] 9.1 Implement orders service
     - Create getAll function with filtering by estado, cliente_telefono, fecha_entrega
     - Create getById function
     - Create create function with validation (cliente_nombre, cliente_telefono, fecha_entrega, descripcion not empty)
