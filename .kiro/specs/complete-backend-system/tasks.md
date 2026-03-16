@@ -95,13 +95,13 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries for all database operations
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11_
 
-  - [-] 5.2 Implement products controller
+  - [x] 5.2 Implement products controller
     - Create controller functions for all CRUD operations
     - Handle service errors and return appropriate HTTP status codes
     - Return standardized success responses
     - _Requirements: 20.1, 20.2, 20.7, 20.8, 20.9_
 
-  - [~] 5.3 Implement products routes
+  - [x] 5.3 Implement products routes
     - Create GET /api/productos (all roles)
     - Create GET /api/productos/:id (all roles)
     - Create POST /api/productos (admin only)
@@ -112,7 +112,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - _Requirements: 2.4, 2.5, 2.6, 17.1, 17.2, 17.3_
 
 - [~] 6. Implement Inventory module
-  - [~] 6.1 Implement inventory service
+  - [x] 6.1 Implement inventory service
     - Create getAll function with filtering by tipo and stock_bajo (stock <= stock_min)
     - Create getById function
     - Create create function with validation (nombre not empty, tipo in allowed list, stock >= 0, costo >= 0)
@@ -122,7 +122,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries for all operations
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9_
 
-  - [~] 6.2 Implement inventory controller and routes
+  - [-] 6.2 Implement inventory controller and routes
     - Create GET /api/inventario with optional stock_bajo query parameter
     - Create GET /api/inventario/:id
     - Create POST /api/inventario
