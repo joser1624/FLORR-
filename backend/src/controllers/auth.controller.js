@@ -22,8 +22,15 @@ class AuthController {
         ...result,
       });
     } catch (error) {
-      if (error.message.includes('Usuario o contraseña incorrectos') || error.message.includes('Usuario inactivo')) {
+      // Handle authentication errors with proper status codes
+      if (error.statusCode === 401) {
         return res.status(401).json({
+          error: true,
+          mensaje: error.message,
+        });
+      }
+      if (error.statusCode === 403) {
+        return res.status(403).json({
           error: true,
           mensaje: error.message,
         });

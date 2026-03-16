@@ -40,9 +40,25 @@ app.use(morgan('dev')); // Logging
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+// Health check with database connectivity test
+app.get('/health', async (req, res) => {
+  const dbStatus = await checkConnection();
+  
+  if (dbStatus.connected) {
+    res.status(200).json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      uptime: process.uptime(),
+    });
+  } else {
+    res.status(503).json({
+      status: 'Database unavailable',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: dbStatus.error,
+    });
+  }
 });
 
 // API Routes

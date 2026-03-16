@@ -8,7 +8,7 @@ The implementation follows a clean layered architecture (routes → controllers 
 
 ## Tasks
 
-- [-] 1. Set up core infrastructure and configuration
+- [x] 1. Set up core infrastructure and configuration
   - Create database connection module with connection pooling (min: 2, max: 10 connections)
   - Create JWT configuration module with token generation and verification utilities
   - Configure environment variables validation (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, JWT_SECRET, PORT, CORS_ORIGIN)
@@ -16,7 +16,7 @@ The implementation follows a clean layered architecture (routes → controllers 
   - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 22.1, 22.2, 22.3, 22.4, 22.5, 22.6, 22.7, 22.8, 23.1, 23.2, 23.3, 23.4, 23.5, 23.6_
 
 - [ ] 2. Implement authentication and authorization system
-  - [~] 2.1 Implement authentication service
+  - [x] 2.1 Implement authentication service
     - Create login function with credential validation
     - Implement password hashing with bcrypt (10 salt rounds)
     - Implement password comparison for login
@@ -25,7 +25,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Return appropriate error messages for invalid credentials (401) and inactive accounts (403)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-  - [~] 2.2 Implement authentication middleware
+  - [-] 2.2 Implement authentication middleware
     - Extract and validate JWT token from Authorization header
     - Verify token signature and expiration
     - Attach decoded user data to request object
