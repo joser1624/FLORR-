@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caja del día — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div>
+          <h2>Caja del día</h2>
+          <p id="fecha-hoy-txt" style="color:var(--gris-500);font-size:14px"></p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" onclick="imprimirCierre()">🖨 Imprimir cierre</button>
+          <button class="btn btn-primary" onclick="Modal.open('modal-apertura')">Abrir caja</button>
+        </div>
+      </div>
+
+      <!-- Resumen caja -->
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.5rem">
+        <div class="stat-card rosa"><span class="stat-icon">💵</span><div class="stat-label">Efectivo recibido</div><div class="stat-value" id="caja-efectivo">S/ 0.00</div></div>
+        <div class="stat-card dorado"><span class="stat-icon">📱</span><div class="stat-label">Pagos digitales</div><div class="stat-value" id="caja-digital">S/ 0.00</div></div>
+        <div class="stat-card success"><span class="stat-icon">💳</span><div class="stat-label">Tarjeta/Transf.</div><div class="stat-value" id="caja-tarjeta">S/ 0.00</div></div>
+        <div class="stat-card warning"><span class="stat-icon">💰</span><div class="stat-label">Total del día</div><div class="stat-value" id="caja-total">S/ 0.00</div></div>
+      </div>
+
+      <!-- Detalle por método -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+
+        <div class="card" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Desglose por método de pago</div>
+          <div id="metodos-desglose" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+
+        <div class="card" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Resumen del turno</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--gris-50)">
+              <span style="color:var(--gris-600)">Monto de apertura</span>
+              <span id="apertura-monto" style="font-weight:500">S/ 0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--gris-50)">
+              <span style="color:var(--gris-600)">Total en ventas</span>
+              <span id="ventas-hoy-caja" style="font-weight:500">S/ 0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--gris-50)">
+              <span style="color:var(--gris-600)">Total en gastos</span>
+              <span id="gastos-hoy-caja" style="font-weight:500;color:var(--danger)">S/ 0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:15px;padding:10px 0;font-weight:700">
+              <span>Saldo final estimado</span>
+              <span id="saldo-final" style="color:var(--success)">S/ 0.00</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Transacciones del día -->
+      <div style="font-weight:600;font-size:15px;margin-bottom:.75rem">Transacciones del día</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Hora</th><th>Descripción</th><th>Tipo</th><th>Método</th><th>Monto</th></tr></thead>
+          <tbody id="tbody-transacciones"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal apertura -->
+<div class="modal-overlay" id="modal-apertura">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>Apertura de caja</h3><button class="btn-close" onclick="Modal.close('modal-apertura')">×</button></div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group">
+          <label class="form-label">Monto inicial en efectivo (S/)</label>
+          <input class="form-control" type="number" id="monto-apertura" step="0.50" min="0" placeholder="Ej: 100.00" />
+        </div>
+        <div style="font-size:12px;color:var(--gris-500)">Este monto es el efectivo con el que empiezas el día (fondo de caja)</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-apertura')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="abrirCaja()">Confirmar apertura</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('caja', 'Caja del día', 'Operaciones');
+
+  const hoy = new Date();
+  document.getElementById('fecha-hoy-txt').textContent =
+    hoy.toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  async function cargarCaja() {
+    try {
+      const d = await API.get('/caja/hoy');
+      renderCaja(d);
+    } catch {
+      renderCajaMock();
+    }
+  }
+
+  function renderCaja(d) {
+    const ventas = d.ventas || [];
+    const efectivo = ventas.filter(v=>v.metodo==='Efectivo').reduce((s,v)=>s+parseFloat(v.total||0),0);
+    const digital  = ventas.filter(v=>['Yape','Plin'].includes(v.metodo)).reduce((s,v)=>s+parseFloat(v.total||0),0);
+    const tarjeta  = ventas.filter(v=>['Tarjeta','Transferencia bancaria'].includes(v.metodo)).reduce((s,v)=>s+parseFloat(v.total||0),0);
+    const total    = efectivo + digital + tarjeta;
+    const gastos   = d.gastos_total || 0;
+    const apertura = d.apertura || 0;
+
+    document.getElementById('caja-efectivo').textContent = Fmt.moneda(efectivo);
+    document.getElementById('caja-digital').textContent  = Fmt.moneda(digital);
+    document.getElementById('caja-tarjeta').textContent  = Fmt.moneda(tarjeta);
+    document.getElementById('caja-total').textContent    = Fmt.moneda(total);
+    document.getElementById('apertura-monto').textContent   = Fmt.moneda(apertura);
+    document.getElementById('ventas-hoy-caja').textContent  = Fmt.moneda(total);
+    document.getElementById('gastos-hoy-caja').textContent  = Fmt.moneda(gastos);
+    document.getElementById('saldo-final').textContent      = Fmt.moneda(apertura + total - gastos);
+
+    const metodos = [
+      { nombre:'Efectivo', monto:efectivo, emoji:'💵' },
+      { nombre:'Yape',     monto:ventas.filter(v=>v.metodo==='Yape').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'📱' },
+      { nombre:'Plin',     monto:ventas.filter(v=>v.metodo==='Plin').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'📲' },
+      { nombre:'Tarjeta',  monto:ventas.filter(v=>v.metodo==='Tarjeta').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'💳' },
+      { nombre:'Transferencia',monto:ventas.filter(v=>v.metodo==='Transferencia bancaria').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'🏦' },
+    ].filter(m => m.monto > 0);
+
+    document.getElementById('metodos-desglose').innerHTML = metodos.length
+      ? metodos.map(m => `
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
+            <span>${m.emoji} ${m.nombre}</span>
+            <span style="font-weight:600">${Fmt.moneda(m.monto)}</span>
+          </div>`).join('')
+      : '<div style="color:var(--gris-400);font-size:13px;text-align:center">Sin ventas registradas</div>';
+
+    const tbody = document.getElementById('tbody-transacciones');
+    tbody.innerHTML = ventas.length
+      ? ventas.map(v => `<tr>
+          <td style="font-size:12px">${new Date(v.fecha).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}</td>
+          <td style="font-size:13px">${(v.productos||[]).map(p=>p.nombre).join(', ') || 'Venta'}</td>
+          <td><span class="badge badge-success">Venta</span></td>
+          <td style="font-size:12px">${v.metodo}</td>
+          <td style="font-weight:600;color:var(--success)">+${Fmt.moneda(v.total)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin transacciones hoy</td></tr>';
+  }
+
+  function renderCajaMock() {
+    renderCaja({
+      apertura: 100,
+      gastos_total: 45,
+      ventas: [
+        { fecha:'2026-03-12T09:30:00', productos:[{nombre:'Ramo rosas'}], metodo:'Yape', total:85 },
+        { fecha:'2026-03-12T11:15:00', productos:[{nombre:'Arreglo caja'}], metodo:'Efectivo', total:120 },
+        { fecha:'2026-03-12T14:00:00', productos:[{nombre:'Peluche + rosas'}], metodo:'Yape', total:95 },
+      ]
+    });
+  }
+
+  function abrirCaja() {
+    const monto = parseFloat(document.getElementById('monto-apertura').value) || 0;
+    API.post('/caja/apertura', { monto_inicial: monto }).catch(()=>{});
+    document.getElementById('apertura-monto').textContent = Fmt.moneda(monto);
+    Toast.success(`Caja abierta con ${Fmt.moneda(monto)}`);
+    Modal.close('modal-apertura');
+  }
+
+  function imprimirCierre() {
+    window.print();
+  }
+
+  cargarCaja();
+</script>
+</body>
+</html>

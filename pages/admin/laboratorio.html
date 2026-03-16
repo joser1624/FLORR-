@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laboratorio — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Laboratorio de flores</h2><p>Crea arreglos personalizados y calcula su costo y precio de venta</p></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start">
+
+        <!-- Panel izquierdo: selección -->
+        <div>
+          <div class="card" style="margin-bottom:1rem">
+            <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Nombre del arreglo</div>
+            <input class="form-control" id="lab-nombre" placeholder="Ej: Ramo romántico de temporada" />
+          </div>
+
+          <div class="card" style="margin-bottom:1rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+              <div style="font-weight:600;font-size:14px">Flores disponibles</div>
+              <div class="filter-chips">
+                <span class="chip active" onclick="filtrarLab(this,'')">Todas</span>
+                <span class="chip" onclick="filtrarLab(this,'flores')">Flores</span>
+                <span class="chip" onclick="filtrarLab(this,'materiales')">Materiales</span>
+                <span class="chip" onclick="filtrarLab(this,'accesorios')">Accesorios</span>
+              </div>
+            </div>
+            <div id="lab-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.75rem"></div>
+          </div>
+        </div>
+
+        <!-- Panel derecho: resumen -->
+        <div style="background:var(--blanco);border:1px solid var(--rosa-100);border-radius:var(--radius-xl);padding:1.5rem;position:sticky;top:76px">
+          <div style="font-family:var(--font-display);font-size:20px;font-style:italic;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--rosa-100)">
+            Resumen del arreglo
+          </div>
+
+          <div id="lab-items" style="min-height:60px;margin-bottom:1rem">
+            <div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Selecciona flores y materiales</div>
+          </div>
+
+          <div style="border-top:1px solid var(--rosa-100);padding-top:12px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+              <span style="color:var(--gris-500)">Costo total:</span>
+              <span id="lab-costo" style="font-weight:600">S/ 0.00</span>
+            </div>
+
+            <div style="margin-bottom:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <label style="font-size:12px;color:var(--gris-600)">Margen de ganancia:</label>
+                <span id="lab-margen-pct" style="font-size:13px;font-weight:600;color:var(--rosa-600)">40%</span>
+              </div>
+              <input type="range" min="5" max="100" value="40" step="5" id="lab-margen" oninput="recalcular()" style="width:100%" />
+            </div>
+
+            <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:12px;text-align:center;margin-bottom:1rem">
+              <div style="font-size:12px;color:var(--gris-500);margin-bottom:4px">Precio de venta sugerido</div>
+              <div id="lab-precio" style="font-size:28px;font-weight:700;color:var(--rosa-600);font-family:var(--font-display)">S/ 0.00</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary" onclick="guardarArreglo()" style="width:100%">Guardar como producto</button>
+              <button class="btn btn-gold" onclick="enviarWAArreglo()" style="width:100%">Enviar por WhatsApp</button>
+              <button class="btn btn-ghost" onclick="limpiarArreglo()" style="width:100%">Limpiar selección</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('laboratorio', 'Laboratorio de flores', 'Catálogo');
+
+  let inventario = [];
+  let seleccion = {};
+  let tipoLabFiltro = '';
+
+  const EMOJI_MAP = { flores:'🌸', materiales:'🎀', accesorios:'🎁' };
+  const FLORES_EMOJI = { 'Rosas rojas':'🌹','Lirios blancos':'🤍','Girasoles':'🌻','Rosas rosadas':'🌸','Tulipanes':'🌷','Margaritas':'🌼','Orquídeas':'🌺' };
+
+  async function cargarInventarioLab() {
+    try {
+      const data = await API.get('/inventario');
+      inventario = data.items || data || [];
+    } catch {
+      inventario = [
+        { id:1, nombre:'Rosas rojas', tipo:'flores', stock:45, costo:3.50 },
+        { id:2, nombre:'Lirios blancos', tipo:'flores', stock:8, costo:2.80 },
+        { id:3, nombre:'Girasoles', tipo:'flores', stock:25, costo:2.00 },
+        { id:4, nombre:'Rosas rosadas', tipo:'flores', stock:30, costo:3.00 },
+        { id:5, nombre:'Papel decorativo dorado', tipo:'materiales', stock:3, costo:8.50 },
+        { id:6, nombre:'Cintas satinadas', tipo:'materiales', stock:12, costo:4.00 },
+        { id:7, nombre:'Cajas decorativas', tipo:'accesorios', stock:7, costo:12.00 },
+        { id:8, nombre:'Peluche mediano', tipo:'accesorios', stock:2, costo:18.00 },
+      ];
+    }
+    renderGrid();
+  }
+
+  function renderGrid() {
+    let lista = inventario;
+    if (tipoLabFiltro) lista = lista.filter(i => i.tipo === tipoLabFiltro);
+    const grid = document.getElementById('lab-grid');
+    grid.innerHTML = lista.map(item => {
+      const qty = seleccion[item.id] || 0;
+      const emoji = FLORES_EMOJI[item.nombre] || EMOJI_MAP[item.tipo] || '🌸';
+      const agotado = item.stock === 0;
+      return `
+        <div style="border:2px solid ${qty>0?'var(--rosa-500)':'var(--gris-100)'};border-radius:var(--radius-md);padding:.75rem;text-align:center;background:${qty>0?'var(--rosa-50)':'var(--blanco)'};transition:all .15s;${agotado?'opacity:.4':''}">
+          <div style="font-size:32px;margin-bottom:4px">${emoji}</div>
+          <div style="font-size:12px;font-weight:500;color:var(--gris-700);margin-bottom:2px">${item.nombre}</div>
+          <div style="font-size:11px;color:var(--rosa-500);font-weight:500">${Fmt.moneda(item.costo)}</div>
+          <div style="font-size:10px;color:var(--gris-400)">Stock: ${item.stock}</div>
+          ${!agotado ? `
+          <div style="display:flex;align-items:center;gap:6px;justify-content:center;margin-top:6px">
+            <button onclick="cambiarQty(${item.id},-1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--rosa-300);background:var(--blanco);color:var(--rosa-600);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">−</button>
+            <span style="font-size:13px;font-weight:600;min-width:18px;text-align:center">${qty}</span>
+            <button onclick="cambiarQty(${item.id},1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--rosa-300);background:var(--blanco);color:var(--rosa-600);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">+</button>
+          </div>` : '<div style="font-size:10px;color:var(--danger);margin-top:4px">Agotado</div>'}
+        </div>`;
+    }).join('');
+  }
+
+  function cambiarQty(id, delta) {
+    const item = inventario.find(i => i.id === id);
+    if (!item) return;
+    const actual = seleccion[id] || 0;
+    const nuevo = Math.max(0, Math.min(item.stock, actual + delta));
+    if (nuevo === 0) delete seleccion[id];
+    else seleccion[id] = nuevo;
+    renderGrid();
+    renderResumen();
+  }
+
+  function recalcular() {
+    const pct = parseInt(document.getElementById('lab-margen').value);
+    document.getElementById('lab-margen-pct').textContent = pct + '%';
+    renderResumen();
+  }
+
+  function renderResumen() {
+    const el = document.getElementById('lab-items');
+    const ids = Object.keys(seleccion);
+    if (!ids.length) {
+      el.innerHTML = '<div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Selecciona flores y materiales</div>';
+      document.getElementById('lab-costo').textContent = 'S/ 0.00';
+      document.getElementById('lab-precio').textContent = 'S/ 0.00';
+      return;
+    }
+    let costoTotal = 0;
+    el.innerHTML = ids.map(id => {
+      const item = inventario.find(i => i.id == id);
+      const qty = seleccion[id];
+      const subtotal = item.costo * qty;
+      costoTotal += subtotal;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gris-50);font-size:13px">
+        <span>${item.nombre} × ${qty}</span>
+        <span style="font-weight:500">${Fmt.moneda(subtotal)}</span>
+      </div>`;
+    }).join('');
+
+    const margen = parseInt(document.getElementById('lab-margen').value) / 100;
+    const precioVenta = costoTotal / (1 - margen);
+    document.getElementById('lab-costo').textContent = Fmt.moneda(costoTotal);
+    document.getElementById('lab-precio').textContent = Fmt.moneda(precioVenta);
+  }
+
+  function filtrarLab(el, tipo) {
+    document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    tipoLabFiltro = tipo;
+    renderGrid();
+  }
+
+  function limpiarArreglo() {
+    seleccion = {};
+    renderGrid();
+    renderResumen();
+  }
+
+  async function guardarArreglo() {
+    const nombre = document.getElementById('lab-nombre').value;
+    if (!nombre) { Toast.warning('Ingresa un nombre para el arreglo'); return; }
+    const ids = Object.keys(seleccion);
+    if (!ids.length) { Toast.warning('Agrega al menos un elemento'); return; }
+    const margen = parseInt(document.getElementById('lab-margen').value);
+    const costoTotal = ids.reduce((s,id) => s + inventario.find(i=>i.id==id).costo * seleccion[id], 0);
+    const precioVenta = costoTotal / (1 - margen/100);
+    const payload = {
+      nombre, margen,
+      costo: costoTotal,
+      precio: parseFloat(precioVenta.toFixed(2)),
+      receta: ids.map(id => ({ inventario_id: parseInt(id), cantidad: seleccion[id] })),
+    };
+    try { await API.post('/arreglos', payload); }
+    catch { /* demo */ }
+    Toast.success(`"${nombre}" guardado como producto (S/ ${precioVenta.toFixed(2)})`);
+    limpiarArreglo();
+    document.getElementById('lab-nombre').value = '';
+  }
+
+  function enviarWAArreglo() {
+    const ids = Object.keys(seleccion);
+    if (!ids.length) { Toast.warning('Agrega elementos primero'); return; }
+    const flores = ids.map(id => ({ nombre: inventario.find(i=>i.id==id).nombre, cantidad: seleccion[id] }));
+    const precioEl = document.getElementById('lab-precio').textContent.replace('S/ ','');
+    const msg = WhatsApp.arregloMsg(flores, parseFloat(precioEl));
+    WhatsApp.send(msg);
+  }
+
+  cargarInventarioLab();
+</script>
+</body>
+</html>

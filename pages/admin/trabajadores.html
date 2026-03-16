@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trabajadores — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Trabajadores</h2><p>Gestiona el equipo de la florería</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-trab')">+ Nuevo trabajador</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem" id="cards-trab">
+        <div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:13px">Cargando...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal-trab">
+  <div class="modal">
+    <div class="modal-header"><h3 id="titulo-modal-trab">Nuevo trabajador</h3><button class="btn-close" onclick="Modal.close('modal-trab')">×</button></div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group"><label class="form-label">Nombre completo <span class="req">*</span></label><input class="form-control" id="trab-nombre" required /></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-control" id="trab-telefono" type="tel" /></div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Cargo <span class="req">*</span></label>
+            <select class="form-control" id="trab-cargo">
+              <option>Vendedor/a</option><option>Florista</option><option>Delivery</option><option>Administrador/a</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Fecha de ingreso</label><input class="form-control" type="date" id="trab-ingreso" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Correo electrónico</label><input class="form-control" type="email" id="trab-email" /></div>
+        <div class="form-group">
+          <label class="form-label">Contraseña del sistema</label>
+          <input class="form-control" type="password" id="trab-pass" placeholder="Mínimo 6 caracteres" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol en el sistema</label>
+          <select class="form-control" id="trab-rol">
+            <option value="empleado">Empleado</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-trab')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarTrabajador()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('trabajadores', 'Trabajadores', 'Negocio');
+  let trabajadores = [];
+
+  async function cargarTrabajadores() {
+    try { const d = await API.get('/trabajadores'); trabajadores = d.trabajadores || d || []; }
+    catch {
+      trabajadores = [
+        { id:1, nombre:'Ana López', cargo:'Vendedora', telefono:'987111222', ingreso:'2024-01-15', ventas_mes:1820, rol:'empleado' },
+        { id:2, nombre:'María Quispe', cargo:'Florista', telefono:'987333444', ingreso:'2024-03-01', ventas_mes:1540, rol:'empleado' },
+        { id:3, nombre:'Rosa Flores', cargo:'Delivery', telefono:'987555666', ingreso:'2025-06-01', ventas_mes:980, rol:'empleado' },
+      ];
+    }
+    renderCards();
+  }
+
+  function renderCards() {
+    const el = document.getElementById('cards-trab');
+    if (!trabajadores.length) { el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No hay trabajadores</div>'; return; }
+    const CARGO_COLOR = { 'Vendedora':'badge-rosa','Vendedor/a':'badge-rosa', Florista:'badge-dorado', Delivery:'badge-info', 'Administrador/a':'badge-success' };
+    el.innerHTML = trabajadores.map(t => {
+      const initials = t.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return `
+        <div class="card" style="padding:1.25rem">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem">
+            <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials}</div>
+            <div>
+              <div style="font-weight:600;font-size:14px">${t.nombre}</div>
+              <span class="badge ${CARGO_COLOR[t.cargo]||'badge-gray'}">${t.cargo}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--gris-600);margin-bottom:1rem">
+            ${t.telefono ? `<div>📱 ${Fmt.tel(t.telefono)}</div>` : ''}
+            ${t.ingreso ? `<div>📅 Desde ${Fmt.fecha(t.ingreso)}</div>` : ''}
+            <div>🔑 Rol: <span class="badge badge-gray">${t.rol}</span></div>
+          </div>
+          ${t.ventas_mes != null ? `
+          <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:11px;color:var(--gris-500)">Ventas este mes</span>
+            <span style="font-weight:700;color:var(--rosa-600)">${Fmt.moneda(t.ventas_mes)}</span>
+          </div>` : ''}
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="editarTrabajador(${t.id})">Editar</button>
+            <button class="btn btn-outline btn-sm" style="flex:1" onclick="Toast.info('Ver ventas de ${t.nombre}')">Ver ventas</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function editarTrabajador(id) {
+    const t = trabajadores.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('titulo-modal-trab').textContent = 'Editar trabajador';
+    document.getElementById('trab-nombre').value = t.nombre;
+    document.getElementById('trab-telefono').value = t.telefono || '';
+    document.getElementById('trab-cargo').value = t.cargo;
+    document.getElementById('trab-ingreso').value = t.ingreso || '';
+    document.getElementById('trab-rol').value = t.rol || 'empleado';
+    Modal.open('modal-trab');
+  }
+
+  async function guardarTrabajador() {
+    const payload = {
+      nombre:   document.getElementById('trab-nombre').value,
+      telefono: document.getElementById('trab-telefono').value,
+      cargo:    document.getElementById('trab-cargo').value,
+      ingreso:  document.getElementById('trab-ingreso').value,
+      email:    document.getElementById('trab-email').value,
+      password: document.getElementById('trab-pass').value,
+      rol:      document.getElementById('trab-rol').value,
+    };
+    if (!payload.nombre) { Toast.warning('El nombre es obligatorio'); return; }
+    try { await API.post('/trabajadores', payload); }
+    catch { trabajadores.push({ id: Date.now(), ...payload, ventas_mes: 0 }); }
+    Toast.success('Trabajador guardado');
+    Modal.close('modal-trab');
+    renderCards();
+  }
+
+  cargarTrabajadores();
+</script>
+</body>
+</html>

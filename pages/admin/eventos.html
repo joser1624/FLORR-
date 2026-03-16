@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eventos — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Eventos especiales</h2><p>Gestiona las fechas especiales que se muestran en el sitio de clientes</p></div>
+        <a href="promociones.html" class="btn btn-outline">Ver promociones</a>
+      </div>
+      <div class="alert alert-info" style="margin-bottom:1.25rem">
+        ℹ Los eventos activos aparecen automáticamente en la página principal de clientes.
+        <a href="../../index.html#eventos" target="_blank" style="color:var(--info);margin-left:8px">Ver sitio →</a>
+      </div>
+      <p style="text-align:center;padding:2rem;color:var(--gris-400)">
+        Los eventos se gestionan desde la página de <a href="promociones.html" style="color:var(--rosa-500)">Promociones y Eventos</a>.
+      </p>
+    </div>
+  </main>
+</div>
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>initAdminLayout('eventos', 'Eventos', 'Contenido');</script>
+</body>
+</html>

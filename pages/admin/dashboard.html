@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+
+    <div class="admin-content">
+
+      <!-- Stats -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card rosa">
+          <span class="stat-icon">💰</span>
+          <div class="stat-label">Ventas del día</div>
+          <div class="stat-value" id="stat-dia">S/ —</div>
+          <div class="stat-change up" id="stat-dia-change">Cargando...</div>
+        </div>
+        <div class="stat-card dorado">
+          <span class="stat-icon">📅</span>
+          <div class="stat-label">Ventas del mes</div>
+          <div class="stat-value" id="stat-mes">S/ —</div>
+          <div class="stat-change up" id="stat-mes-change">Cargando...</div>
+        </div>
+        <div class="stat-card success">
+          <span class="stat-icon">📈</span>
+          <div class="stat-label">Ganancia neta del mes</div>
+          <div class="stat-value" id="stat-ganancia">S/ —</div>
+          <div class="stat-change" id="stat-ganancia-change">Cargando...</div>
+        </div>
+        <div class="stat-card warning">
+          <span class="stat-icon">📦</span>
+          <div class="stat-label">Pedidos pendientes</div>
+          <div class="stat-value" id="stat-pedidos">—</div>
+          <div class="stat-change" id="stat-pedidos-change">Cargando...</div>
+        </div>
+      </div>
+
+      <!-- Alertas de stock -->
+      <div id="alertas-stock"></div>
+
+      <!-- Gráficos + Pedidos recientes -->
+      <div style="display:grid;grid-template-columns:1fr 380px;gap:1.25rem;margin-bottom:1.25rem">
+
+        <!-- Gráfico ventas semana -->
+        <div class="card" style="padding:1.25rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div>
+              <div style="font-weight:600;font-size:14px">Ventas de la semana</div>
+              <div style="font-size:12px;color:var(--gris-500)">Últimos 7 días</div>
+            </div>
+            <select class="form-control" style="width:auto;font-size:12px;padding:5px 10px" onchange="cambiarPeriodo(this.value)">
+              <option value="7">7 días</option>
+              <option value="30">30 días</option>
+            </select>
+          </div>
+          <canvas id="chart-ventas" height="200"></canvas>
+        </div>
+
+        <!-- Pedidos recientes -->
+        <div class="card" style="padding:1.25rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="font-weight:600;font-size:14px">Pedidos recientes</div>
+            <a href="pedidos.html" style="font-size:12px;color:var(--rosa-500)">Ver todos →</a>
+          </div>
+          <div id="pedidos-recientes" style="display:flex;flex-direction:column;gap:8px">
+            <div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:13px">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Productos más vendidos + Ventas por trabajador -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+        <div class="card" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Productos más vendidos</div>
+          <canvas id="chart-productos" height="220"></canvas>
+        </div>
+
+        <div class="card" style="padding:1.25rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="font-weight:600;font-size:14px">Ventas por trabajador</div>
+            <span style="font-size:12px;color:var(--gris-500)">Este mes</span>
+          </div>
+          <div id="ventas-trabajadores" style="display:flex;flex-direction:column;gap:10px">
+            <div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:13px">Cargando...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('dashboard', 'Dashboard', 'Panel principal');
+
+  let chartVentas = null;
+  let chartProductos = null;
+
+  async function loadDashboard() {
+    try {
+      const data = await API.get('/dashboard');
+      renderStats(data);
+      renderAlertasStock(data.stock_bajo || []);
+      renderChartVentas(data.ventas_semana || []);
+      renderChartProductos(data.top_productos || []);
+      renderPedidosRecientes(data.pedidos_recientes || []);
+      renderVentasTrabajadores(data.ventas_trabajadores || []);
+    } catch {
+      renderStatsMock();
+      renderChartVentasMock();
+      renderChartProductosMock();
+      renderPedidosRecietesMock();
+      renderVentasTrabajadoresMock();
+    }
+  }
+
+  function renderStats(data) {
+    document.getElementById('stat-dia').textContent = Fmt.moneda(data.ventas_dia || 0);
+    document.getElementById('stat-mes').textContent = Fmt.moneda(data.ventas_mes || 0);
+    document.getElementById('stat-ganancia').textContent = Fmt.moneda(data.ganancia_mes || 0);
+    document.getElementById('stat-pedidos').textContent = Fmt.nro(data.pedidos_pendientes || 0);
+    document.getElementById('stat-dia-change').textContent = data.pedidos_hoy + ' pedidos hoy';
+    document.getElementById('stat-mes-change').textContent = data.pedidos_mes + ' pedidos este mes';
+    const pct = data.margen_mes ? data.margen_mes.toFixed(1) + '% de margen' : '—';
+    document.getElementById('stat-ganancia-change').textContent = pct;
+    const pend = document.getElementById('stat-pedidos-change');
+    pend.textContent = data.pedidos_pendientes > 0 ? 'Requieren atención' : 'Todo al día';
+    pend.className = 'stat-change ' + (data.pedidos_pendientes > 0 ? 'down' : 'up');
+  }
+
+  function renderAlertasStock(items) {
+    const el = document.getElementById('alertas-stock');
+    if (!items.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <div class="alert alert-warning" style="margin-bottom:1rem">
+        ⚠ <strong>${items.length} artículo(s) con stock bajo:</strong>
+        ${items.map(i => `<span class="badge badge-warning" style="margin-left:6px">${i.nombre} (${i.stock_actual})</span>`).join('')}
+        <a href="inventario.html" style="margin-left:auto;font-size:12px;color:var(--warning)">Gestionar →</a>
+      </div>`;
+  }
+
+  function renderChartVentas(ventas) {
+    const ctx = document.getElementById('chart-ventas').getContext('2d');
+    if (chartVentas) chartVentas.destroy();
+    chartVentas = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ventas.map(v => v.fecha),
+        datasets: [{
+          label: 'Ventas (S/)',
+          data: ventas.map(v => v.total),
+          backgroundColor: 'rgba(204,56,112,.18)',
+          borderColor: '#CC3870',
+          borderWidth: 2,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { callback: v => 'S/'+v } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderChartProductos(productos) {
+    const ctx = document.getElementById('chart-productos').getContext('2d');
+    if (chartProductos) chartProductos.destroy();
+    chartProductos = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: productos.map(p => p.nombre),
+        datasets: [{
+          data: productos.map(p => p.cantidad),
+          backgroundColor: ['#CC3870','#D4A017','#2D8C4E','#1E6FA8','#A82058','#8A6009'],
+          borderWidth: 2,
+          borderColor: '#fff',
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '62%',
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } }
+        }
+      }
+    });
+  }
+
+  function renderPedidosRecientes(pedidos) {
+    const el = document.getElementById('pedidos-recientes');
+    if (!pedidos.length) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--gris-400);font-size:13px">Sin pedidos recientes</div>'; return; }
+    const statusCls = { pendiente:'sp-pendiente', 'en preparación':'sp-preparacion', 'listo para entrega':'sp-listo', entregado:'sp-entregado', cancelado:'sp-cancelado' };
+    el.innerHTML = pedidos.map(p => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--gris-50)">
+        <div>
+          <div style="font-size:13px;font-weight:500">${p.cliente}</div>
+          <div style="font-size:11px;color:var(--gris-400)">${Fmt.fecha(p.fecha_entrega)} · ${Fmt.moneda(p.total)}</div>
+        </div>
+        <span class="status-pill ${statusCls[p.estado] || 'sp-pendiente'}">${p.estado}</span>
+      </div>`).join('');
+  }
+
+  function renderVentasTrabajadores(trabajadores) {
+    const el = document.getElementById('ventas-trabajadores');
+    if (!trabajadores.length) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--gris-400);font-size:13px">Sin datos</div>'; return; }
+    const max = Math.max(...trabajadores.map(t => t.total));
+    el.innerHTML = trabajadores.map(t => {
+      const pct = max > 0 ? (t.total / max * 100).toFixed(0) : 0;
+      const initials = t.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return `
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="avatar" style="flex-shrink:0">${initials}</div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+              <span style="font-weight:500">${t.nombre}</span>
+              <span style="color:var(--rosa-600)">${Fmt.moneda(t.total)}</span>
+            </div>
+            <div style="height:4px;background:var(--rosa-100);border-radius:4px">
+              <div style="height:4px;width:${pct}%;background:var(--rosa-400);border-radius:4px"></div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Datos mock cuando el backend no esté activo
+  function renderStatsMock() {
+    document.getElementById('stat-dia').textContent = 'S/ 285.00';
+    document.getElementById('stat-mes').textContent = 'S/ 4,820.00';
+    document.getElementById('stat-ganancia').textContent = 'S/ 1,930.00';
+    document.getElementById('stat-pedidos').textContent = '3';
+    document.getElementById('stat-dia-change').innerHTML = '<span style="color:var(--success)">↑ 8 pedidos hoy</span>';
+    document.getElementById('stat-mes-change').innerHTML = '<span>142 pedidos este mes</span>';
+    document.getElementById('stat-ganancia-change').textContent = '40% de margen';
+    document.getElementById('stat-pedidos-change').textContent = 'Requieren atención';
+    document.getElementById('stat-pedidos-change').className = 'stat-change down';
+  }
+
+  function renderChartVentasMock() {
+    const dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    renderChartVentas(dias.map((d,i) => ({ fecha: d, total: [180,220,95,310,280,420,190][i] })));
+  }
+
+  function renderChartProductosMock() {
+    renderChartProductos([
+      {nombre:'Ramos',cantidad:42},{nombre:'Arreglos',cantidad:28},
+      {nombre:'Peluches',cantidad:18},{nombre:'Cajas',cantidad:12},{nombre:'Otros',cantidad:8}
+    ]);
+  }
+
+  function renderPedidosRecietesMock() {
+    renderPedidosRecientes([
+      {cliente:'Ana García',fecha_entrega:'2026-03-15',total:120,estado:'pendiente'},
+      {cliente:'Luis Pérez',fecha_entrega:'2026-03-14',total:85,estado:'en preparación'},
+      {cliente:'María Torres',fecha_entrega:'2026-03-13',total:200,estado:'listo para entrega'},
+      {cliente:'Carlos Ramos',fecha_entrega:'2026-03-12',total:65,estado:'entregado'},
+    ]);
+  }
+
+  function renderVentasTrabajadoresMock() {
+    renderVentasTrabajadores([
+      {nombre:'Ana López',total:1820},
+      {nombre:'María Quispe',total:1540},
+      {nombre:'Rosa Flores',total:980},
+    ]);
+  }
+
+  function cambiarPeriodo(dias) {
+    // Al conectar el backend se recarga con el período
+    loadDashboard();
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

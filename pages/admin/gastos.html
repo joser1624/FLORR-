@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gastos — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Gastos</h2><p>Registra los gastos del negocio para calcular la ganancia real</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-gasto')">+ Registrar gasto</button>
+      </div>
+
+      <!-- Resumen -->
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.25rem">
+        <div class="stat-card rosa"><span class="stat-icon">💸</span><div class="stat-label">Gastos del mes</div><div class="stat-value" id="gastos-mes">S/ 0.00</div></div>
+        <div class="stat-card success"><span class="stat-icon">💰</span><div class="stat-label">Ventas del mes</div><div class="stat-value" id="ventas-mes-g">S/ 0.00</div></div>
+        <div class="stat-card dorado"><span class="stat-icon">📈</span><div class="stat-label">Ganancia real</div><div class="stat-value" id="ganancia-real">S/ 0.00</div></div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-chips">
+          <span class="chip active" onclick="filtrarCat(this,'')">Todos</span>
+          <span class="chip" onclick="filtrarCat(this,'flores')">Compra flores</span>
+          <span class="chip" onclick="filtrarCat(this,'transporte')">Transporte</span>
+          <span class="chip" onclick="filtrarCat(this,'materiales')">Materiales</span>
+          <span class="chip" onclick="filtrarCat(this,'mantenimiento')">Mantenimiento</span>
+          <span class="chip" onclick="filtrarCat(this,'otros')">Otros</span>
+        </div>
+        <input class="form-control" type="month" id="mes-gasto" onchange="cargarGastos()" style="max-width:160px;margin-left:auto" />
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-gastos"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-header"><h3>Registrar gasto</h3><button class="btn-close" onclick="Modal.close('modal-gasto')">×</button></div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group"><label class="form-label">Descripción <span class="req">*</span></label><input class="form-control" id="gasto-desc" required placeholder="Ej: Compra de 100 rosas a proveedor" /></div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <select class="form-control" id="gasto-cat">
+              <option value="flores">Compra de flores</option><option value="transporte">Transporte</option>
+              <option value="materiales">Materiales</option><option value="mantenimiento">Mantenimiento</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Monto (S/) <span class="req">*</span></label><input class="form-control" type="number" id="gasto-monto" step="0.01" min="0" required /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Fecha</label><input class="form-control" type="date" id="gasto-fecha" /></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-gasto')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarGasto()">Guardar gasto</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('gastos', 'Gastos', 'Negocio');
+  let gastos = [];
+  let catFiltro = '';
+
+  const now = new Date();
+  document.getElementById('mes-gasto').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  const CAT_LABELS = { flores:'Compra flores', transporte:'Transporte', materiales:'Materiales', mantenimiento:'Mantenimiento', otros:'Otros' };
+  const CAT_BADGE = { flores:'badge-rosa', transporte:'badge-info', materiales:'badge-dorado', mantenimiento:'badge-warning', otros:'badge-gray' };
+
+  async function cargarGastos() {
+    const mes = document.getElementById('mes-gasto').value;
+    try { const d = await API.get(`/gastos?mes=${mes}`); gastos = d.gastos || d || []; }
+    catch {
+      gastos = [
+        { id:1, descripcion:'Compra 200 rosas rojas', categoria:'flores', monto:280, fecha:'2026-03-02' },
+        { id:2, descripcion:'Transporte proveedor', categoria:'transporte', monto:35, fecha:'2026-03-05' },
+        { id:3, descripcion:'Papel decorativo x10', categoria:'materiales', monto:85, fecha:'2026-03-08' },
+        { id:4, descripcion:'Mantenimiento refrigerador', categoria:'mantenimiento', monto:150, fecha:'2026-03-10' },
+      ];
+    }
+    renderResumen();
+    renderGastos();
+  }
+
+  function renderResumen() {
+    const total = gastos.reduce((s,g)=>s+parseFloat(g.monto||0),0);
+    document.getElementById('gastos-mes').textContent = Fmt.moneda(total);
+    document.getElementById('ventas-mes-g').textContent = '— (del backend)';
+    document.getElementById('ganancia-real').textContent = '— (del backend)';
+  }
+
+  function renderGastos() {
+    const lista = catFiltro ? gastos.filter(g=>g.categoria===catFiltro) : gastos;
+    const tbody = document.getElementById('tbody-gastos');
+    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin gastos</td></tr>'; return; }
+    tbody.innerHTML = lista.map(g => `<tr>
+      <td style="font-size:12px">${Fmt.fecha(g.fecha)}</td>
+      <td style="font-weight:500">${g.descripcion}</td>
+      <td><span class="badge ${CAT_BADGE[g.categoria]||'badge-gray'}">${CAT_LABELS[g.categoria]||g.categoria}</span></td>
+      <td style="font-weight:600;color:var(--danger)">${Fmt.moneda(g.monto)}</td>
+      <td><button class="btn-tbl btn-tbl-delete" onclick="eliminarGasto(${g.id})">Eliminar</button></td>
+    </tr>`).join('');
+  }
+
+  function filtrarCat(el, cat) {
+    document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active'));
+    el.classList.add('active');
+    catFiltro = cat;
+    renderGastos();
+  }
+
+  async function guardarGasto() {
+    const payload = { descripcion: document.getElementById('gasto-desc').value, categoria: document.getElementById('gasto-cat').value, monto: parseFloat(document.getElementById('gasto-monto').value)||0, fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0] };
+    if (!payload.descripcion || !payload.monto) { Toast.warning('Completa los campos obligatorios'); return; }
+    try { await API.post('/gastos', payload); } catch { gastos.unshift({ id:Date.now(), ...payload }); }
+    Toast.success('Gasto registrado');
+    Modal.close('modal-gasto');
+    renderResumen();
+    renderGastos();
+  }
+
+  function eliminarGasto(id) {
+    Modal.confirm('¿Eliminar este gasto?', () => {
+      gastos = gastos.filter(g=>g.id!==id);
+      API.delete('/gastos/'+id).catch(()=>{});
+      renderResumen();
+      renderGastos();
+      Toast.success('Gasto eliminado');
+    });
+  }
+
+  document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
+  cargarGastos();
+</script>
+</body>
+</html>

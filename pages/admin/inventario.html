@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Inventario</h2><p>Flores y materiales disponibles en tienda</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-item')">+ Agregar ítem</button>
+      </div>
+
+      <!-- Alertas stock bajo -->
+      <div id="alertas-inv"></div>
+
+      <div class="filter-bar">
+        <div class="filter-chips">
+          <span class="chip active" onclick="filtrarTipo(this,'')">Todos</span>
+          <span class="chip" onclick="filtrarTipo(this,'flores')">Flores</span>
+          <span class="chip" onclick="filtrarTipo(this,'materiales')">Materiales</span>
+          <span class="chip" onclick="filtrarTipo(this,'accesorios')">Accesorios</span>
+          <span class="chip" style="color:var(--warning)" onclick="filtrarBajos(this)">⚠ Stock bajo</span>
+        </div>
+        <input class="form-control" placeholder="Buscar..." id="buscar-inv" oninput="renderInv()" style="max-width:200px;margin-left:auto" />
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Ítem</th><th>Tipo</th><th>Stock actual</th><th>Stock mínimo</th><th>Unidad</th><th>Costo unit. (S/)</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-inv"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal ítem -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="titulo-modal-item">Nuevo ítem de inventario</h3>
+      <button class="btn-close" onclick="Modal.close('modal-item')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group"><label class="form-label">Nombre <span class="req">*</span></label><input class="form-control" id="item-nombre" required /></div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select class="form-control" id="item-tipo"><option value="flores">Flores</option><option value="materiales">Materiales</option><option value="accesorios">Accesorios</option></select>
+          </div>
+          <div class="form-group"><label class="form-label">Unidad</label><select class="form-control" id="item-unidad"><option>unidad</option><option>docena</option><option>metro</option><option>rollo</option><option>caja</option></select></div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group"><label class="form-label">Stock actual <span class="req">*</span></label><input class="form-control" id="item-stock" type="number" min="0" required /></div>
+          <div class="form-group"><label class="form-label">Stock mínimo</label><input class="form-control" id="item-stock-min" type="number" min="0" placeholder="Ej: 5" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Costo unitario (S/)</label><input class="form-control" id="item-costo" type="number" step="0.01" min="0" /></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-item')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarItem()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('inventario', 'Inventario', 'Catálogo');
+
+  let items = [];
+  let tipoFiltro = '';
+  let soloBajoInv = false;
+
+  const TIPO_EMOJI = { flores:'🌸', materiales:'🎀', accesorios:'🎁' };
+
+  async function cargarInventario() {
+    try {
+      const data = await API.get('/inventario');
+      items = data.items || data || [];
+    } catch {
+      items = [
+        { id:1, nombre:'Rosas rojas', tipo:'flores', stock:45, stock_min:10, unidad:'unidad', costo:3.50 },
+        { id:2, nombre:'Lirios blancos', tipo:'flores', stock:8, stock_min:10, unidad:'unidad', costo:2.80 },
+        { id:3, nombre:'Girasoles', tipo:'flores', stock:25, stock_min:8, unidad:'unidad', costo:2.00 },
+        { id:4, nombre:'Papel decorativo dorado', tipo:'materiales', stock:3, stock_min:5, unidad:'rollo', costo:8.50 },
+        { id:5, nombre:'Cintas satinadas', tipo:'materiales', stock:12, stock_min:5, unidad:'rollo', costo:4.00 },
+        { id:6, nombre:'Cajas decorativas', tipo:'accesorios', stock:7, stock_min:5, unidad:'unidad', costo:12.00 },
+        { id:7, nombre:'Peluches medianos', tipo:'accesorios', stock:2, stock_min:5, unidad:'unidad', costo:18.00 },
+      ];
+    }
+    renderAlertas();
+    renderInv();
+  }
+
+  function renderAlertas() {
+    const bajos = items.filter(i => i.stock <= (i.stock_min || 5));
+    const el = document.getElementById('alertas-inv');
+    if (!bajos.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="alert alert-warning" style="margin-bottom:1rem">⚠ <strong>${bajos.length} ítem(s) con stock bajo:</strong> ${bajos.map(i=>`<span class="badge badge-warning" style="margin-left:4px">${i.nombre} (${i.stock})</span>`).join('')}</div>`;
+  }
+
+  function renderInv() {
+    const q = (document.getElementById('buscar-inv').value||'').toLowerCase();
+    let lista = items;
+    if (tipoFiltro) lista = lista.filter(i => i.tipo === tipoFiltro);
+    if (soloBajoInv) lista = lista.filter(i => i.stock <= (i.stock_min||5));
+    if (q) lista = lista.filter(i => i.nombre.toLowerCase().includes(q));
+    const tbody = document.getElementById('tbody-inv');
+    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
+    tbody.innerHTML = lista.map(i => {
+      const bajo = i.stock <= (i.stock_min||5);
+      const badge = i.stock === 0 ? '<span class="badge badge-danger">Agotado</span>' : bajo ? '<span class="badge badge-warning">Bajo</span>' : '<span class="badge badge-success">OK</span>';
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">${TIPO_EMOJI[i.tipo]||'📦'}</span><span style="font-weight:500">${i.nombre}</span></div></td>
+        <td><span class="badge badge-gray">${i.tipo}</span></td>
+        <td style="font-weight:${bajo?'700':'400'};color:${bajo?'var(--warning)':'inherit'}">${i.stock}</td>
+        <td style="color:var(--gris-400)">${i.stock_min||'—'}</td>
+        <td style="color:var(--gris-500)">${i.unidad}</td>
+        <td>${i.costo ? Fmt.moneda(i.costo) : '—'}</td>
+        <td>${badge}</td>
+        <td><div class="tbl-actions-cell">
+          <button class="btn-tbl btn-tbl-edit" onclick="ajustarStock(${i.id})">Ajustar</button>
+          <button class="btn-tbl btn-tbl-delete" onclick="eliminarItem(${i.id})">Eliminar</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filtrarTipo(el, tipo) { document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); tipoFiltro=tipo; soloBajoInv=false; renderInv(); }
+  function filtrarBajos(el) { document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); tipoFiltro=''; soloBajoInv=true; renderInv(); }
+
+  function ajustarStock(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const nuevo = prompt(`Ajustar stock de "${item.nombre}".\nStock actual: ${item.stock}\n\nNuevo stock:`, item.stock);
+    if (nuevo === null) return;
+    const val = parseInt(nuevo);
+    if (isNaN(val) || val < 0) { Toast.error('Valor inválido'); return; }
+    item.stock = val;
+    API.put('/inventario/' + id, { stock: val }).catch(()=>{});
+    Toast.success('Stock actualizado');
+    renderAlertas();
+    renderInv();
+  }
+
+  function eliminarItem(id) {
+    const item = items.find(i => i.id === id);
+    Modal.confirm(`¿Eliminar "${item?.nombre}"?`, () => {
+      items = items.filter(i => i.id !== id);
+      API.delete('/inventario/' + id).catch(()=>{});
+      renderInv();
+      Toast.success('Ítem eliminado');
+    });
+  }
+
+  async function guardarItem() {
+    const payload = {
+      nombre:    document.getElementById('item-nombre').value,
+      tipo:      document.getElementById('item-tipo').value,
+      unidad:    document.getElementById('item-unidad').value,
+      stock:     parseInt(document.getElementById('item-stock').value)||0,
+      stock_min: parseInt(document.getElementById('item-stock-min').value)||0,
+      costo:     parseFloat(document.getElementById('item-costo').value)||0,
+    };
+    if (!payload.nombre) { Toast.warning('El nombre es obligatorio'); return; }
+    try { await API.post('/inventario', payload); }
+    catch { items.push({ id: Date.now(), ...payload }); }
+    Toast.success('Ítem agregado');
+    Modal.close('modal-item');
+    renderAlertas();
+    renderInv();
+  }
+
+  cargarInventario();
+</script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Productos — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+
+      <div class="page-header">
+        <div>
+          <h2>Productos</h2>
+          <p>Administra el catálogo de la florería</p>
+        </div>
+        <button class="btn btn-primary" onclick="abrirModalProducto()">+ Nuevo producto</button>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filter-bar">
+        <input class="form-control" type="text" id="buscar" placeholder="Buscar producto..." oninput="filtrarProductos()" style="max-width:240px" />
+        <div class="filter-chips" id="filter-chips">
+          <span class="chip active" onclick="filtrarCategoria(this,'')">Todos</span>
+          <span class="chip" onclick="filtrarCategoria(this,'Ramos')">Ramos</span>
+          <span class="chip" onclick="filtrarCategoria(this,'Arreglos')">Arreglos</span>
+          <span class="chip" onclick="filtrarCategoria(this,'Peluches')">Peluches</span>
+          <span class="chip" onclick="filtrarCategoria(this,'Cajas sorpresa')">Cajas sorpresa</span>
+          <span class="chip" onclick="filtrarCategoria(this,'Globos')">Globos</span>
+          <span class="chip" onclick="filtrarCategoria(this,'Otros')">Otros</span>
+          <span class="chip" onclick="filtrarStockBajo(this)" style="color:var(--warning)">⚠ Stock bajo</span>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="table-wrap">
+        <table class="data-table" id="tabla-productos">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Precio venta</th>
+              <th>Costo</th>
+              <th>Margen</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-productos">
+            <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando productos...</td></tr>
+          </tbody>
+        </table>
+        <div style="padding:10px 16px;font-size:11px;color:var(--gris-400);border-top:1px solid var(--gris-50)">
+          <span id="total-count">0</span> productos · El stock se actualiza automáticamente con cada venta
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal Producto -->
+<div class="modal-overlay" id="modal-producto">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-producto-titulo">Nuevo producto</h3>
+      <button class="btn-close" onclick="Modal.close('modal-producto')">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-producto" class="form-stack" onsubmit="guardarProducto(event)">
+        <input type="hidden" id="prod-id" />
+        <div class="form-group">
+          <label class="form-label">Nombre <span class="req">*</span></label>
+          <input class="form-control" id="prod-nombre" placeholder="Ej: Ramo romántico de rosas" required />
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Precio de venta (S/) <span class="req">*</span></label>
+            <input class="form-control" id="prod-precio" type="number" step="0.01" min="0" required oninput="calcMargen()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Costo del producto (S/) <span class="req">*</span></label>
+            <input class="form-control" id="prod-costo" type="number" step="0.01" min="0" required oninput="calcMargen()" />
+          </div>
+        </div>
+
+        <!-- Preview margen -->
+        <div class="margen-preview" id="margen-preview" style="display:none">
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span style="color:var(--gris-600)">Margen de ganancia:</span>
+            <span id="margen-valor" style="font-weight:600">0%</span>
+          </div>
+          <div class="margen-bar-wrap"><div class="margen-bar-fill" id="margen-barra" style="width:0%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gris-500)">
+            <span>Ganancia: <strong id="margen-ganancia">S/ 0.00</strong></span>
+            <span id="margen-estado"></span>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Stock inicial <span class="req">*</span></label>
+            <input class="form-control" id="prod-stock" type="number" min="0" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoría <span class="req">*</span></label>
+            <select class="form-control" id="prod-categoria" required>
+              <option value="">Seleccionar...</option>
+              <option>Ramos</option>
+              <option>Arreglos</option>
+              <option>Peluches</option>
+              <option>Cajas sorpresa</option>
+              <option>Globos</option>
+              <option>Otros</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción (opcional)</label>
+          <textarea class="form-control" id="prod-descripcion" rows="2" placeholder="Describe brevemente el producto..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Imagen (opcional)</label>
+          <input class="form-control" type="file" id="prod-imagen" accept="image/*" />
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-producto')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('form-producto').requestSubmit()" id="btn-guardar-prod">Guardar producto</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('productos', 'Productos', 'Catálogo');
+
+  let todosProductos = [];
+  let categoriaActual = '';
+  let soloBajos = false;
+
+  const CATS_EMOJI = { Ramos:'🌹', Arreglos:'💐', Peluches:'🧸', 'Cajas sorpresa':'🎁', Globos:'🎈', Otros:'🌸' };
+  const CATS_COLOR = { Ramos:'badge-rosa', Arreglos:'badge-dorado', Peluches:'badge-gray', 'Cajas sorpresa':'badge-warning', Globos:'badge-info', Otros:'badge-gray' };
+
+  async function cargarProductos() {
+    try {
+      const data = await API.get('/productos');
+      todosProductos = data.productos || data || [];
+    } catch {
+      todosProductos = [
+        { id:1, nombre:'Ramo romántico de rosas', categoria:'Ramos', precio:85, costo:52, stock:15, descripcion:'12 rosas premium' },
+        { id:2, nombre:'Arreglo primaveral en caja', categoria:'Arreglos', precio:120, costo:68, stock:3, descripcion:'Flores variadas' },
+        { id:3, nombre:'Peluche + rosas rojas', categoria:'Peluches', precio:95, costo:58, stock:8, descripcion:'Oso + 6 rosas' },
+        { id:4, nombre:'Caja sorpresa San Valentín', categoria:'Cajas sorpresa', precio:150, costo:89, stock:0, descripcion:'Caja especial' },
+        { id:5, nombre:'Ramo de girasoles y lirios', categoria:'Ramos', precio:70, costo:41, stock:12, descripcion:'Flores de campo' },
+        { id:6, nombre:'Arreglo de cumpleaños', categoria:'Arreglos', precio:110, costo:60, stock:2, descripcion:'Arreglo festivo' },
+      ];
+    }
+    renderTabla();
+  }
+
+  function renderTabla() {
+    const q = (document.getElementById('buscar').value || '').toLowerCase();
+    let lista = todosProductos;
+    if (categoriaActual) lista = lista.filter(p => p.categoria === categoriaActual);
+    if (soloBajos) lista = lista.filter(p => p.stock <= 3);
+    if (q) lista = lista.filter(p => p.nombre.toLowerCase().includes(q));
+
+    document.getElementById('total-count').textContent = lista.length;
+    const tbody = document.getElementById('tbody-productos');
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">No se encontraron productos</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = lista.map(p => {
+      const margen = p.precio > 0 ? ((p.precio - p.costo) / p.precio * 100).toFixed(1) : 0;
+      const stockBadge = p.stock === 0
+        ? '<span class="badge badge-danger">Agotado</span>'
+        : p.stock <= 3
+          ? `<span class="badge badge-warning">Bajo (${p.stock})</span>`
+          : `<span class="badge badge-success">${p.stock} uds</span>`;
+      const margenColor = margen >= 30 ? 'var(--success)' : margen >= 15 ? 'var(--warning)' : 'var(--danger)';
+      const emoji = CATS_EMOJI[p.categoria] || '🌸';
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:22px">${emoji}</span>
+            <div>
+              <div style="font-weight:500;font-size:13px">${p.nombre}</div>
+              ${p.descripcion ? `<div style="font-size:11px;color:var(--gris-400)">${p.descripcion}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td><span class="badge ${CATS_COLOR[p.categoria]||'badge-gray'}">${p.categoria}</span></td>
+        <td style="font-weight:600;color:var(--rosa-600)">${Fmt.moneda(p.precio)}</td>
+        <td style="color:var(--gris-500)">${Fmt.moneda(p.costo)}</td>
+        <td><span style="font-weight:600;color:${margenColor}">${margen}%</span></td>
+        <td>${stockBadge}</td>
+        <td><span class="badge ${p.activo !== false ? 'badge-success' : 'badge-gray'}">${p.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
+        <td>
+          <div class="tbl-actions-cell">
+            <button class="btn-tbl btn-tbl-edit" onclick="editarProducto(${p.id})">Editar</button>
+            <button class="btn-tbl btn-tbl-delete" onclick="eliminarProducto(${p.id},'${p.nombre.replace(/'/g,"\\'")}')">Eliminar</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filtrarProductos() { renderTabla(); }
+
+  function filtrarCategoria(el, cat) {
+    document.querySelectorAll('#filter-chips .chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    categoriaActual = cat;
+    soloBajos = false;
+    renderTabla();
+  }
+
+  function filtrarStockBajo(el) {
+    document.querySelectorAll('#filter-chips .chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    categoriaActual = '';
+    soloBajos = true;
+    renderTabla();
+  }
+
+  function abrirModalProducto() {
+    document.getElementById('modal-producto-titulo').textContent = 'Nuevo producto';
+    document.getElementById('form-producto').reset();
+    document.getElementById('prod-id').value = '';
+    document.getElementById('margen-preview').style.display = 'none';
+    Modal.open('modal-producto');
+  }
+
+  function editarProducto(id) {
+    const p = todosProductos.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('modal-producto-titulo').textContent = 'Editar producto';
+    document.getElementById('prod-id').value = p.id;
+    document.getElementById('prod-nombre').value = p.nombre;
+    document.getElementById('prod-precio').value = p.precio;
+    document.getElementById('prod-costo').value = p.costo;
+    document.getElementById('prod-stock').value = p.stock;
+    document.getElementById('prod-categoria').value = p.categoria;
+    document.getElementById('prod-descripcion').value = p.descripcion || '';
+    calcMargen();
+    Modal.open('modal-producto');
+  }
+
+  function calcMargen() {
+    const precio = parseFloat(document.getElementById('prod-precio').value) || 0;
+    const costo  = parseFloat(document.getElementById('prod-costo').value) || 0;
+    const preview = document.getElementById('margen-preview');
+    if (precio <= 0 && costo <= 0) { preview.style.display = 'none'; return; }
+    preview.style.display = 'block';
+    const gan  = precio - costo;
+    const pct  = precio > 0 ? (gan / precio * 100) : 0;
+    const bar  = document.getElementById('margen-barra');
+    const val  = document.getElementById('margen-valor');
+    const gEl  = document.getElementById('margen-ganancia');
+    const stat = document.getElementById('margen-estado');
+    val.textContent  = pct.toFixed(1) + '%';
+    gEl.textContent  = Fmt.moneda(gan);
+    bar.style.width  = Math.min(Math.max(pct, 0), 100) + '%';
+    if (pct >= 30) { bar.style.background = 'var(--success)'; val.style.color = 'var(--success)'; stat.textContent = 'Margen saludable'; stat.style.color = 'var(--success)'; }
+    else if (pct >= 15) { bar.style.background = 'var(--warning)'; val.style.color = 'var(--warning)'; stat.textContent = 'Margen aceptable'; stat.style.color = 'var(--warning)'; }
+    else { bar.style.background = 'var(--danger)'; val.style.color = 'var(--danger)'; stat.textContent = 'Margen bajo'; stat.style.color = 'var(--danger)'; }
+  }
+
+  async function guardarProducto(e) {
+    e.preventDefault();
+    const id = document.getElementById('prod-id').value;
+    const payload = {
+      nombre:      document.getElementById('prod-nombre').value,
+      precio:      parseFloat(document.getElementById('prod-precio').value),
+      costo:       parseFloat(document.getElementById('prod-costo').value),
+      stock:       parseInt(document.getElementById('prod-stock').value),
+      categoria:   document.getElementById('prod-categoria').value,
+      descripcion: document.getElementById('prod-descripcion').value,
+    };
+    try {
+      const res = id
+        ? await API.put('/productos/' + id, payload)
+        : await API.post('/productos', payload);
+      if (res.error) { Toast.error(res.error); return; }
+      Toast.success(id ? 'Producto actualizado' : 'Producto creado');
+      Modal.close('modal-producto');
+      cargarProductos();
+    } catch {
+      Toast.error('No se pudo conectar con el servidor');
+      // Actualizar localmente para demo
+      if (id) {
+        const i = todosProductos.findIndex(x => x.id == id);
+        if (i >= 0) todosProductos[i] = { ...todosProductos[i], ...payload };
+      } else {
+        todosProductos.push({ id: Date.now(), ...payload });
+      }
+      Modal.close('modal-producto');
+      renderTabla();
+      Toast.success(id ? 'Actualizado (demo)' : 'Creado (demo)');
+    }
+  }
+
+  function eliminarProducto(id, nombre) {
+    Modal.confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`, async () => {
+      try {
+        await API.delete('/productos/' + id);
+        Toast.success('Producto eliminado');
+      } catch {
+        Toast.info('Eliminado (demo)');
+      }
+      todosProductos = todosProductos.filter(p => p.id !== id);
+      renderTabla();
+    });
+  }
+
+  cargarProductos();
+</script>
+</body>
+</html>

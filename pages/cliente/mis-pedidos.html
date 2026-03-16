@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis pedidos — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/public.css" />
+  <style>
+    body { background: var(--crema); }
+    .pedidos-wrap { max-width: 700px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    .pedidos-wrap h2 { font-family: var(--font-display); font-size: 28px; margin-bottom: .5rem; }
+    .pedidos-wrap p { color: var(--gris-500); font-size: 14px; margin-bottom: 2rem; }
+
+    .buscar-pedido-wrap {
+      background: var(--blanco);
+      border: 1px solid var(--rosa-100);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .buscar-pedido-wrap h3 { font-size: 16px; margin-bottom:1rem; }
+
+    .pedido-card {
+      background: var(--blanco);
+      border: 1px solid var(--rosa-100);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .pedido-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: .75rem; }
+    .pedido-num { font-weight: 600; color: var(--gris-800); }
+    .pedido-fecha { font-size: 12px; color: var(--gris-400); margin-top: 2px; }
+    .pedido-desc { font-size: 13px; color: var(--gris-600); margin-bottom: .75rem; }
+    .pedido-footer { display: flex; justify-content: space-between; align-items: center; padding-top: .75rem; border-top: 1px solid var(--gris-50); }
+
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .status-pill::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .sp-pendiente   { background: var(--warning-bg); color: var(--warning); }
+    .sp-preparacion { background: var(--info-bg); color: var(--info); }
+    .sp-listo       { background: #EDF3FD; color: #1A5CC4; }
+    .sp-entregado   { background: var(--success-bg); color: var(--success); }
+    .sp-cancelado   { background: var(--danger-bg); color: var(--danger); }
+
+    .empty-state { text-align: center; padding: 3rem 1rem; }
+    .empty-state div:first-child { font-size: 56px; margin-bottom: 1rem; }
+    .empty-state h3 { font-size: 20px; margin-bottom: .5rem; }
+    .empty-state p { font-size: 14px; color: var(--gris-500); margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="navbar-pub">
+    <div class="navbar-brand">
+      Detalles y Regalos Encantos Eternos
+      <span>Florería · Perú</span>
+    </div>
+    <div class="navbar-actions">
+      <a href="../../index.html" class="btn btn-ghost btn-sm">← Volver al inicio</a>
+    </div>
+  </nav>
+
+  <div class="pedidos-wrap">
+    <h2>Seguimiento de pedidos</h2>
+    <p>Ingresa tu número de teléfono para ver el estado de tus pedidos.</p>
+
+    <div class="buscar-pedido-wrap">
+      <h3>Buscar mis pedidos</h3>
+      <div style="display:flex;gap:10px">
+        <input class="form-control" type="tel" id="telefono-buscar" placeholder="Ej: 987654321" style="flex:1" />
+        <button class="btn btn-primary" onclick="buscarPedidos()">Buscar</button>
+      </div>
+      <div style="font-size:12px;color:var(--gris-400);margin-top:8px">El número de teléfono que usaste al hacer tu pedido</div>
+    </div>
+
+    <div id="resultado-pedidos"></div>
+
+    <div class="buscar-pedido-wrap" style="text-align:center">
+      <div style="font-size:32px;margin-bottom:8px">📱</div>
+      <div style="font-weight:600;margin-bottom:4px">¿Necesitas ayuda con tu pedido?</div>
+      <div style="font-size:13px;color:var(--gris-500);margin-bottom:1rem">Contáctanos directamente por WhatsApp</div>
+      <a href="https://wa.me/51972542802" target="_blank" class="btn btn-primary">Escribir por WhatsApp</a>
+    </div>
+  </div>
+
+  <a href="https://wa.me/51972542802" target="_blank" class="wa-float">📱</a>
+
+  <script src="../../js/main.js"></script>
+  <script>
+    const STATUS_MAP = {
+      'pendiente':'sp-pendiente',
+      'en preparación':'sp-preparacion',
+      'listo para entrega':'sp-listo',
+      'entregado':'sp-entregado',
+      'cancelado':'sp-cancelado'
+    };
+
+    async function buscarPedidos() {
+      const tel = document.getElementById('telefono-buscar').value.trim();
+      if (!tel || tel.length < 9) {
+        document.getElementById('resultado-pedidos').innerHTML =
+          '<div class="alert alert-warning" style="margin-bottom:1rem">⚠ Ingresa un número de teléfono válido (9 dígitos)</div>';
+        return;
+      }
+      try {
+        const data = await API.get(`/pedidos/cliente?telefono=${tel}`);
+        renderPedidos(data.pedidos || data || []);
+      } catch {
+        // Demo: mostrar pedidos de ejemplo
+        renderPedidos([
+          { id:15, descripcion:'Ramo de 12 rosas rojas con papel dorado', total:120, fecha_pedido:'2026-03-10', fecha_entrega:'2026-03-15', estado:'en preparación', metodo:'Yape' },
+          { id:8,  descripcion:'Arreglo primaveral en caja azul', total:95, fecha_pedido:'2026-03-05', fecha_entrega:'2026-03-08', estado:'entregado', metodo:'Efectivo' },
+        ]);
+      }
+    }
+
+    function renderPedidos(pedidos) {
+      const el = document.getElementById('resultado-pedidos');
+      if (!pedidos.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <div>🌸</div>
+            <h3>No encontramos pedidos</h3>
+            <p>No hay pedidos registrados con ese número de teléfono.</p>
+            <a href="../../index.html#catalogo" class="btn btn-primary">Ver catálogo</a>
+          </div>`;
+        return;
+      }
+
+      const progreso = { 'pendiente':1, 'en preparación':2, 'listo para entrega':3, 'entregado':4, 'cancelado':0 };
+
+      el.innerHTML = `<div style="font-size:13px;color:var(--gris-500);margin-bottom:1rem">Se encontraron <strong>${pedidos.length}</strong> pedido(s)</div>` +
+        pedidos.map(p => {
+          const paso = progreso[p.estado] || 1;
+          const pasos = ['Recibido', 'Preparación', 'Listo', 'Entregado'];
+          const barras = p.estado === 'cancelado'
+            ? `<div style="font-size:12px;color:var(--danger);margin-top:8px">✕ Pedido cancelado</div>`
+            : `<div style="display:flex;gap:4px;align-items:center;margin-top:10px">
+                ${pasos.map((name, i) => `
+                  <div style="flex:1;text-align:center">
+                    <div style="height:4px;background:${i < paso ? 'var(--rosa-400)' : 'var(--gris-200)'};border-radius:4px;margin-bottom:4px"></div>
+                    <div style="font-size:10px;color:${i < paso ? 'var(--rosa-600)' : 'var(--gris-400)'};font-weight:${i === paso-1 ? '600' : '400'}">${name}</div>
+                  </div>`).join('<div style="font-size:10px;color:var(--gris-300);flex-shrink:0">›</div>')}
+               </div>`;
+          return `
+            <div class="pedido-card">
+              <div class="pedido-card-header">
+                <div>
+                  <div class="pedido-num">Pedido #${p.id}</div>
+                  <div class="pedido-fecha">Solicitado el ${Fmt.fecha(p.fecha_pedido || p.created_at)}</div>
+                </div>
+                <span class="status-pill ${STATUS_MAP[p.estado]||'sp-pendiente'}">${p.estado}</span>
+              </div>
+              <div class="pedido-desc">📋 ${p.descripcion}</div>
+              ${barras}
+              <div class="pedido-footer">
+                <div>
+                  <div style="font-size:12px;color:var(--gris-500)">Fecha de entrega:</div>
+                  <div style="font-size:13px;font-weight:500">${p.fecha_entrega ? Fmt.fecha(p.fecha_entrega) : '—'}</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:18px;font-weight:700;color:var(--rosa-600)">S/ ${parseFloat(p.total||0).toFixed(2)}</div>
+                  <div style="font-size:11px;color:var(--gris-400)">${p.metodo || ''}</div>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Si viene con parámetro de teléfono en URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tel')) {
+      document.getElementById('telefono-buscar').value = urlParams.get('tel');
+      buscarPedidos();
+    }
+  </script>
+</body>
+</html>

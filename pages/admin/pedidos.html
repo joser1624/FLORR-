@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pedidos — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Pedidos</h2><p>Gestiona los pedidos y su estado de entrega</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-pedido')">+ Nuevo pedido</button>
+      </div>
+
+      <!-- Kanban de estados -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.5rem">
+        <div style="text-align:center;background:var(--warning-bg);border-radius:var(--radius-md);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--warning);text-transform:uppercase;letter-spacing:.08em">Pendientes</div>
+          <div style="font-size:24px;font-weight:700;color:var(--warning)" id="cnt-pendiente">—</div>
+        </div>
+        <div style="text-align:center;background:var(--info-bg);border-radius:var(--radius-md);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--info);text-transform:uppercase;letter-spacing:.08em">Preparación</div>
+          <div style="font-size:24px;font-weight:700;color:var(--info)" id="cnt-preparacion">—</div>
+        </div>
+        <div style="text-align:center;background:#EDF3FD;border-radius:var(--radius-md);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:#1A5CC4;text-transform:uppercase;letter-spacing:.08em">Listos</div>
+          <div style="font-size:24px;font-weight:700;color:#1A5CC4" id="cnt-listo">—</div>
+        </div>
+        <div style="text-align:center;background:var(--success-bg);border-radius:var(--radius-md);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.08em">Entregados</div>
+          <div style="font-size:24px;font-weight:700;color:var(--success)" id="cnt-entregado">—</div>
+        </div>
+        <div style="text-align:center;background:var(--danger-bg);border-radius:var(--radius-md);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.08em">Cancelados</div>
+          <div style="font-size:24px;font-weight:700;color:var(--danger)" id="cnt-cancelado">—</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-chips">
+          <span class="chip active" onclick="filtrarEstado(this,'')">Todos</span>
+          <span class="chip" onclick="filtrarEstado(this,'pendiente')">Pendientes</span>
+          <span class="chip" onclick="filtrarEstado(this,'en preparación')">En preparación</span>
+          <span class="chip" onclick="filtrarEstado(this,'listo para entrega')">Listos</span>
+          <span class="chip" onclick="filtrarEstado(this,'entregado')">Entregados</span>
+          <span class="chip" onclick="filtrarEstado(this,'cancelado')">Cancelados</span>
+        </div>
+        <input class="form-control" type="text" placeholder="Buscar cliente..." id="buscar-pedido" oninput="renderPedidos()" style="max-width:200px;margin-left:auto" />
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Entrega</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-pedidos"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal pedido -->
+<div class="modal-overlay" id="modal-pedido">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3 id="titulo-modal-pedido">Nuevo pedido</h3>
+      <button class="btn-close" onclick="Modal.close('modal-pedido')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Nombre del cliente <span class="req">*</span></label>
+            <input class="form-control" id="ped-cliente" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono <span class="req">*</span></label>
+            <input class="form-control" id="ped-telefono" type="tel" placeholder="9XXXXXXXX" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dirección de entrega</label>
+          <input class="form-control" id="ped-direccion" placeholder="Calle, número, referencia..." />
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Fecha de entrega <span class="req">*</span></label>
+            <input class="form-control" type="date" id="ped-fecha" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado inicial</label>
+            <select class="form-control" id="ped-estado">
+              <option value="pendiente">Pendiente</option>
+              <option value="en preparación">En preparación</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción del pedido <span class="req">*</span></label>
+          <textarea class="form-control" id="ped-descripcion" rows="3" placeholder="Ej: Ramo de 12 rosas rojas con papel dorado..." required></textarea>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Total (S/)</label>
+            <input class="form-control" type="number" id="ped-total" step="0.01" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Método de pago</label>
+            <select class="form-control" id="ped-metodo">
+              <option>Efectivo</option><option>Yape</option><option>Plin</option><option>Tarjeta</option><option>Transferencia bancaria</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-pedido')">Cancelar</button>
+      <button class="btn btn-gold btn-sm" onclick="enviarWA()">Enviar por WhatsApp</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarPedido()">Guardar pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal cambiar estado -->
+<div class="modal-overlay" id="modal-estado">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Cambiar estado</h3>
+      <button class="btn-close" onclick="Modal.close('modal-estado')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gris-600);margin-bottom:1rem">Selecciona el nuevo estado del pedido <strong id="estado-pedido-nombre"></strong></p>
+      <div style="display:flex;flex-direction:column;gap:8px" id="estados-lista"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('pedidos', 'Pedidos', 'Operaciones');
+
+  let todosPedidos = [];
+  let estadoFiltro = '';
+  let pedidoActivo = null;
+
+  const ESTADOS = ['pendiente','en preparación','listo para entrega','entregado','cancelado'];
+  const STATUS_MAP = { pendiente:'sp-pendiente', 'en preparación':'sp-preparacion', 'listo para entrega':'sp-listo', entregado:'sp-entregado', cancelado:'sp-cancelado' };
+  const CNT_IDS = { pendiente:'cnt-pendiente', 'en preparación':'cnt-preparacion', 'listo para entrega':'cnt-listo', entregado:'cnt-entregado', cancelado:'cnt-cancelado' };
+
+  async function cargarPedidos() {
+    try {
+      const data = await API.get('/pedidos');
+      todosPedidos = data.pedidos || data || [];
+    } catch {
+      todosPedidos = [
+        { id:1, cliente:'Ana García', telefono:'987654321', direccion:'Av. Los Rosales 123', fecha_entrega:'2026-03-15', descripcion:'Ramo de rosas rojas x12', total:120, estado:'pendiente', metodo:'Yape' },
+        { id:2, cliente:'Luis Pérez', telefono:'912345678', direccion:'Jr. Flores 456', fecha_entrega:'2026-03-14', descripcion:'Arreglo primaveral en caja', total:85, estado:'en preparación', metodo:'Efectivo' },
+        { id:3, cliente:'María Torres', telefono:'998877665', direccion:'Calle Jardín 789', fecha_entrega:'2026-03-16', descripcion:'Caja sorpresa personalizada', total:200, estado:'listo para entrega', metodo:'Tarjeta' },
+        { id:4, cliente:'Carlos Ramos', telefono:'976543210', direccion:'', fecha_entrega:'2026-03-12', descripcion:'Ramo de girasoles', total:65, estado:'entregado', metodo:'Yape' },
+      ];
+    }
+    renderContadores();
+    renderPedidos();
+  }
+
+  function renderContadores() {
+    Object.keys(CNT_IDS).forEach(est => {
+      const el = document.getElementById(CNT_IDS[est]);
+      if (el) el.textContent = todosPedidos.filter(p => p.estado === est).length;
+    });
+  }
+
+  function renderPedidos() {
+    const q = (document.getElementById('buscar-pedido').value || '').toLowerCase();
+    let lista = todosPedidos;
+    if (estadoFiltro) lista = lista.filter(p => p.estado === estadoFiltro);
+    if (q) lista = lista.filter(p => p.cliente.toLowerCase().includes(q));
+    const tbody = document.getElementById('tbody-pedidos');
+    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">No hay pedidos</td></tr>'; return; }
+    tbody.innerHTML = lista.map(p => `<tr>
+      <td style="color:var(--gris-400);font-size:12px">#${p.id}</td>
+      <td style="font-weight:500">${p.cliente}</td>
+      <td style="font-size:12px"><a href="https://wa.me/51${p.telefono}" target="_blank" style="color:var(--rosa-500)">${Fmt.tel(p.telefono)}</a></td>
+      <td style="font-size:12px;color:var(--gris-500)">${p.direccion || '— Tienda'}</td>
+      <td style="font-size:12px">${Fmt.fecha(p.fecha_entrega)}</td>
+      <td style="font-weight:600;color:var(--rosa-600)">${Fmt.moneda(p.total)}</td>
+      <td><span class="status-pill ${STATUS_MAP[p.estado]||'sp-pendiente'}">${p.estado}</span></td>
+      <td>
+        <div class="tbl-actions-cell">
+          <button class="btn-tbl btn-tbl-edit" onclick="abrirCambioEstado(${p.id})">Estado</button>
+          <button class="btn-tbl btn-tbl-view" onclick="enviarWAPedido(${p.id})" title="WhatsApp">📱</button>
+        </div>
+      </td>
+    </tr>`).join('');
+  }
+
+  function filtrarEstado(el, est) {
+    document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    estadoFiltro = est;
+    renderPedidos();
+  }
+
+  function abrirCambioEstado(id) {
+    pedidoActivo = todosPedidos.find(p => p.id === id);
+    if (!pedidoActivo) return;
+    document.getElementById('estado-pedido-nombre').textContent = `#${pedidoActivo.id} — ${pedidoActivo.cliente}`;
+    const lista = document.getElementById('estados-lista');
+    lista.innerHTML = ESTADOS.map(est => `
+      <button onclick="cambiarEstado('${est}')" style="padding:10px 14px;border:1.5px solid ${pedidoActivo.estado===est?'var(--rosa-400)':'var(--gris-200)'};border-radius:var(--radius-md);background:${pedidoActivo.estado===est?'var(--rosa-50)':'var(--blanco)'};cursor:pointer;font-size:13px;font-family:var(--font-body);text-align:left;transition:all .15s">
+        <span class="status-pill ${STATUS_MAP[est]}">${est}</span>
+        ${pedidoActivo.estado===est?' ← actual':''}
+      </button>`).join('');
+    Modal.open('modal-estado');
+  }
+
+  async function cambiarEstado(nuevoEstado) {
+    if (!pedidoActivo) return;
+    try { await API.put('/pedidos/' + pedidoActivo.id, { estado: nuevoEstado }); }
+    catch { /* demo */ }
+    pedidoActivo.estado = nuevoEstado;
+    const i = todosPedidos.findIndex(p => p.id === pedidoActivo.id);
+    if (i >= 0) todosPedidos[i].estado = nuevoEstado;
+    Toast.success('Estado actualizado a: ' + nuevoEstado);
+    Modal.close('modal-estado');
+    renderContadores();
+    renderPedidos();
+  }
+
+  async function guardarPedido() {
+    const payload = {
+      cliente:      document.getElementById('ped-cliente').value,
+      telefono:     document.getElementById('ped-telefono').value,
+      direccion:    document.getElementById('ped-direccion').value,
+      fecha_entrega:document.getElementById('ped-fecha').value,
+      descripcion:  document.getElementById('ped-descripcion').value,
+      total:        parseFloat(document.getElementById('ped-total').value)||0,
+      metodo_pago:  document.getElementById('ped-metodo').value,
+      estado:       document.getElementById('ped-estado').value,
+    };
+    if (!payload.cliente || !payload.telefono || !payload.descripcion || !payload.fecha_entrega) {
+      Toast.warning('Completa los campos obligatorios'); return;
+    }
+    try { await API.post('/pedidos', payload); }
+    catch {
+      todosPedidos.unshift({ id: Date.now(), ...payload });
+    }
+    Toast.success('Pedido registrado');
+    Modal.close('modal-pedido');
+    cargarPedidos();
+  }
+
+  function enviarWA() {
+    const cliente  = document.getElementById('ped-cliente').value;
+    const desc     = document.getElementById('ped-descripcion').value;
+    const total    = document.getElementById('ped-total').value;
+    const direccion= document.getElementById('ped-direccion').value;
+    const msg = `🌸 *Pedido confirmado — Encantos Eternos*\n\nHola ${cliente}, tu pedido ha sido registrado:\n\n📋 ${desc}\n💰 Total: S/ ${total}\n📍 Entrega: ${direccion || 'Retiro en tienda'}\n\n¡Gracias por elegirnos! 🌸`;
+    WhatsApp.send(msg);
+  }
+
+  function enviarWAPedido(id) {
+    const p = todosPedidos.find(x => x.id === id);
+    if (!p) return;
+    const msg = `🌸 *Actualización de tu pedido — Encantos Eternos*\n\nHola ${p.cliente} 👋\n\nTu pedido está: *${p.estado.toUpperCase()}*\n\n📋 ${p.descripcion}\n💰 Total: ${Fmt.moneda(p.total)}\n\n¡Gracias por tu preferencia! 🌸`;
+    window.open(`https://wa.me/51${p.telefono}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  cargarPedidos();
+</script>
+</body>
+</html>

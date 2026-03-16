@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ventas — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Ventas</h2><p>Registra y consulta las ventas de la florería</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-venta')">+ Nueva venta</button>
+      </div>
+
+      <!-- Resumen del día -->
+      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+        <div class="stat-card rosa"><span class="stat-icon">💵</span><div class="stat-label">Total hoy</div><div class="stat-value" id="total-hoy">S/ 0.00</div></div>
+        <div class="stat-card dorado"><span class="stat-icon">🛒</span><div class="stat-label">Ventas hoy</div><div class="stat-value" id="count-hoy">0</div></div>
+        <div class="stat-card success"><span class="stat-icon">📊</span><div class="stat-label">Ticket promedio</div><div class="stat-value" id="ticket-prom">S/ 0.00</div></div>
+        <div class="stat-card warning"><span class="stat-icon">💳</span><div class="stat-label">Método principal</div><div class="stat-value" id="metodo-ppal" style="font-size:16px">—</div></div>
+      </div>
+
+      <div class="filter-bar">
+        <input class="form-control" type="date" id="fecha-filtro" oninput="cargarVentas()" style="max-width:160px" />
+        <select class="form-control" id="metodo-filtro" onchange="cargarVentas()" style="max-width:160px">
+          <option value="">Todos los métodos</option>
+          <option>Efectivo</option><option>Yape</option><option>Plin</option>
+          <option>Tarjeta</option><option>Transferencia bancaria</option>
+        </select>
+        <select class="form-control" id="trabajador-filtro" onchange="cargarVentas()" style="max-width:180px">
+          <option value="">Todos los trabajadores</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Fecha y hora</th><th>Productos</th><th>Trabajador</th><th>Método de pago</th><th>Total</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-ventas"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando ventas...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal nueva venta -->
+<div class="modal-overlay" id="modal-venta">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h3>Nueva venta</h3>
+      <button class="btn-close" onclick="Modal.close('modal-venta')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div id="productos-venta" style="border:1px solid var(--rosa-100);border-radius:var(--radius-md);padding:12px;min-height:80px;max-height:220px;overflow-y:auto">
+          <div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Agrega productos a la venta</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <select class="form-control" id="sel-producto"><option value="">Seleccionar producto...</option></select>
+          <input class="form-control" type="number" id="cant-producto" value="1" min="1" style="max-width:80px" placeholder="Cant." />
+          <button class="btn btn-outline btn-sm" onclick="agregarProductoVenta()">Agregar</button>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Método de pago <span class="req">*</span></label>
+            <select class="form-control" id="metodo-pago" required>
+              <option>Efectivo</option><option>Yape</option><option>Plin</option>
+              <option>Tarjeta</option><option>Transferencia bancaria</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trabajador <span class="req">*</span></label>
+            <select class="form-control" id="venta-trabajador" required></select>
+          </div>
+        </div>
+        <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:14px;font-weight:500">Total de la venta:</span>
+          <span style="font-size:22px;font-weight:700;color:var(--rosa-600);font-family:var(--font-display)" id="total-venta">S/ 0.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-venta')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="registrarVenta()">Registrar venta</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('ventas', 'Ventas', 'Operaciones');
+
+  let itemsVenta = [];
+  let productosDisp = [];
+
+  // Fecha de hoy por defecto
+  document.getElementById('fecha-filtro').value = new Date().toISOString().split('T')[0];
+
+  async function cargarVentas() {
+    try {
+      const fecha   = document.getElementById('fecha-filtro').value;
+      const metodo  = document.getElementById('metodo-filtro').value;
+      const trab    = document.getElementById('trabajador-filtro').value;
+      let url = `/ventas?fecha=${fecha}`;
+      if (metodo) url += `&metodo=${metodo}`;
+      if (trab)   url += `&trabajador_id=${trab}`;
+      const data = await API.get(url);
+      renderVentas(data.ventas || data || []);
+      if (data.resumen) renderResumen(data.resumen);
+    } catch {
+      renderVentasMock();
+    }
+  }
+
+  function renderVentas(ventas) {
+    const tbody = document.getElementById('tbody-ventas');
+    if (!ventas.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">No hay ventas para este filtro</td></tr>'; return; }
+    const metodoIcon = { Efectivo:'💵', Yape:'📱', Plin:'📱', Tarjeta:'💳', 'Transferencia bancaria':'🏦' };
+    tbody.innerHTML = ventas.map(v => `<tr>
+      <td style="color:var(--gris-400);font-size:12px">#${v.id}</td>
+      <td style="font-size:12px">${Fmt.fechaHora(v.fecha)}</td>
+      <td style="font-size:12px;max-width:180px">${(v.productos||[]).map(p=>p.nombre+' x'+p.cantidad).join(', ') || v.descripcion || '—'}</td>
+      <td style="font-size:12px">${v.trabajador || '—'}</td>
+      <td><span class="badge badge-gray">${metodoIcon[v.metodo]||''} ${v.metodo}</span></td>
+      <td style="font-weight:600;color:var(--rosa-600)">${Fmt.moneda(v.total)}</td>
+      <td><button class="btn-tbl btn-tbl-view" onclick="verDetalleVenta(${v.id})">Ver</button></td>
+    </tr>`).join('');
+
+    // Resumen
+    const total = ventas.reduce((s,v) => s + parseFloat(v.total||0), 0);
+    const count = ventas.length;
+    document.getElementById('total-hoy').textContent = Fmt.moneda(total);
+    document.getElementById('count-hoy').textContent = count;
+    document.getElementById('ticket-prom').textContent = count > 0 ? Fmt.moneda(total/count) : 'S/ 0.00';
+    const metodoCounts = {};
+    ventas.forEach(v => { metodoCounts[v.metodo] = (metodoCounts[v.metodo]||0)+1; });
+    const topMetodo = Object.entries(metodoCounts).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('metodo-ppal').textContent = topMetodo ? topMetodo[0] : '—';
+  }
+
+  function renderVentasMock() {
+    renderVentas([
+      { id:101, fecha:'2026-03-12T09:30:00', productos:[{nombre:'Ramo de rosas',cantidad:1}], trabajador:'Ana López', metodo:'Yape', total:85 },
+      { id:102, fecha:'2026-03-12T11:15:00', productos:[{nombre:'Arreglo primaveral',cantidad:1}], trabajador:'María Quispe', metodo:'Efectivo', total:120 },
+      { id:103, fecha:'2026-03-12T14:00:00', productos:[{nombre:'Peluche + rosas',cantidad:1}], trabajador:'Ana López', metodo:'Yape', total:95 },
+    ]);
+  }
+
+  function verDetalleVenta(id) { Toast.info('Detalle de venta #' + id + ' (conectar backend)'); }
+
+  function agregarProductoVenta() {
+    const sel = document.getElementById('sel-producto');
+    const cant = parseInt(document.getElementById('cant-producto').value) || 1;
+    const id = parseInt(sel.value);
+    if (!id) { Toast.warning('Selecciona un producto'); return; }
+    const prod = productosDisp.find(p => p.id === id);
+    if (!prod) return;
+    const existing = itemsVenta.find(i => i.id === id);
+    if (existing) existing.cantidad += cant;
+    else itemsVenta.push({ ...prod, cantidad: cant });
+    renderItemsVenta();
+    sel.value = '';
+  }
+
+  function renderItemsVenta() {
+    const el = document.getElementById('productos-venta');
+    if (!itemsVenta.length) { el.innerHTML = '<div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Agrega productos a la venta</div>'; document.getElementById('total-venta').textContent = 'S/ 0.00'; return; }
+    el.innerHTML = itemsVenta.map((i,idx) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--gris-50)">
+        <span style="font-size:13px">${i.nombre}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" min="1" value="${i.cantidad}" style="width:50px;padding:4px 6px;border:1px solid var(--gris-200);border-radius:6px;font-size:12px" onchange="cambiarCant(${idx},this.value)" />
+          <span style="font-size:13px;font-weight:500;min-width:60px;text-align:right">${Fmt.moneda(i.precio*i.cantidad)}</span>
+          <button style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px" onclick="quitarItem(${idx})">×</button>
+        </div>
+      </div>`).join('');
+    const total = itemsVenta.reduce((s,i) => s + i.precio*i.cantidad, 0);
+    document.getElementById('total-venta').textContent = Fmt.moneda(total);
+  }
+
+  function cambiarCant(idx, val) { itemsVenta[idx].cantidad = Math.max(1, parseInt(val)||1); renderItemsVenta(); }
+  function quitarItem(idx) { itemsVenta.splice(idx,1); renderItemsVenta(); }
+
+  async function registrarVenta() {
+    if (!itemsVenta.length) { Toast.warning('Agrega al menos un producto'); return; }
+    const payload = {
+      productos: itemsVenta.map(i => ({ producto_id: i.id, cantidad: i.cantidad, precio: i.precio })),
+      metodo_pago: document.getElementById('metodo-pago').value,
+      trabajador_id: document.getElementById('venta-trabajador').value,
+    };
+    try {
+      await API.post('/ventas', payload);
+      Toast.success('Venta registrada correctamente');
+    } catch {
+      Toast.success('Venta registrada (demo)');
+    }
+    itemsVenta = [];
+    renderItemsVenta();
+    Modal.close('modal-venta');
+    cargarVentas();
+  }
+
+  async function cargarProductosSelect() {
+    try {
+      const data = await API.get('/productos');
+      productosDisp = data.productos || data || [];
+    } catch {
+      productosDisp = [
+        {id:1,nombre:'Ramo romántico de rosas',precio:85},
+        {id:2,nombre:'Arreglo primaveral en caja',precio:120},
+        {id:3,nombre:'Peluche + rosas rojas',precio:95},
+      ];
+    }
+    const sel = document.getElementById('sel-producto');
+    productosDisp.forEach(p => { const o = document.createElement('option'); o.value=p.id; o.textContent=`${p.nombre} — ${Fmt.moneda(p.precio)}`; sel.appendChild(o); });
+  }
+
+  async function cargarTrabajadoresSelect() {
+    try {
+      const data = await API.get('/trabajadores');
+      const trab = data.trabajadores || data || [];
+      const sels = [document.getElementById('venta-trabajador'), document.getElementById('trabajador-filtro')];
+      sels.forEach(sel => { if (!sel) return; trab.forEach(t => { const o=document.createElement('option'); o.value=t.id; o.textContent=t.nombre; sel.appendChild(o); }); });
+    } catch {
+      ['Ana López','María Quispe','Rosa Flores'].forEach((n,i) => {
+        const sels = [document.getElementById('venta-trabajador'), document.getElementById('trabajador-filtro')];
+        sels.forEach(sel => { if (!sel) return; const o=document.createElement('option'); o.value=i+1; o.textContent=n; sel.appendChild(o); });
+      });
+    }
+  }
+
+  cargarVentas();
+  cargarProductosSelect();
+  cargarTrabajadoresSelect();
+</script>
+</body>
+</html>

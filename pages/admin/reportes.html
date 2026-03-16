@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reportes — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Reportes</h2><p>Análisis del negocio en el tiempo</p></div>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" type="month" id="reporte-mes" style="max-width:160px" />
+          <button class="btn btn-outline" onclick="cargarReportes()">Generar</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:1.5rem">
+        <div class="stat-card rosa"><span class="stat-icon">💰</span><div class="stat-label">Ventas totales</div><div class="stat-value" id="rep-ventas">S/ —</div></div>
+        <div class="stat-card dorado"><span class="stat-icon">💸</span><div class="stat-label">Gastos totales</div><div class="stat-value" id="rep-gastos">S/ —</div></div>
+        <div class="stat-card success"><span class="stat-icon">📈</span><div class="stat-label">Ganancia real</div><div class="stat-value" id="rep-ganancia">S/ —</div></div>
+        <div class="stat-card warning"><span class="stat-icon">🛒</span><div class="stat-label">Total pedidos</div><div class="stat-value" id="rep-pedidos">—</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        <div class="card" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Ventas por día</div>
+          <canvas id="chart-rep-ventas" height="220"></canvas>
+        </div>
+        <div class="card" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Métodos de pago</div>
+          <canvas id="chart-rep-metodos" height="220"></canvas>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+        <div class="card" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Top 5 productos vendidos</div>
+          <canvas id="chart-rep-productos" height="220"></canvas>
+        </div>
+        <div class="card" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Ventas por trabajador</div>
+          <div id="rep-trab" style="display:flex;flex-direction:column;gap:10px;padding-top:4px"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('reportes', 'Reportes', 'Negocio');
+  const now = new Date();
+  document.getElementById('reporte-mes').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  let charts = {};
+
+  async function cargarReportes() {
+    const mes = document.getElementById('reporte-mes').value;
+    try {
+      const d = await API.get(`/reportes?mes=${mes}`);
+      renderReportes(d);
+    } catch { renderReportesMock(); }
+  }
+
+  function renderReportes(d) {
+    document.getElementById('rep-ventas').textContent = Fmt.moneda(d.ventas_total||0);
+    document.getElementById('rep-gastos').textContent = Fmt.moneda(d.gastos_total||0);
+    document.getElementById('rep-ganancia').textContent = Fmt.moneda((d.ventas_total||0)-(d.gastos_total||0));
+    document.getElementById('rep-pedidos').textContent = Fmt.nro(d.total_pedidos||0);
+    renderChartVentas(d.ventas_dias||[]);
+    renderChartMetodos(d.metodos_pago||[]);
+    renderChartProductos(d.top_productos||[]);
+    renderTrabajadores(d.ventas_trabajadores||[]);
+  }
+
+  function renderChartVentas(datos) {
+    if (charts.ventas) charts.ventas.destroy();
+    charts.ventas = new Chart(document.getElementById('chart-rep-ventas').getContext('2d'), {
+      type:'line',
+      data:{ labels: datos.map(d=>d.dia||d.fecha), datasets:[{ label:'S/', data: datos.map(d=>d.total), borderColor:'#CC3870', backgroundColor:'rgba(204,56,112,.08)', borderWidth:2, pointRadius:3, tension:.4, fill:true }] },
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{callback:v=>'S/'+v}, grid:{color:'rgba(0,0,0,.04)'} }, x:{grid:{display:false}} } }
+    });
+  }
+
+  function renderChartMetodos(metodos) {
+    if (charts.metodos) charts.metodos.destroy();
+    charts.metodos = new Chart(document.getElementById('chart-rep-metodos').getContext('2d'), {
+      type:'pie',
+      data:{ labels: metodos.map(m=>m.metodo), datasets:[{ data: metodos.map(m=>m.total), backgroundColor:['#CC3870','#D4A017','#2D8C4E','#1E6FA8','#A82058'], borderWidth:2, borderColor:'#fff' }] },
+      options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{font:{size:11},padding:12} } } }
+    });
+  }
+
+  function renderChartProductos(prods) {
+    if (charts.prods) charts.prods.destroy();
+    charts.prods = new Chart(document.getElementById('chart-rep-productos').getContext('2d'), {
+      type:'bar',
+      data:{ labels: prods.map(p=>p.nombre), datasets:[{ data: prods.map(p=>p.cantidad), backgroundColor:'rgba(212,160,23,.7)', borderColor:'#D4A017', borderWidth:1, borderRadius:6 }] },
+      options:{ indexAxis:'y', responsive:true, plugins:{legend:{display:false}}, scales:{ x:{beginAtZero:true,grid:{display:false}}, y:{grid:{display:false}} } }
+    });
+  }
+
+  function renderTrabajadores(trab) {
+    const el = document.getElementById('rep-trab');
+    if (!trab.length) { el.innerHTML='<div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1.5rem">Sin datos</div>'; return; }
+    const max = Math.max(...trab.map(t=>t.total));
+    el.innerHTML = trab.map(t => {
+      const pct = max > 0 ? (t.total/max*100).toFixed(0) : 0;
+      const initials = t.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return `<div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar" style="flex-shrink:0">${initials}</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span style="font-weight:500">${t.nombre}</span><span style="color:var(--rosa-600)">${Fmt.moneda(t.total)}</span></div>
+          <div style="height:4px;background:var(--rosa-100);border-radius:4px"><div style="height:4px;width:${pct}%;background:var(--rosa-400);border-radius:4px"></div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderReportesMock() {
+    renderReportes({
+      ventas_total:4820, gastos_total:2100, total_pedidos:142,
+      ventas_dias: Array.from({length:15},(_,i)=>({dia:`${i+1}`,total:Math.floor(100+Math.random()*300)})),
+      metodos_pago:[{metodo:'Yape',total:2100},{metodo:'Efectivo',total:1500},{metodo:'Plin',total:700},{metodo:'Tarjeta',total:520}],
+      top_productos:[{nombre:'Ramo rosas',cantidad:42},{nombre:'Arreglos',cantidad:28},{nombre:'Peluches',cantidad:18},{nombre:'Cajas',cantidad:12},{nombre:'Globos',cantidad:8}],
+      ventas_trabajadores:[{nombre:'Ana López',total:1820},{nombre:'María Quispe',total:1540},{nombre:'Rosa Flores',total:980}],
+    });
+  }
+
+  cargarReportes();
+</script>
+</body>
+</html>

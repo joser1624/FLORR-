@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detalles y Regalos Encantos Eternos — Florería</title>
+  <meta name="description" content="Florería en Perú. Ramos, arreglos y regalos para cada momento especial. Crea tu arreglo personalizado." />
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/public.css" />
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar-pub" id="navbar">
+    <div class="navbar-brand">
+      Detalles y Regalos Encantos Eternos
+      <span>Florería · Perú</span>
+    </div>
+    <ul class="navbar-links">
+      <li><a href="#catalogo">Catálogo</a></li>
+      <li><a href="#laboratorio">Crea tu arreglo</a></li>
+      <li><a href="#promociones">Promociones</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+    <div class="navbar-actions">
+      <a href="pages/cliente/mis-pedidos.html" class="btn btn-ghost btn-sm">Mis pedidos</a>
+      <a href="pages/admin/login.html" class="btn btn-outline btn-sm">Panel</a>
+      <button class="btn-menu-mob" onclick="toggleMobileNav()" id="btn-menu">☰</button>
+    </div>
+  </nav>
+
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="#catalogo" onclick="closeMobileNav()">Catálogo</a>
+    <a href="#laboratorio" onclick="closeMobileNav()">Crea tu arreglo</a>
+    <a href="#promociones" onclick="closeMobileNav()">Promociones</a>
+    <a href="#contacto" onclick="closeMobileNav()">Contacto</a>
+    <a href="pages/admin/login.html">Iniciar sesión →</a>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-eyebrow">Florería en Perú</div>
+        <h1>Cada flor cuenta <em>una historia</em></h1>
+        <p class="hero-desc">Crea arreglos únicos para los momentos que más importan. Ramos, cajas sorpresa, peluches y mucho más. Entrega a domicilio y en tienda.</p>
+        <div class="hero-btns">
+          <a href="#catalogo" class="btn btn-primary btn-lg">Ver catálogo</a>
+          <a href="#laboratorio" class="btn btn-outline btn-lg">Crea tu arreglo</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="hero-stat-num" id="stat-productos">+50</div><div class="hero-stat-label">Productos</div></div>
+          <div class="hero-stat"><div class="hero-stat-num" id="stat-clientes">+200</div><div class="hero-stat-label">Clientes felices</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">🚚</div><div class="hero-stat-label">Delivery disponible</div></div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-flower-card">
+          <span class="hero-flower-emoji">💐</span>
+          <div class="hero-flower-title">Ramo del día</div>
+          <div class="hero-flower-price">S/ 85.00</div>
+          <div style="font-size:12px;color:var(--gris-400);margin-top:6px">Rosas + papel dorado + cinta</div>
+          <a href="#laboratorio" class="btn btn-primary" style="width:100%;margin-top:1rem">Personalizar</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATÁLOGO -->
+  <section class="section section-alt" id="catalogo">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">Nuestros productos</span>
+        <h2>Para cada momento especial</h2>
+        <p>Elige entre nuestra variedad de arreglos y regalos. Todo hecho con amor.</p>
+      </div>
+
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:2rem;flex-wrap:wrap">
+        <button class="chip active" onclick="filtrarCatalogo(this,'')">Todos</button>
+        <button class="chip" onclick="filtrarCatalogo(this,'Ramos')">🌹 Ramos</button>
+        <button class="chip" onclick="filtrarCatalogo(this,'Arreglos')">💐 Arreglos</button>
+        <button class="chip" onclick="filtrarCatalogo(this,'Peluches')">🧸 Peluches</button>
+        <button class="chip" onclick="filtrarCatalogo(this,'Cajas sorpresa')">🎁 Cajas sorpresa</button>
+        <button class="chip" onclick="filtrarCatalogo(this,'Globos')">🎈 Globos</button>
+      </div>
+
+      <div class="products-grid" id="products-grid"></div>
+    </div>
+  </section>
+
+  <!-- PROMOCIONES -->
+  <section class="section" id="promociones">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">Ofertas especiales</span>
+        <h2>Promociones vigentes</h2>
+        <p>Aprovecha nuestras ofertas y consigue más por menos.</p>
+      </div>
+      <div class="promo-grid" id="promo-grid">
+        <div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:14px">Cargando promociones...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LABORATORIO -->
+  <section class="section section-alt" id="laboratorio">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">Diseña tu arreglo</span>
+        <h2>Laboratorio de flores</h2>
+        <p>Elige las flores y materiales que quieres. Te mostramos el precio al instante y te conectamos por WhatsApp.</p>
+      </div>
+
+      <div class="lab-layout">
+        <!-- Flores disponibles -->
+        <div>
+          <div style="font-weight:600;font-size:15px;margin-bottom:1rem;color:var(--gris-800)">
+            Selecciona flores y materiales
+          </div>
+          <div class="lab-flores-grid" id="lab-flores-grid"></div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="lab-resumen">
+          <div class="lab-resumen-title">🌸 Tu arreglo</div>
+
+          <div id="lab-items-list">
+            <div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1.5rem 0">
+              Selecciona flores para comenzar
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--rosa-100);padding-top:12px;margin-top:4px">
+            <div class="lab-total">
+              <span>Precio estimado:</span>
+              <span class="lab-precio-total" id="lab-precio-pub">S/ 0.00</span>
+            </div>
+            <div style="font-size:11px;color:var(--gris-400);margin-bottom:1rem;">
+              *Precio orientativo, incluye margen estándar
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="pedirPorWhatsApp()">
+              📱 Pedir por WhatsApp
+            </button>
+            <button class="btn btn-ghost" style="width:100%" onclick="limpiarLabPub()">Limpiar selección</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EVENTOS -->
+  <section class="section" id="eventos">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">Fechas especiales</span>
+        <h2>Próximos eventos</h2>
+        <p>Prepárate con anticipación para cada fecha importante del año.</p>
+      </div>
+      <div class="promo-grid" id="eventos-grid">
+        <div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:14px">Cargando eventos...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMAS DE PAGO -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">Facilidades</span>
+        <h2>Múltiples formas de pago</h2>
+      </div>
+      <div style="display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;align-items:center">
+        <div style="text-align:center">
+          <div style="font-size:40px;margin-bottom:8px">💵</div>
+          <div style="font-size:14px;font-weight:500;color:var(--gris-700)">Efectivo</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:40px;margin-bottom:8px">📱</div>
+          <div style="font-size:14px;font-weight:500;color:var(--gris-700)">Yape</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:40px;margin-bottom:8px">📲</div>
+          <div style="font-size:14px;font-weight:500;color:var(--gris-700)">Plin</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:40px;margin-bottom:8px">💳</div>
+          <div style="font-size:14px;font-weight:500;color:var(--gris-700)">Tarjeta</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:40px;margin-bottom:8px">🏦</div>
+          <div style="font-size:14px;font-weight:500;color:var(--gris-700)">Transferencia</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:1.5rem">
+        <span class="badge badge-success" style="font-size:13px;padding:6px 16px">🚚 Delivery disponible</span>
+        <span class="badge badge-rosa" style="font-size:13px;padding:6px 16px;margin-left:10px">🏪 Retiro en tienda</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACTO -->
+  <section class="section" id="contacto">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">Estamos para ti</span>
+        <h2>Contáctanos</h2>
+        <p>¿Tienes alguna pregunta o quieres hacer un pedido especial? Escríbenos.</p>
+      </div>
+      <div style="display:flex;justify-content:center">
+        <div class="card" style="max-width:440px;width:100%;text-align:center;padding:2.5rem">
+          <div style="font-size:56px;margin-bottom:1rem">🌸</div>
+          <h3 style="font-size:22px;margin-bottom:.5rem">Detalles y Regalos<br>Encantos Eternos</h3>
+          <p style="font-size:13px;color:var(--gris-500);margin-bottom:1.5rem">Florería peruana · Entrega a domicilio disponible</p>
+          <a href="https://wa.me/51972542802" target="_blank" class="btn btn-primary btn-lg" style="width:100%;margin-bottom:12px">
+            📱 WhatsApp: +51 972 542 802
+          </a>
+          <div style="font-size:12px;color:var(--gris-400)">Respondemos rápidamente ✓</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">Detalles y Regalos Encantos Eternos</div>
+        <p class="footer-desc">Florería peruana especializada en arreglos florales únicos para cada momento especial. Delivery disponible.</p>
+        <div style="margin-top:1rem">
+          <a href="https://wa.me/51972542802" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:500">
+            📱 +51 972 542 802
+          </a>
+        </div>
+      </div>
+      <div>
+        <h4>Productos</h4>
+        <ul class="footer-links">
+          <li><a href="#catalogo">Ramos de flores</a></li>
+          <li><a href="#catalogo">Arreglos florales</a></li>
+          <li><a href="#catalogo">Cajas sorpresa</a></li>
+          <li><a href="#catalogo">Peluches</a></li>
+          <li><a href="#laboratorio">Arreglos personalizados</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Información</h4>
+        <ul class="footer-links">
+          <li><a href="#promociones">Promociones</a></li>
+          <li><a href="#eventos">Eventos especiales</a></li>
+          <li><a href="pages/cliente/mis-pedidos.html">Mis pedidos</a></li>
+          <li><a href="pages/admin/login.html">Panel de gestión</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Detalles y Regalos Encantos Eternos. Todos los derechos reservados.</span>
+      <span style="color:rgba(255,255,255,.25)">Hecho con 🌸 en Perú</span>
+    </div>
+  </footer>
+
+  <!-- Botón flotante WhatsApp -->
+  <a href="https://wa.me/51972542802" target="_blank" class="wa-float" title="Escríbenos por WhatsApp">
+    📱
+  </a>
+
+  <script src="js/main.js"></script>
+  <script>
+    const CATS_EMOJI = { Ramos:'🌹', Arreglos:'💐', Peluches:'🧸', 'Cajas sorpresa':'🎁', Globos:'🎈', Otros:'🌸' };
+    const FLORES_EMOJI_PUB = { 'Rosas rojas':'🌹','Lirios blancos':'🤍','Girasoles':'🌻','Rosas rosadas':'🌸','Tulipanes':'🌷','Margaritas':'🌼','Orquídeas':'🌺' };
+    const TIPO_EMOJI_PUB = { flores:'🌸', materiales:'🎀', accesorios:'🎁' };
+
+    let todosProd = [];
+    let catActual = '';
+    let selLab = {};
+    let inventarioPub = [];
+
+    // ── CATÁLOGO ──
+    async function cargarCatalogo() {
+      try {
+        const d = await API.get('/productos');
+        todosProd = d.productos || d || [];
+      } catch {
+        todosProd = [
+          { id:1, nombre:'Ramo romántico de rosas',   categoria:'Ramos',          precio:85,  stock:15, descripcion:'12 rosas premium con papel dorado' },
+          { id:2, nombre:'Arreglo primaveral en caja', categoria:'Arreglos',       precio:120, stock:3,  descripcion:'Flores variadas en caja decorativa' },
+          { id:3, nombre:'Peluche + rosas rojas',      categoria:'Peluches',       precio:95,  stock:8,  descripcion:'Osito + 6 rosas rojas' },
+          { id:4, nombre:'Caja sorpresa especial',     categoria:'Cajas sorpresa', precio:150, stock:0,  descripcion:'Caja personalizada con flores' },
+          { id:5, nombre:'Ramo de girasoles y lirios', categoria:'Ramos',          precio:70,  stock:12, descripcion:'Flores de campo naturales' },
+          { id:6, nombre:'Arreglo de cumpleaños',      categoria:'Arreglos',       precio:110, stock:5,  descripcion:'Arreglo festivo multicolor' },
+          { id:7, nombre:'Globos + rosas',             categoria:'Globos',         precio:60,  stock:10, descripcion:'5 globos metalizados + rosas' },
+          { id:8, nombre:'Caja corazón con rosas',     categoria:'Cajas sorpresa', precio:180, stock:4,  descripcion:'Caja corazón con 24 rosas' },
+        ];
+      }
+      renderCatalogo();
+    }
+
+    function renderCatalogo() {
+      const lista = catActual ? todosProd.filter(p => p.categoria === catActual) : todosProd;
+      const grid = document.getElementById('products-grid');
+      if (!lista.length) { grid.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gris-400);grid-column:1/-1">Sin productos en esta categoría</div>'; return; }
+      grid.innerHTML = lista.map(p => {
+        const emoji = CATS_EMOJI[p.categoria] || '🌸';
+        const stockBadge = p.stock === 0
+          ? '<span class="product-badge-stock agotado">Agotado</span>'
+          : p.stock <= 3
+            ? `<span class="product-badge-stock" style="color:var(--warning)">Últimas unidades</span>`
+            : '<span class="product-badge-stock">Disponible ✓</span>';
+        return `
+          <div class="product-card" onclick="pedirProducto('${p.nombre.replace(/'/g,"\\'")}', ${p.precio})">
+            <div class="product-img">
+              <span style="font-size:64px">${emoji}</span>
+              ${stockBadge}
+            </div>
+            <div class="product-body">
+              <div class="product-cat">${p.categoria}</div>
+              <div class="product-name">${p.nombre}</div>
+              ${p.descripcion ? `<div class="product-desc">${p.descripcion}</div>` : ''}
+              <div class="product-footer">
+                <div class="product-price">S/ ${p.precio.toFixed(2)}</div>
+                ${p.stock > 0
+                  ? `<button class="btn-pedir" onclick="event.stopPropagation();pedirProducto('${p.nombre.replace(/'/g,"\\'")}', ${p.precio})">Pedir 📱</button>`
+                  : `<span style="font-size:12px;color:var(--danger)">Agotado</span>`}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function filtrarCatalogo(el, cat) {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      catActual = cat;
+      renderCatalogo();
+    }
+
+    function pedirProducto(nombre, precio) {
+      const msg = `🌸 ¡Hola! Vi "${nombre}" en su catálogo y me interesa pedirlo.\n\n💰 Precio: S/ ${precio.toFixed(2)}\n\n¿Tienen disponibilidad? ¿Cuáles son los tiempos de entrega?`;
+      window.open(`https://wa.me/51972542802?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    // ── LABORATORIO PÚBLICO ──
+    async function cargarInventarioPub() {
+      try {
+        const d = await API.get('/inventario');
+        inventarioPub = (d.items || d || []).filter(i => i.stock > 0);
+      } catch {
+        inventarioPub = [
+          { id:1, nombre:'Rosas rojas',     tipo:'flores',    stock:45, costo:3.5  },
+          { id:2, nombre:'Lirios blancos',  tipo:'flores',    stock:8,  costo:2.8  },
+          { id:3, nombre:'Girasoles',       tipo:'flores',    stock:25, costo:2.0  },
+          { id:4, nombre:'Rosas rosadas',   tipo:'flores',    stock:30, costo:3.0  },
+          { id:5, nombre:'Tulipanes',       tipo:'flores',    stock:20, costo:3.2  },
+          { id:6, nombre:'Papel decorativo',tipo:'materiales',stock:5,  costo:8.5  },
+          { id:7, nombre:'Cinta satinada',  tipo:'materiales',stock:12, costo:4.0  },
+          { id:8, nombre:'Caja decorativa', tipo:'accesorios',stock:7,  costo:12.0 },
+        ];
+      }
+      renderLabPub();
+    }
+
+    function renderLabPub() {
+      const grid = document.getElementById('lab-flores-grid');
+      grid.innerHTML = inventarioPub.map(item => {
+        const qty = selLab[item.id] || 0;
+        const emoji = FLORES_EMOJI_PUB[item.nombre] || TIPO_EMOJI_PUB[item.tipo] || '🌸';
+        return `
+          <div class="lab-flor-card ${qty > 0 ? 'selected' : ''}">
+            <div class="lab-flor-emoji">${emoji}</div>
+            <div class="lab-flor-name">${item.nombre}</div>
+            <div class="lab-flor-precio">S/ ${item.costo.toFixed(2)} c/u</div>
+            <div class="lab-flor-stock">Stock: ${item.stock}</div>
+            <div class="lab-qty-ctrl">
+              <button class="lab-qty-btn" onclick="cambiarQtyPub(${item.id},-1)">−</button>
+              <span class="lab-qty-num">${qty}</span>
+              <button class="lab-qty-btn" onclick="cambiarQtyPub(${item.id},1)">+</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function cambiarQtyPub(id, delta) {
+      const item = inventarioPub.find(i => i.id === id);
+      if (!item) return;
+      const nuevo = Math.max(0, Math.min(item.stock, (selLab[id] || 0) + delta));
+      if (nuevo === 0) delete selLab[id]; else selLab[id] = nuevo;
+      renderLabPub();
+      renderResumenPub();
+    }
+
+    function renderResumenPub() {
+      const ids = Object.keys(selLab);
+      const el = document.getElementById('lab-items-list');
+      if (!ids.length) {
+        el.innerHTML = '<div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1.5rem 0">Selecciona flores para comenzar</div>';
+        document.getElementById('lab-precio-pub').textContent = 'S/ 0.00';
+        return;
+      }
+      let costo = 0;
+      el.innerHTML = ids.map(id => {
+        const item = inventarioPub.find(i => i.id == id);
+        const sub = item.costo * selLab[id];
+        costo += sub;
+        return `<div class="lab-item"><span>${item.nombre} × ${selLab[id]}</span><span style="font-weight:500">S/ ${sub.toFixed(2)}</span></div>`;
+      }).join('');
+      const precio = costo / 0.6; // margen 40%
+      document.getElementById('lab-precio-pub').textContent = `S/ ${precio.toFixed(2)}`;
+    }
+
+    function limpiarLabPub() {
+      selLab = {};
+      renderLabPub();
+      renderResumenPub();
+    }
+
+    function pedirPorWhatsApp() {
+      const ids = Object.keys(selLab);
+      if (!ids.length) { alert('Selecciona flores primero'); return; }
+      const flores = ids.map(id => ({ nombre: inventarioPub.find(i=>i.id==id).nombre, cantidad: selLab[id] }));
+      const precio = parseFloat(document.getElementById('lab-precio-pub').textContent.replace('S/ ',''));
+      const msg = WhatsApp.arregloMsg(flores, precio);
+      WhatsApp.send(msg);
+    }
+
+    // ── PROMOCIONES ──
+    async function cargarPromos() {
+      try {
+        const d = await API.get('/promociones?activa=true');
+        renderPromos(d.promociones || d || []);
+      } catch {
+        renderPromos([
+          { titulo:'20% en ramos de rosas', descripcion:'Válido para ramos de 12 rosas en adelante', descuento:20, hasta:'2026-03-31' },
+          { titulo:'Día de la Madre — precio especial', descripcion:'Arreglos con cinta dorada gratis', descuento:0, hasta:'2026-05-11', tipo_clase:'dorada' },
+        ]);
+      }
+    }
+
+    function renderPromos(promos) {
+      const grid = document.getElementById('promo-grid');
+      if (!promos.length) { grid.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No hay promociones activas actualmente</div>'; return; }
+      grid.innerHTML = promos.map(p => `
+        <div class="promo-card ${p.tipo_clase||''}">
+          <div class="promo-tag">Promoción</div>
+          <div class="promo-title">${p.titulo}</div>
+          <div class="promo-desc">${p.descripcion||''}</div>
+          ${p.descuento ? `<div class="promo-descuento">${p.descuento}% OFF</div>` : ''}
+          ${p.hasta ? `<div class="promo-vigencia">Válido hasta ${new Date(p.hasta).toLocaleDateString('es-PE',{day:'2-digit',month:'long'})}</div>` : ''}
+          <div style="margin-top:1rem">
+            <a href="https://wa.me/51972542802?text=${encodeURIComponent('¡Hola! Me interesa la promoción: '+p.titulo)}" target="_blank" class="btn btn-primary btn-sm">Aprovechar →</a>
+          </div>
+        </div>`).join('');
+    }
+
+    // ── EVENTOS ──
+    async function cargarEventos() {
+      try {
+        const d = await API.get('/eventos?activo=true');
+        renderEventos(d.eventos || d || []);
+      } catch {
+        renderEventos([
+          { nombre:'Día de la Madre', descripcion:'Honra a mamá con el arreglo perfecto', emoji:'🌹', fecha:'2026-05-10' },
+          { nombre:'Día del Amor y la Amistad', descripcion:'Celebra con flores para tus seres queridos', emoji:'💐', fecha:'2026-07-23' },
+          { nombre:'Aniversarios', descripcion:'Sorprende a quien más quieres con un arreglo único', emoji:'💕', fecha:null },
+        ]);
+      }
+    }
+
+    function renderEventos(eventos) {
+      const grid = document.getElementById('eventos-grid');
+      if (!eventos.length) { grid.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No hay eventos próximos</div>'; return; }
+      grid.innerHTML = eventos.map(e => `
+        <div class="promo-card">
+          <div class="promo-tag">Evento especial</div>
+          <div style="font-size:32px;margin:8px 0">${e.emoji||'🌸'}</div>
+          <div class="promo-title">${e.nombre}</div>
+          <div class="promo-desc">${e.descripcion||''}</div>
+          ${e.fecha ? `<div class="promo-vigencia">📅 ${new Date(e.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'})}</div>` : ''}
+          <div style="margin-top:1rem">
+            <a href="https://wa.me/51972542802?text=${encodeURIComponent('¡Hola! Quisiera un arreglo especial para: '+e.nombre)}" target="_blank" class="btn btn-outline btn-sm">Encargar →</a>
+          </div>
+        </div>`).join('');
+    }
+
+    // ── NAVBAR ──
+    function toggleMobileNav() {
+      document.getElementById('mobile-nav').classList.toggle('open');
+    }
+    function closeMobileNav() {
+      document.getElementById('mobile-nav').classList.remove('open');
+    }
+
+    // Navbar sticky shadow
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar').style.boxShadow = window.scrollY > 10 ? 'var(--shadow-md)' : 'none';
+    });
+
+    // Init
+    cargarCatalogo();
+    cargarInventarioPub();
+    cargarPromos();
+    cargarEventos();
+  </script>
+</body>
+</html>

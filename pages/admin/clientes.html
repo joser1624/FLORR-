@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clientes — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+      <div class="page-header">
+        <div><h2>Clientes</h2><p>Registro y historial de compras de clientes</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-cliente')">+ Nuevo cliente</button>
+      </div>
+
+      <div class="filter-bar">
+        <input class="form-control" placeholder="Buscar por nombre o teléfono..." id="buscar-cli" oninput="renderClientes()" style="max-width:280px" />
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Total pedidos</th><th>Última compra</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-clientes"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-header"><h3>Nuevo cliente</h3><button class="btn-close" onclick="Modal.close('modal-cliente')">×</button></div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group"><label class="form-label">Nombre completo <span class="req">*</span></label><input class="form-control" id="cli-nombre" required /></div>
+        <div class="form-group"><label class="form-label">Teléfono <span class="req">*</span></label><input class="form-control" id="cli-telefono" type="tel" required /></div>
+        <div class="form-group"><label class="form-label">Dirección (opcional)</label><input class="form-control" id="cli-direccion" /></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-cliente')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('clientes', 'Clientes', 'Negocio');
+  let clientes = [];
+
+  async function cargarClientes() {
+    try { const d = await API.get('/clientes'); clientes = d.clientes || d || []; }
+    catch {
+      clientes = [
+        { id:1, nombre:'Ana García', telefono:'987654321', direccion:'Av. Los Rosales 123', total_pedidos:8, ultima_compra:'2026-03-10' },
+        { id:2, nombre:'Luis Pérez', telefono:'912345678', direccion:'', total_pedidos:3, ultima_compra:'2026-03-08' },
+        { id:3, nombre:'María Torres', telefono:'998877665', direccion:'Calle Jardín 789', total_pedidos:12, ultima_compra:'2026-03-12' },
+      ];
+    }
+    renderClientes();
+  }
+
+  function renderClientes() {
+    const q = (document.getElementById('buscar-cli').value||'').toLowerCase();
+    const lista = clientes.filter(c => !q || c.nombre.toLowerCase().includes(q) || c.telefono.includes(q));
+    const tbody = document.getElementById('tbody-clientes');
+    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin clientes</td></tr>'; return; }
+    tbody.innerHTML = lista.map(c => {
+      const initials = c.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">${initials}</div><span style="font-weight:500">${c.nombre}</span></div></td>
+        <td><a href="https://wa.me/51${c.telefono}" target="_blank" style="color:var(--rosa-500)">${Fmt.tel(c.telefono)}</a></td>
+        <td style="font-size:12px;color:var(--gris-500)">${c.direccion||'—'}</td>
+        <td><span class="badge badge-rosa">${c.total_pedidos||0} pedidos</span></td>
+        <td style="font-size:12px">${c.ultima_compra ? Fmt.fecha(c.ultima_compra) : '—'}</td>
+        <td><div class="tbl-actions-cell"><button class="btn-tbl btn-tbl-view" onclick="Toast.info('Historial de ${c.nombre}')">Historial</button></div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function guardarCliente() {
+    const payload = { nombre: document.getElementById('cli-nombre').value, telefono: document.getElementById('cli-telefono').value, direccion: document.getElementById('cli-direccion').value };
+    if (!payload.nombre || !payload.telefono) { Toast.warning('Nombre y teléfono son obligatorios'); return; }
+    try { await API.post('/clientes', payload); } catch { clientes.unshift({ id: Date.now(), ...payload, total_pedidos:0 }); }
+    Toast.success('Cliente registrado');
+    Modal.close('modal-cliente');
+    renderClientes();
+  }
+
+  cargarClientes();
+</script>
+</body>
+</html>

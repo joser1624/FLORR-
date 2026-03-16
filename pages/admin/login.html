@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar sesión — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      background: var(--crema);
+      font-family: var(--font-body);
+    }
+
+    .login-left {
+      flex: 1;
+      background: var(--gris-900);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-left::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: var(--rosa-800);
+      opacity: .12;
+      top: -200px; right: -150px;
+    }
+    .login-left::after {
+      content: '';
+      position: absolute;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: var(--dorado-700);
+      opacity: .08;
+      bottom: -100px; left: -80px;
+    }
+
+    .login-brand {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .login-brand-icon {
+      font-size: 72px;
+      display: block;
+      margin-bottom: 1.5rem;
+      filter: drop-shadow(0 0 20px rgba(212,160,23,.3));
+    }
+    .login-brand-name {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-style: italic;
+      color: var(--dorado-300);
+      line-height: 1.3;
+      margin-bottom: .5rem;
+    }
+    .login-brand-slogan {
+      font-size: 12px;
+      color: rgba(255,255,255,.35);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .login-features {
+      margin-top: 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 280px;
+    }
+    .login-feat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: rgba(255,255,255,.5);
+      font-size: 13px;
+    }
+    .login-feat-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--rosa-500);
+      flex-shrink: 0;
+    }
+
+    .login-right {
+      width: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2.5rem;
+      background: var(--crema);
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-title {
+      font-family: var(--font-display);
+      font-size: 30px;
+      color: var(--gris-900);
+      margin-bottom: .35rem;
+    }
+    .login-title em { color: var(--rosa-600); }
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--gris-500);
+      margin-bottom: 2rem;
+    }
+
+    .form-stack { display: flex; flex-direction: column; gap: 16px; }
+
+    .input-icon-wrap {
+      position: relative;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--gris-400);
+      pointer-events: none;
+    }
+    .input-with-icon {
+      width: 100%;
+      padding: 11px 14px 11px 38px;
+      border: 1.5px solid var(--gris-200);
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--gris-800);
+      background: var(--blanco);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .input-with-icon:focus {
+      border-color: var(--rosa-400);
+      box-shadow: 0 0 0 3px rgba(204,56,112,.10);
+    }
+    .input-with-icon::placeholder { color: var(--gris-400); }
+
+    .login-btn {
+      width: 100%;
+      padding: 13px;
+      background: var(--rosa-500);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-full);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: .04em;
+      transition: all .2s;
+      box-shadow: var(--shadow-rosa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .login-btn:hover {
+      background: var(--rosa-600);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(204,56,112,.3);
+    }
+    .login-btn:active { transform: translateY(0); }
+    .login-btn .spinner { display: none; }
+    .login-btn.loading .btn-text { display: none; }
+    .login-btn.loading .spinner { display: block; }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--gris-300);
+      font-size: 12px;
+      margin: 4px 0;
+    }
+    .login-divider::before, .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--gris-200);
+    }
+
+    .roles-hint {
+      background: var(--rosa-50);
+      border: 1px solid var(--rosa-100);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 12px;
+    }
+    .roles-hint-title {
+      font-weight: 600;
+      color: var(--rosa-700);
+      margin-bottom: 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .role-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: var(--gris-600); }
+    .role-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    .login-error {
+      background: var(--danger-bg);
+      border: 1px solid #F0AAAA;
+      color: var(--danger);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-size: 13px;
+      display: none;
+    }
+    .login-error.show { display: block; }
+
+    .btn-ir-inicio {
+      width: 100%;
+      padding: 11px;
+      background: transparent;
+      border: 1.5px solid var(--rosa-200);
+      color: var(--rosa-600);
+      border-radius: var(--radius-full);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: all .2s;
+      text-decoration: none;
+      display: block;
+    }
+    .btn-ir-inicio:hover { background: var(--rosa-50); }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .login-left { min-height: 200px; padding: 2rem; }
+      .login-features { display: none; }
+      .login-right { width: 100%; padding: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-left">
+    <div class="login-brand">
+      <span class="login-brand-icon">🌸</span>
+      <div class="login-brand-name">Detalles y Regalos<br>Encantos Eternos</div>
+      <div class="login-brand-slogan">Sistema de gestión</div>
+    </div>
+    <div class="login-features">
+      <div class="login-feat"><div class="login-feat-dot"></div>Control de ventas e inventario</div>
+      <div class="login-feat"><div class="login-feat-dot"></div>Laboratorio de arreglos florales</div>
+      <div class="login-feat"><div class="login-feat-dot"></div>Reportes y estadísticas</div>
+      <div class="login-feat"><div class="login-feat-dot"></div>Pedidos y delivery</div>
+      <div class="login-feat"><div class="login-feat-dot"></div>Integración con WhatsApp</div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box">
+
+      <h1 class="login-title">Bienvenida <em>de vuelta</em></h1>
+      <p class="login-subtitle">Ingresa tus credenciales para acceder al panel</p>
+
+      <div id="login-error" class="login-error">
+        Usuario o contraseña incorrectos. Inténtalo de nuevo.
+      </div>
+
+      <form class="form-stack" id="login-form" onsubmit="handleLogin(event)">
+
+        <div class="form-group">
+          <label class="form-label" for="email">Correo electrónico</label>
+          <div class="input-icon-wrap">
+            <span class="input-icon">✉</span>
+            <input class="input-with-icon" type="email" id="email"
+              placeholder="tu@email.com" required autocomplete="email" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Contraseña</label>
+          <div class="input-icon-wrap">
+            <span class="input-icon">🔒</span>
+            <input class="input-with-icon" type="password" id="password"
+              placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+        </div>
+
+        <button type="submit" class="login-btn" id="login-btn">
+          <span class="btn-text">Ingresar al panel</span>
+          <div class="spinner" style="width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite"></div>
+        </button>
+
+      </form>
+
+      <div class="login-divider" style="margin-top:1.5rem">o</div>
+
+      <a href="../../index.html" class="btn-ir-inicio">Ver sitio de clientes</a>
+
+      <div class="roles-hint" style="margin-top:1.5rem">
+        <div class="roles-hint-title">Roles del sistema</div>
+        <div class="role-row"><div class="role-dot" style="background:var(--rosa-500)"></div> <strong>Admin</strong> — acceso completo</div>
+        <div class="role-row"><div class="role-dot" style="background:var(--dorado-500)"></div> <strong>Empleado</strong> — ventas y pedidos</div>
+        <div class="role-row"><div class="role-dot" style="background:var(--success)"></div> <strong>Dueña</strong> — reportes y estadísticas</div>
+      </div>
+
+    </div>
+  </div>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+
+  <script>
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('login-error');
+      err.classList.remove('show');
+      btn.classList.add('loading');
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.token) {
+          localStorage.setItem('ee_token', data.token);
+          localStorage.setItem('ee_user', JSON.stringify(data.user));
+          window.location.href = 'dashboard.html';
+        } else {
+          err.textContent = data.mensaje || 'Usuario o contraseña incorrectos.';
+          err.classList.add('show');
+        }
+      } catch {
+        err.textContent = 'No se pudo conectar con el servidor. Verifica que el backend esté activo.';
+        err.classList.add('show');
+      } finally {
+        btn.classList.remove('loading');
+      }
+    }
+
+    // Verificar si ya está logueado
+    if (localStorage.getItem('ee_token')) {
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>

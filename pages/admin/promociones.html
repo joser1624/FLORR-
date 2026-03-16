@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Promociones — Encantos Eternos</title>
+  <link rel="stylesheet" href="../../css/variables.css" />
+  <link rel="stylesheet" href="../../css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <main class="admin-main">
+    <div class="topbar" id="topbar"></div>
+    <div class="admin-content">
+
+      <!-- Promociones -->
+      <div class="page-header">
+        <div><h2>Promociones</h2><p>Las promociones activas se muestran en la página de clientes</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-promo')">+ Nueva promoción</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;margin-bottom:2.5rem" id="cards-promos">
+        <div style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando...</div>
+      </div>
+
+      <!-- Eventos -->
+      <div class="page-header" style="margin-top:1rem">
+        <div><h2>Eventos especiales</h2><p>Fechas como San Valentín, Día de la Madre, etc.</p></div>
+        <button class="btn btn-primary" onclick="Modal.open('modal-evento')">+ Nuevo evento</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem" id="cards-eventos">
+        <div style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando...</div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal promoción -->
+<div class="modal-overlay" id="modal-promo">
+  <div class="modal">
+    <div class="modal-header"><h3>Nueva promoción</h3><button class="btn-close" onclick="Modal.close('modal-promo')">×</button></div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group"><label class="form-label">Título <span class="req">*</span></label><input class="form-control" id="promo-titulo" placeholder="Ej: 2x1 en ramos de rosas" required /></div>
+        <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-control" id="promo-desc" rows="2" placeholder="Detalles de la promoción..."></textarea></div>
+        <div class="form-grid-2">
+          <div class="form-group"><label class="form-label">Descuento (%)</label><input class="form-control" type="number" id="promo-descuento" min="0" max="100" placeholder="Ej: 20" /></div>
+          <div class="form-group"><label class="form-label">Tipo</label><select class="form-control" id="promo-tipo"><option value="porcentaje">Porcentaje</option><option value="2x1">2x1</option><option value="precio_fijo">Precio fijo</option><option value="regalo">Con regalo</option></select></div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group"><label class="form-label">Válida desde</label><input class="form-control" type="date" id="promo-desde" /></div>
+          <div class="form-group"><label class="form-label">Válida hasta</label><input class="form-control" type="date" id="promo-hasta" /></div>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="promo-activa" checked /> Mostrar en el sitio de clientes
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-promo')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarPromo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal evento -->
+<div class="modal-overlay" id="modal-evento">
+  <div class="modal">
+    <div class="modal-header"><h3>Nuevo evento</h3><button class="btn-close" onclick="Modal.close('modal-evento')">×</button></div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group"><label class="form-label">Nombre del evento <span class="req">*</span></label><input class="form-control" id="ev-nombre" placeholder="Ej: San Valentín 2026" required /></div>
+        <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-control" id="ev-desc" rows="2" placeholder="¿Qué ofreces en esta fecha especial?"></textarea></div>
+        <div class="form-group"><label class="form-label">Emoji / ícono</label><input class="form-control" id="ev-emoji" placeholder="Ej: 💕" maxlength="4" /></div>
+        <div class="form-grid-2">
+          <div class="form-group"><label class="form-label">Fecha del evento</label><input class="form-control" type="date" id="ev-fecha" /></div>
+          <div class="form-group"><label class="form-label">Color del banner</label><select class="form-control" id="ev-color"><option value="rosa">Rosa</option><option value="dorado">Dorado</option><option value="rojo">Rojo</option><option value="morado">Morado</option></select></div>
+        </div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" id="ev-activo" checked /> Mostrar en el sitio</label></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-evento')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarEvento()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../js/main.js"></script>
+<script src="../../js/admin-layout.js"></script>
+<script>
+  initAdminLayout('promociones', 'Promociones y eventos', 'Contenido');
+  let promos = [], eventos = [];
+
+  async function cargarPromos() {
+    try { const d = await API.get('/promociones'); promos = d.promociones || d || []; }
+    catch { promos = [
+      { id:1, titulo:'20% en ramos de rosas', descripcion:'Válido para ramos de 12 rosas en adelante', descuento:20, tipo:'porcentaje', desde:'2026-03-01', hasta:'2026-03-31', activa:true },
+      { id:2, titulo:'Día de la Madre — precio especial', descripcion:'Arreglos florales con cinta dorada gratis', descuento:0, tipo:'regalo', desde:'2026-05-01', hasta:'2026-05-11', activa:true },
+    ]; }
+    renderPromos();
+  }
+
+  async function cargarEventos() {
+    try { const d = await API.get('/eventos'); eventos = d.eventos || d || []; }
+    catch { eventos = [
+      { id:1, nombre:'San Valentín', descripcion:'Arreglos especiales y dedicatorias', emoji:'💕', fecha:'2026-02-14', color:'rosa', activo:false },
+      { id:2, nombre:'Día de la Madre', descripcion:'Honra a mamá con el arreglo perfecto', emoji:'🌹', fecha:'2026-05-10', color:'dorado', activo:true },
+      { id:3, nombre:'Día del Amor y la Amistad', descripcion:'Celebra con flores para tus seres queridos', emoji:'💐', fecha:'2026-07-23', color:'morado', activo:true },
+    ]; }
+    renderEventos();
+  }
+
+  const COLOR_BG = { rosa:'var(--rosa-50)', dorado:'var(--dorado-50)', rojo:'#FFF0F0', morado:'#F5F0FF' };
+  const COLOR_BORDE = { rosa:'var(--rosa-400)', dorado:'var(--dorado-400)', rojo:'#FF6B6B', morado:'#9B6BFF' };
+
+  function renderPromos() {
+    const el = document.getElementById('cards-promos');
+    if (!promos.length) { el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">Sin promociones</div>'; return; }
+    el.innerHTML = promos.map(p => `
+      <div style="background:var(--blanco);border:1px solid var(--rosa-100);border-left:4px solid ${p.activa?'var(--rosa-400)':'var(--gris-300)'};border-radius:var(--radius-lg);padding:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <span class="badge ${p.activa?'badge-success':'badge-gray'}">${p.activa?'Activa':'Inactiva'}</span>
+          <button class="btn-tbl btn-tbl-delete" onclick="eliminarPromo(${p.id})">Eliminar</button>
+        </div>
+        <div style="font-family:var(--font-display);font-size:17px;margin-bottom:4px">${p.titulo}</div>
+        <div style="font-size:12px;color:var(--gris-500);margin-bottom:8px">${p.descripcion||''}</div>
+        ${p.descuento ? `<div style="font-size:24px;font-weight:700;color:var(--rosa-600);font-family:var(--font-display)">${p.descuento}% OFF</div>` : ''}
+        <div style="font-size:11px;color:var(--gris-400);margin-top:4px">Vigente: ${p.desde ? Fmt.fecha(p.desde) : '—'} al ${p.hasta ? Fmt.fecha(p.hasta) : '—'}</div>
+      </div>`).join('');
+  }
+
+  function renderEventos() {
+    const el = document.getElementById('cards-eventos');
+    if (!eventos.length) { el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">Sin eventos</div>'; return; }
+    el.innerHTML = eventos.map(e => `
+      <div style="background:${COLOR_BG[e.color]||'var(--rosa-50)'};border:1px solid;border-color:${e.activo?COLOR_BORDE[e.color]:'var(--gris-200)'};border-radius:var(--radius-lg);padding:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <span class="badge ${e.activo?'badge-success':'badge-gray'}">${e.activo?'Activo':'Inactivo'}</span>
+          <button class="btn-tbl btn-tbl-delete" onclick="eliminarEvento(${e.id})">Eliminar</button>
+        </div>
+        <div style="font-size:32px;margin-bottom:6px">${e.emoji||'🌸'}</div>
+        <div style="font-family:var(--font-display);font-size:18px;margin-bottom:4px">${e.nombre}</div>
+        <div style="font-size:12px;color:var(--gris-500);margin-bottom:8px">${e.descripcion||''}</div>
+        ${e.fecha ? `<div style="font-size:11px;color:var(--gris-500)">📅 ${Fmt.fecha(e.fecha)}</div>` : ''}
+      </div>`).join('');
+  }
+
+  async function guardarPromo() {
+    const p = { titulo:document.getElementById('promo-titulo').value, descripcion:document.getElementById('promo-desc').value, descuento:parseInt(document.getElementById('promo-descuento').value)||0, tipo:document.getElementById('promo-tipo').value, desde:document.getElementById('promo-desde').value, hasta:document.getElementById('promo-hasta').value, activa:document.getElementById('promo-activa').checked };
+    if (!p.titulo) { Toast.warning('El título es obligatorio'); return; }
+    try { await API.post('/promociones', p); } catch { promos.unshift({id:Date.now(),...p}); }
+    Toast.success('Promoción creada'); Modal.close('modal-promo'); renderPromos();
+  }
+
+  async function guardarEvento() {
+    const e = { nombre:document.getElementById('ev-nombre').value, descripcion:document.getElementById('ev-desc').value, emoji:document.getElementById('ev-emoji').value||'🌸', fecha:document.getElementById('ev-fecha').value, color:document.getElementById('ev-color').value, activo:document.getElementById('ev-activo').checked };
+    if (!e.nombre) { Toast.warning('El nombre es obligatorio'); return; }
+    try { await API.post('/eventos', e); } catch { eventos.unshift({id:Date.now(),...e}); }
+    Toast.success('Evento creado'); Modal.close('modal-evento'); renderEventos();
+  }
+
+  function eliminarPromo(id) { Modal.confirm('¿Eliminar esta promoción?', () => { promos=promos.filter(p=>p.id!==id); API.delete('/promociones/'+id).catch(()=>{}); renderPromos(); Toast.success('Eliminada'); }); }
+  function eliminarEvento(id) { Modal.confirm('¿Eliminar este evento?', () => { eventos=eventos.filter(e=>e.id!==id); API.delete('/eventos/'+id).catch(()=>{}); renderEventos(); Toast.success('Eliminado'); }); }
+
+  cargarPromos();
+  cargarEventos();
+</script>
+</body>
+</html>
