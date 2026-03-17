@@ -207,10 +207,12 @@ describe('CASCADE Constraints (Requirement 24.8)', () => {
 // TRANSACTION ROLLBACK (Requirements 24.1, 24.2)
 // =============================================
 
-describe('Transaction Rollback on Errors (Requirements 24.1, 24.2)', () => {
-  const { query, getClient } = require('../config/database');
-  jest.mock('../config/database');
+// Mock database BEFORE requiring services
+jest.mock('../config/database');
 
+const { query, getClient } = require('../config/database');
+
+describe('Transaction Rollback on Errors (Requirements 24.1, 24.2)', () => {
   let mockClient;
 
   beforeEach(() => {

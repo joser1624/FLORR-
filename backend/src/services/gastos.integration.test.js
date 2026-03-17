@@ -43,6 +43,15 @@ describe('GastosService Integration Tests', () => {
   });
 
   describe('Filtering Requirements', () => {
+    beforeEach(() => {
+      // Mock the database query to prevent real DB calls
+      jest.spyOn(require('../config/database'), 'query').mockResolvedValue({ rows: [] });
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
     it('supports filtering by mes in YYYY-MM format (Requirement 10.5)', async () => {
       const filters = { mes: '2024-03' };
       await expect(gastosService.getAll(filters)).resolves.toBeDefined();

@@ -8,9 +8,6 @@ const { validateEnv } = require('./config/env');
 const { checkConnection } = require('./config/database');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 
-// Validate environment variables on startup
-validateEnv();
-
 // Import routes
 const authRoutes = require('./routes/auth.routes');
 const productosRoutes = require('./routes/productos.routes');
@@ -143,6 +140,9 @@ app.use(errorHandler);
 
 // Start server only when run directly (not when required by tests)
 if (require.main === module) {
+  // Validate env vars only at startup, not when imported by tests
+  validateEnv();
+
   const server = app.listen(PORT, () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗

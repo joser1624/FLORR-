@@ -36,6 +36,10 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
+afterAll(() => {
+  jest.resetAllMocks();
+});
+
 // ─── Helper: generate a valid JWT token ───────────────────────────────────────
 function makeToken(payload = {}) {
   return jwtConfig.generateToken({

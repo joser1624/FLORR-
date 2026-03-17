@@ -15,25 +15,25 @@ class VentasService {
     let paramCount = 1;
 
     if (filters.fecha) {
-      baseQuery += ` AND DATE(fecha) = $${paramCount}`;
+      baseQuery += ' AND DATE(fecha) = $' + paramCount;
       params.push(filters.fecha);
       paramCount++;
     }
     if (filters.metodo_pago) {
-      baseQuery += ` AND metodo_pago = $${paramCount}`;
+      baseQuery += ' AND metodo_pago = $' + paramCount;
       params.push(filters.metodo_pago);
       paramCount++;
     }
     if (filters.trabajador_id) {
-      baseQuery += ` AND trabajador_id = $${paramCount}`;
+      baseQuery += ' AND trabajador_id = $' + paramCount;
       params.push(filters.trabajador_id);
       paramCount++;
     }
 
-    const countResult = await query(`SELECT COUNT(*) as total ${baseQuery}`, params);
+    const countResult = await query('SELECT COUNT(*) as total ' + baseQuery, params);
     const total = parseInt(countResult.rows[0].total);
 
-    const queryText = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+    const queryText = 'SELECT * ' + baseQuery + ' ORDER BY created_at DESC LIMIT $' + paramCount + ' OFFSET $' + (paramCount + 1);
     params.push(limit, offset);
 
     const result = await query(queryText, params);

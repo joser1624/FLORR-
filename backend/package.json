@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "jest",
+    "test": "jest --runInBand --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "db:schema": "psql -U postgres -d floreria_system_core -f ../database/schema.sql",
@@ -49,6 +49,7 @@
     ],
     "setupFilesAfterEnv": [
       "./src/config/jest.setup.js"
-    ]
+    ],
+    "forceExit": true
   }
 }

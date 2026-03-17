@@ -1,6 +1,9 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Track all checkout timeouts so we can clean them up when the pool ends
+const checkoutTimeouts = new Set();
+
 // PostgreSQL connection pool configuration
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -8,11 +11,22 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'floreria_system_core',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD,
-  min: 2, // Minimum number of clients in the pool
+  // In test env, min=0 prevents the pool from opening real connections on import,
+  // which avoids Jest "open handles" warnings.
+  min: process.env.NODE_ENV === 'test' ? 0 : 2,
   max: 10, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
 });
+
+// Override pool.end to clean up all checkout timeouts before closing
+const originalPoolEnd = pool.end.bind(pool);
+pool.end = async () => {
+  // Clear all checkout timeouts
+  checkoutTimeouts.forEach(timeout => clearTimeout(timeout));
+  checkoutTimeouts.clear();
+  return originalPoolEnd();
+};
 
 // Test database connection
 pool.on('connect', () => {
@@ -23,7 +37,10 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
+  // Do not call process.exit in test environment — it kills the Jest worker.
+  if (process.env.NODE_ENV !== 'test') {
+    process.exit(-1);
+  }
 });
 
 // Helper function to execute queries
@@ -64,6 +81,9 @@ const getClient = async () => {
     console.error('A client has been checked out for more than 5 seconds!');
   }, 5000);
   
+  // Register the timeout so we can clean it up when the pool ends
+  checkoutTimeouts.add(timeout);
+  
   // Monkey patch the query method to keep track of the last query executed
   client.query = (...args) => {
     client.lastQuery = args;
@@ -71,6 +91,8 @@ const getClient = async () => {
   };
   
   client.release = () => {
+    // Remove the timeout from the tracking set
+    checkoutTimeouts.delete(timeout);
     clearTimeout(timeout);
     // Set the methods back to their old un-monkey-patched version
     client.query = query;
