@@ -85,7 +85,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Log database queries in development mode
     - _Requirements: 19.8, 19.9, 19.10_
 
-- [~] 5. Implement Products module
+- [x] 5. Implement Products module
   - [x] 5.1 Implement products service
     - Create getAll function with filtering by categoria and activo
     - Create getById function
@@ -111,7 +111,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation middleware
     - _Requirements: 2.4, 2.5, 2.6, 17.1, 17.2, 17.3_
 
-- [~] 6. Implement Inventory module
+- [x] 6. Implement Inventory module
   - [x] 6.1 Implement inventory service
     - Create getAll function with filtering by tipo and stock_bajo (stock <= stock_min)
     - Create getById function
@@ -132,7 +132,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 20.1, 20.2, 20.7, 20.8_
 
-- [~] 7. Implement Sales module
+- [x] 7. Implement Sales module
   - [x] 7.1 Implement sales service with transaction support
     - Create create function with database transaction
     - Validate productos array not empty
@@ -165,7 +165,7 @@ The implementation follows a clean layered architecture (routes → controllers 
 - [x] 8. Checkpoint - Test core modules
   - Ensure all tests pass, ask the user if questions arise.
 
-- [~] 9. Implement Orders module
+- [x] 9. Implement Orders module
   - [x] 9.1 Implement orders service
     - Create getAll function with filtering by estado, cliente_telefono, fecha_entrega
     - Create getById function
@@ -189,7 +189,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 2.5, 20.1, 20.2, 20.6, 20.7_
 
-- [~] 10. Implement Clients module
+- [x] 10. Implement Clients module
   - [x] 10.1 Implement clients service
     - Create getAll function with pagination support
     - Create getById function
@@ -210,8 +210,8 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 21.6, 21.7, 20.1, 20.2_
 
-- [~] 11. Implement Workers module (admin only)
-  - [~] 11.1 Implement workers service
+- [x] 11. Implement Workers module (admin only)
+  - [x] 11.1 Implement workers service
     - Create getAll function
     - Create getById function
     - Create create function with validation (nombre, email not empty, email unique, password min 6 chars, rol in allowed list)
@@ -223,7 +223,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 9.11_
 
-  - [~] 11.2 Implement workers controller and routes
+  - [x] 11.2 Implement workers controller and routes
     - Create GET /api/trabajadores (admin only)
     - Create GET /api/trabajadores/:id (admin only)
     - Create POST /api/trabajadores (admin only)
@@ -234,8 +234,8 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Return 403 for non-admin users
     - _Requirements: 9.10, 2.4, 20.1, 20.2_
 
-- [~] 12. Implement Expenses module
-  - [~] 12.1 Implement expenses service
+- [x] 12. Implement Expenses module
+  - [x] 12.1 Implement expenses service
     - Create getAll function with filtering by mes (YYYY-MM) and categoria
     - Create getById function
     - Create create function with validation (descripcion not empty, categoria in allowed list, monto >= 0, fecha not empty)
@@ -243,7 +243,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
 
-  - [~] 12.2 Implement expenses controller and routes
+  - [x] 12.2 Implement expenses controller and routes
     - Create GET /api/gastos with query parameters (mes, categoria)
     - Create GET /api/gastos/:id
     - Create POST /api/gastos
@@ -252,8 +252,8 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 2.6, 20.1, 20.2_
 
-- [~] 13. Implement Dashboard module
-  - [~] 13.1 Implement dashboard service with optimized queries
+- [x] 13. Implement Dashboard module
+  - [x] 13.1 Implement dashboard service with optimized queries
     - Calculate ventas_dia (total sales for current day)
     - Calculate ventas_mes (total sales for current month)
     - Calculate ganancia_mes (sales minus expenses for current month)
@@ -269,14 +269,14 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use database indexes for performance
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 21.2_
 
-  - [~] 13.2 Implement dashboard controller and routes
+  - [x] 13.2 Implement dashboard controller and routes
     - Create GET /api/dashboard
     - Apply authentication middleware (all roles)
     - Return all statistics in single response
     - _Requirements: 20.1, 20.2, 20.9_
 
-- [~] 14. Implement Reports module
-  - [~] 14.1 Implement reports service
+- [x] 14. Implement Reports module
+  - [x] 14.1 Implement reports service
     - Validate mes parameter format (YYYY-MM)
     - Calculate ventas_total for specified month
     - Calculate gastos_total for specified month
@@ -289,17 +289,17 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 21.3_
 
-  - [~] 14.2 Implement reports controller and routes
+  - [x] 14.2 Implement reports controller and routes
     - Create GET /api/reportes with mes query parameter
     - Apply authentication middleware (admin, duena roles)
     - Apply request validation for mes format
     - _Requirements: 2.6, 20.1, 20.2_
 
-- [~] 15. Checkpoint - Test business logic modules
+- [x] 15. Checkpoint - Test business logic modules
   - Ensure all tests pass, ask the user if questions arise.
 
-- [~] 16. Implement Cash Register module
-  - [~] 16.1 Implement cash register service
+- [x] 16. Implement Cash Register module
+  - [x] 16.1 Implement cash register service
     - Create apertura function validating no other register open for same date
     - Validate monto_apertura >= 0
     - Set estado to "abierta" and record trabajador_apertura_id
@@ -315,7 +315,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13, 12.14, 12.15, 12.16_
 
-  - [~] 16.2 Implement cash register controller and routes
+  - [x] 16.2 Implement cash register controller and routes
     - Create GET /api/caja/hoy
     - Create POST /api/caja/apertura
     - Create POST /api/caja/cierre
@@ -324,8 +324,8 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 2.5, 20.1, 20.2, 20.8_
 
-- [~] 17. Implement Custom Arrangements module
-  - [~] 17.1 Implement arrangements service with transaction support
+- [x] 17. Implement Custom Arrangements module
+  - [x] 17.1 Implement arrangements service with transaction support
     - Create getAll function including recipe items with inventario details
     - Create getById function with full recipe details
     - Create create function with validation (nombre not empty, margen 0-100)
@@ -338,7 +338,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 24.1, 24.8_
 
-  - [~] 17.2 Implement arrangements controller and routes
+  - [x] 17.2 Implement arrangements controller and routes
     - Create GET /api/arreglos
     - Create GET /api/arreglos/:id
     - Create POST /api/arreglos
@@ -348,8 +348,8 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 20.1, 20.2, 20.6_
 
-- [~] 18. Implement Promotions module
-  - [~] 18.1 Implement promotions service
+- [x] 18. Implement Promotions module
+  - [x] 18.1 Implement promotions service
     - Create getAll function with filtering by activa and date range
     - Create getById function
     - Create create function with validation (titulo not empty, tipo in allowed list, descuento 0-100, fecha_desde <= fecha_hasta)
@@ -358,7 +358,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8_
 
-  - [~] 18.2 Implement promotions controller and routes
+  - [x] 18.2 Implement promotions controller and routes
     - Create GET /api/promociones with query parameters
     - Create GET /api/promociones/:id
     - Create POST /api/promociones
@@ -368,8 +368,8 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 2.6, 20.1, 20.2_
 
-- [~] 19. Implement Events module
-  - [~] 19.1 Implement events service
+- [x] 19. Implement Events module
+  - [x] 19.1 Implement events service
     - Create getAll function with filtering by activo and fecha, ordered by fecha ascending
     - Create getById function
     - Create create function with validation (nombre not empty, color in allowed list)
@@ -378,7 +378,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7_
 
-  - [~] 19.2 Implement events controller and routes
+  - [x] 19.2 Implement events controller and routes
     - Create GET /api/eventos with query parameters
     - Create GET /api/eventos/:id
     - Create POST /api/eventos
@@ -388,7 +388,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Apply request validation
     - _Requirements: 2.6, 20.1, 20.2_
 
-- [~] 20. Implement database integrity and constraints
+- [x] 20. Implement database integrity and constraints
   - Verify foreign key constraints on all relationship columns (cliente_id, trabajador_id, producto_id, etc.)
   - Verify check constraints on numeric fields (precio >= 0, stock >= 0, descuento 0-100, margen 0-100)
   - Verify unique constraints on usuarios.email and caja.fecha
@@ -398,7 +398,7 @@ The implementation follows a clean layered architecture (routes → controllers 
   - Test transaction rollback on errors
   - _Requirements: 24.3, 24.4, 24.5, 24.6, 24.7, 24.8_
 
-- [~] 21. Implement audit trail and timestamps
+- [x] 21. Implement audit trail and timestamps
   - Verify created_at is set automatically on record creation for all tables
   - Verify updated_at is set automatically on record creation for all tables
   - Verify updated_at is automatically updated on record modification via database triggers
@@ -407,7 +407,7 @@ The implementation follows a clean layered architecture (routes → controllers 
   - Test timestamp behavior across all modules
   - _Requirements: 25.1, 25.2, 25.3, 25.4, 25.5, 25.6, 25.7_
 
-- [~] 22. Implement performance optimizations
+- [x] 22. Implement performance optimizations
   - Verify database indexes exist on frequently queried columns (usuarios.email, ventas.fecha, pedidos.estado, pedidos.fecha_entrega, productos.categoria, inventario.tipo, clientes.telefono)
   - Implement pagination for list endpoints (productos, inventario, ventas, pedidos, clientes, trabajadores, gastos) with default page size 50
   - Test CRUD operations complete within 200ms
@@ -416,7 +416,7 @@ The implementation follows a clean layered architecture (routes → controllers 
   - Test system handles 50 concurrent requests without degradation
   - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5, 21.6, 21.7_
 
-- [~] 23. Final integration and testing
+- [ ] 23. Final integration and testing
   - Test complete authentication flow (login, token validation, role-based access)
   - Test complete sales flow (create sale, deduct stock, update client, record in caja)
   - Test complete order workflow (create, update status, track delivery)
@@ -430,7 +430,7 @@ The implementation follows a clean layered architecture (routes → controllers 
   - Verify all API responses follow consistent format
   - _Requirements: 1.1-25.7 (comprehensive integration)_
 
-- [~] 24. Final checkpoint - Production readiness
+- [ ] 24. Final checkpoint - Production readiness
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

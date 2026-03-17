@@ -16,7 +16,9 @@ const pool = new Pool({
 
 // Test database connection
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('✅ Connected to PostgreSQL database');
+  }
 });
 
 pool.on('error', (err) => {
@@ -32,8 +34,8 @@ const query = async (text, params) => {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
     
-    // Log queries in development mode
-    if (process.env.NODE_ENV !== 'production') {
+    // Log queries in development mode (not in test)
+    if (process.env.NODE_ENV === 'development') {
       console.log('📊 Database Query:', {
         query: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
         params: params,

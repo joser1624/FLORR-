@@ -10,7 +10,7 @@ class DashboardController {
       
       res.json({
         success: true,
-        ...stats
+        data: stats
       });
     } catch (error) {
       next(error);

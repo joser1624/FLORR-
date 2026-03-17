@@ -141,9 +141,10 @@ app.use((err, req, res, next) => {
 // Error handler
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
+// Start server only when run directly (not when required by tests)
+if (require.main === module) {
+  const server = app.listen(PORT, () => {
+    console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
 ║   🌸 Florería Encantos Eternos - Backend API 🌸          ║
@@ -153,15 +154,16 @@ app.listen(PORT, () => {
 ║   Database: ${process.env.DB_NAME}                    ║
 ║                                                           ║
 ╚═══════════════════════════════════════════════════════════╝
-  `);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
+    `);
   });
-});
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    server.close(() => {
+      console.log('HTTP server closed');
+    });
+  });
+}
 
 module.exports = app;

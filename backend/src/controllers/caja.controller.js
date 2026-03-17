@@ -3,56 +3,34 @@ const cajaService = require('../services/caja.service');
 class CajaController {
   /**
    * GET /api/caja/hoy
+   * Requirements: 12.14, 12.15
    */
-  async getToday(req, res, next) {
+  async getHoy(req, res, next) {
     try {
-      const caja = await cajaService.getToday();
-      
-      if (!caja) {
-        return res.json({
-          success: true,
-          caja: null,
-          mensaje: 'No hay caja abierta para hoy'
-        });
-      }
-
-      res.json({
-        success: true,
-        ...caja
-      });
+      const caja = await cajaService.getHoy();
+      res.json({ success: true, data: caja });
     } catch (error) {
+      if (error.statusCode === 404) {
+        return res.status(404).json({ error: true, mensaje: error.message });
+      }
       next(error);
     }
   }
 
   /**
    * POST /api/caja/apertura
+   * Requirements: 12.1, 12.2, 12.3, 12.4, 12.5
    */
-  async openCaja(req, res, next) {
+  async apertura(req, res, next) {
     try {
-      const { monto_inicial } = req.body;
+      const { monto_apertura } = req.body;
       const trabajadorId = req.user.id;
 
-      if (monto_inicial === undefined || monto_inicial < 0) {
-        return res.status(400).json({
-          error: true,
-          mensaje: 'Monto inicial inválido'
-        });
-      }
-
-      const caja = await cajaService.openCaja(trabajadorId, monto_inicial);
-      
-      res.status(201).json({
-        success: true,
-        caja,
-        mensaje: 'Caja abierta correctamente'
-      });
+      const caja = await cajaService.apertura(trabajadorId, monto_apertura);
+      res.status(201).json({ success: true, data: caja, mensaje: 'Caja abierta correctamente' });
     } catch (error) {
-      if (error.message.includes('ya está abierta')) {
-        return res.status(400).json({
-          error: true,
-          mensaje: error.message
-        });
+      if (error.statusCode === 400) {
+        return res.status(400).json({ error: true, mensaje: error.message });
       }
       next(error);
     }
@@ -60,32 +38,17 @@ class CajaController {
 
   /**
    * POST /api/caja/cierre
+   * Requirements: 12.6-12.13
    */
-  async closeCaja(req, res, next) {
+  async cierre(req, res, next) {
     try {
-      const { monto_cierre } = req.body;
       const trabajadorId = req.user.id;
 
-      if (monto_cierre === undefined || monto_cierre < 0) {
-        return res.status(400).json({
-          error: true,
-          mensaje: 'Monto de cierre inválido'
-        });
-      }
-
-      const caja = await cajaService.closeCaja(trabajadorId, monto_cierre);
-      
-      res.json({
-        success: true,
-        caja,
-        mensaje: 'Caja cerrada correctamente'
-      });
+      const caja = await cajaService.cierre(trabajadorId);
+      res.json({ success: true, data: caja, mensaje: 'Caja cerrada correctamente' });
     } catch (error) {
-      if (error.message.includes('No hay caja') || error.message.includes('ya está cerrada')) {
-        return res.status(400).json({
-          error: true,
-          mensaje: error.message
-        });
+      if (error.statusCode === 404) {
+        return res.status(404).json({ error: true, mensaje: error.message });
       }
       next(error);
     }
@@ -94,19 +57,23 @@ class CajaController {
   /**
    * GET /api/caja/historial
    */
-  async getHistory(req, res, next) {
+  async getHistorial(req, res, next) {
     try {
-      const limit = parseInt(req.query.limit) || 30;
-      const history = await cajaService.getHistory(limit);
-      
-      res.json({
-        success: true,
-        historial: history
-      });
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+
+      const result = await cajaService.getHistorial(page, limit);
+      res.json({ success: true, ...result });
     } catch (error) {
       next(error);
     }
   }
+
+  // Backward-compatible aliases
+  async getToday(req, res, next) { return this.getHoy(req, res, next); }
+  async openCaja(req, res, next) { return this.apertura(req, res, next); }
+  async closeCaja(req, res, next) { return this.cierre(req, res, next); }
+  async getHistory(req, res, next) { return this.getHistorial(req, res, next); }
 }
 
 module.exports = new CajaController();

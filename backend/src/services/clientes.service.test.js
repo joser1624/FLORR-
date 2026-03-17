@@ -145,7 +145,10 @@ describe('ClientesService', () => {
 
   describe('update', () => {
     it('should update cliente with valid data', async () => {
+      const existingCliente = { id: 1, nombre: 'Cliente 1', telefono: '123456789', direccion: null, email: null };
       const mockCliente = { id: 1, nombre: 'Cliente Updated', telefono: '123456789', updated_at: new Date() };
+      // First call: getById (SELECT), second call: UPDATE
+      query.mockResolvedValueOnce({ rows: [existingCliente] });
       query.mockResolvedValueOnce({ rows: [mockCliente] });
 
       const result = await clientesService.update(1, {
@@ -173,7 +176,10 @@ describe('ClientesService', () => {
     });
 
     it('should update updated_at timestamp', async () => {
+      const existingCliente = { id: 1, nombre: 'Cliente 1', telefono: '123456789', direccion: null, email: null };
       const mockCliente = { id: 1, nombre: 'Cliente 1', telefono: '123456789', updated_at: new Date() };
+      // First call: getById (SELECT), second call: UPDATE
+      query.mockResolvedValueOnce({ rows: [existingCliente] });
       query.mockResolvedValueOnce({ rows: [mockCliente] });
 
       await clientesService.update(1, {

@@ -43,28 +43,19 @@ describe('GastosService Integration Tests', () => {
   });
 
   describe('Filtering Requirements', () => {
-    it('supports filtering by mes in YYYY-MM format (Requirement 10.5)', () => {
-      // This test verifies the query construction
+    it('supports filtering by mes in YYYY-MM format (Requirement 10.5)', async () => {
       const filters = { mes: '2024-03' };
-      
-      // The service should construct a query with TO_CHAR(fecha, 'YYYY-MM') = $1
-      expect(() => gastosService.getAll(filters)).not.toThrow();
+      await expect(gastosService.getAll(filters)).resolves.toBeDefined();
     });
 
-    it('supports filtering by categoria (Requirement 10.6)', () => {
-      // This test verifies the query construction
+    it('supports filtering by categoria (Requirement 10.6)', async () => {
       const filters = { categoria: 'flores' };
-      
-      // The service should construct a query with categoria = $1
-      expect(() => gastosService.getAll(filters)).not.toThrow();
+      await expect(gastosService.getAll(filters)).resolves.toBeDefined();
     });
 
-    it('supports filtering by both mes and categoria', () => {
-      // This test verifies the query construction
+    it('supports filtering by both mes and categoria', async () => {
       const filters = { mes: '2024-03', categoria: 'flores' };
-      
-      // The service should construct a query with both filters
-      expect(() => gastosService.getAll(filters)).not.toThrow();
+      await expect(gastosService.getAll(filters)).resolves.toBeDefined();
     });
   });
 

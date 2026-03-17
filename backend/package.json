@@ -46,6 +46,9 @@
     ],
     "testMatch": [
       "**/*.test.js"
+    ],
+    "setupFilesAfterEnv": [
+      "./src/config/jest.setup.js"
     ]
   }
 }

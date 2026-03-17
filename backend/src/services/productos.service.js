@@ -2,34 +2,47 @@ const { query } = require('../config/database');
 
 class ProductosService {
   /**
-   * Get all products with filtering
+   * Get all products with filtering and pagination
    * Requirement 4.9: Support filtering by categoria
    * Requirement 4.10: Support filtering by activo status
    * Requirement 4.11: Use parameterized queries
+   * Requirement 21.6: Pagination with default page size 50
    */
   async getAll(filters = {}) {
-    let queryText = 'SELECT * FROM productos WHERE 1=1';
+    const page = parseInt(filters.page) || 1;
+    const limit = parseInt(filters.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    let baseQuery = 'FROM productos WHERE 1=1';
     const params = [];
     let paramCount = 1;
 
-    // Filter by categoria
     if (filters.categoria) {
-      queryText += ` AND categoria = $${paramCount}`;
+      baseQuery += ` AND categoria = $${paramCount}`;
       params.push(filters.categoria);
       paramCount++;
     }
 
-    // Filter by activo status
     if (filters.activo !== undefined) {
-      queryText += ` AND activo = $${paramCount}`;
+      baseQuery += ` AND activo = $${paramCount}`;
       params.push(filters.activo);
       paramCount++;
     }
 
-    queryText += ' ORDER BY created_at DESC';
+    const countResult = await query(`SELECT COUNT(*) as total ${baseQuery}`, params);
+    const total = parseInt(countResult.rows[0].total);
+
+    const queryText = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT $${paramCount} OFFSET $${paramCount + 1}`;
+    params.push(limit, offset);
 
     const result = await query(queryText, params);
-    return result.rows;
+    return {
+      data: result.rows,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit)
+    };
   }
 
   /**
@@ -46,36 +59,22 @@ class ProductosService {
 
   /**
    * Create product with validation
-   * Requirement 4.1: Validate nombre is not empty
-   * Requirement 4.2: Validate precio >= 0
-   * Requirement 4.3: Validate costo >= 0
-   * Requirement 4.4: Validate stock >= 0
-   * Requirement 4.5: Validate categoria is in allowed list
-   * Requirement 4.11: Use parameterized queries
+   * Requirement 4.1-4.5, 4.11
    */
   async create(data) {
-    // Requirement 4.1: Validate nombre is not empty
     if (!data.nombre || data.nombre.trim() === '') {
       throw new Error('El nombre del producto no puede estar vacío');
     }
-
-    // Requirement 4.2: Validate precio >= 0
     if (data.precio < 0) {
       throw new Error('El precio debe ser mayor o igual a cero');
     }
-
-    // Requirement 4.3: Validate costo >= 0
     if (data.costo < 0) {
       throw new Error('El costo debe ser mayor o igual a cero');
     }
-
-    // Requirement 4.4: Validate stock >= 0
     const stock = data.stock !== undefined ? data.stock : 0;
     if (stock < 0) {
       throw new Error('El stock debe ser mayor o igual a cero');
     }
-
-    // Requirement 4.5: Validate categoria is in allowed list
     const allowedCategorias = ['Ramos', 'Arreglos', 'Peluches', 'Cajas sorpresa', 'Globos', 'Otros'];
     if (!allowedCategorias.includes(data.categoria)) {
       throw new Error(`La categoría debe ser una de: ${allowedCategorias.join(', ')}`);
@@ -101,28 +100,21 @@ class ProductosService {
 
   /**
    * Update product
-   * Requirement 4.6: Preserve created_at timestamp
-   * Requirement 4.7: Update updated_at timestamp
-   * Requirement 4.11: Use parameterized queries
+   * Requirement 4.6: Preserve created_at, 4.7: Update updated_at, 4.11
    */
   async update(id, data) {
-    // Validate if data contains validation fields
     if (data.nombre !== undefined && (!data.nombre || data.nombre.trim() === '')) {
       throw new Error('El nombre del producto no puede estar vacío');
     }
-
     if (data.precio !== undefined && data.precio < 0) {
       throw new Error('El precio debe ser mayor o igual a cero');
     }
-
     if (data.costo !== undefined && data.costo < 0) {
       throw new Error('El costo debe ser mayor o igual a cero');
     }
-
     if (data.stock !== undefined && data.stock < 0) {
       throw new Error('El stock debe ser mayor o igual a cero');
     }
-
     if (data.categoria !== undefined) {
       const allowedCategorias = ['Ramos', 'Arreglos', 'Peluches', 'Cajas sorpresa', 'Globos', 'Otros'];
       if (!allowedCategorias.includes(data.categoria)) {
@@ -130,7 +122,6 @@ class ProductosService {
       }
     }
 
-    // Requirement 4.6: Preserve created_at, Requirement 4.7: Update updated_at
     const result = await query(
       `UPDATE productos 
        SET nombre = $1, descripcion = $2, categoria = $3, precio = $4, 
@@ -155,8 +146,7 @@ class ProductosService {
 
   /**
    * Delete product (soft delete)
-   * Requirement 4.8: Set activo = false instead of removing record
-   * Requirement 4.11: Use parameterized queries
+   * Requirement 4.8: Set activo = false
    */
   async delete(id) {
     const result = await query(
@@ -166,9 +156,6 @@ class ProductosService {
     return result.rows[0];
   }
 
-  /**
-   * Update stock
-   */
   async updateStock(id, cantidad) {
     const result = await query(
       'UPDATE productos SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
@@ -177,19 +164,14 @@ class ProductosService {
     return result.rows[0];
   }
 
-  /**
-   * Deduct stock (for sales)
-   */
   async deductStock(id, cantidad) {
     const result = await query(
       'UPDATE productos SET stock = stock - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND stock >= $1 RETURNING *',
       [cantidad, id]
     );
-    
     if (result.rows.length === 0) {
       throw new Error('Stock insuficiente');
     }
-    
     return result.rows[0];
   }
 }
