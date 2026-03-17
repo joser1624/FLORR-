@@ -178,7 +178,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11, 7.12, 7.13_
 
-  - [~] 9.2 Implement orders controller and routes
+  - [x] 9.2 Implement orders controller and routes
     - Create GET /api/pedidos with query parameters
     - Create GET /api/pedidos/:id
     - Create GET /api/pedidos/cliente (filter by telefono)
@@ -190,7 +190,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - _Requirements: 2.5, 20.1, 20.2, 20.6, 20.7_
 
 - [~] 10. Implement Clients module
-  - [~] 10.1 Implement clients service
+  - [x] 10.1 Implement clients service
     - Create getAll function with pagination support
     - Create getById function
     - Create getByTelefono function
@@ -200,7 +200,7 @@ The implementation follows a clean layered architecture (routes → controllers 
     - Use parameterized queries
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-  - [~] 10.2 Implement clients controller and routes
+  - [x] 10.2 Implement clients controller and routes
     - Create GET /api/clientes with pagination (page, limit query parameters)
     - Create GET /api/clientes/:id
     - Create POST /api/clientes
