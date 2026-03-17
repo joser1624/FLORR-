@@ -11,14 +11,26 @@
 
 // Close pool after tests complete
 afterAll(async () => {
+  // Give Jest a small grace period before force closing
+  // This allows pg to clean up internal handles
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
   try {
     const resolved = require.resolve('./database');
     const mod = require.cache[resolved];
     if (mod && mod.exports && mod.exports.pool) {
-      // End the pool
-      await mod.exports.pool.end();
+      const pool = mod.exports.pool;
+      
+      // Drain the pool completely
+      pool.on('error', () => {}); // Suppress errors during cleanup
+      
+      // End the pool gracefully
+      await pool.end();
     }
   } catch {
     // Module was mocked, not loaded, or pool already closed — nothing to do.
   }
+  
+  // Final grace period for pg to release all handles
+  await new Promise(resolve => setTimeout(resolve, 100));
 });

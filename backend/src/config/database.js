@@ -1,9 +1,6 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Track all checkout timeouts so we can clean them up when the pool ends
-const checkoutTimeouts = new Set();
-
 // PostgreSQL connection pool configuration
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -18,15 +15,6 @@ const pool = new Pool({
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
 });
-
-// Override pool.end to clean up all checkout timeouts before closing
-const originalPoolEnd = pool.end.bind(pool);
-pool.end = async () => {
-  // Clear all checkout timeouts
-  checkoutTimeouts.forEach(timeout => clearTimeout(timeout));
-  checkoutTimeouts.clear();
-  return originalPoolEnd();
-};
 
 // Test database connection
 pool.on('connect', () => {
@@ -71,36 +59,9 @@ const query = async (text, params) => {
 };
 
 // Helper function to get a client from the pool (for transactions)
+// Returns a client that must be released after use with client.release()
 const getClient = async () => {
-  const client = await pool.connect();
-  const query = client.query.bind(client);
-  const release = client.release.bind(client);
-  
-  // Set a timeout of 5 seconds, after which we will log this client's last query
-  const timeout = setTimeout(() => {
-    console.error('A client has been checked out for more than 5 seconds!');
-  }, 5000);
-  
-  // Register the timeout so we can clean it up when the pool ends
-  checkoutTimeouts.add(timeout);
-  
-  // Monkey patch the query method to keep track of the last query executed
-  client.query = (...args) => {
-    client.lastQuery = args;
-    return query(...args);
-  };
-  
-  client.release = () => {
-    // Remove the timeout from the tracking set
-    checkoutTimeouts.delete(timeout);
-    clearTimeout(timeout);
-    // Set the methods back to their old un-monkey-patched version
-    client.query = query;
-    client.release = release;
-    return release();
-  };
-  
-  return client;
+  return await pool.connect();
 };
 
 // Helper function to check database connectivity
