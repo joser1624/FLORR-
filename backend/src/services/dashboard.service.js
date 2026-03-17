@@ -3,127 +3,142 @@ const { query } = require('../config/database');
 class DashboardService {
   /**
    * Get dashboard statistics
+   * All queries run in parallel via Promise.all for performance (Req 3.11, 21.2)
    */
   async getDashboardStats() {
-    const today = new Date().toISOString().split('T')[0];
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    // Run all queries in parallel for performance
+    const [
+      ventasDiaResult,
+      ventasMesResult,
+      gastosMesResult,
+      pedidosPendientesResult,
+      pedidosHoyResult,
+      pedidosMesResult,
+      stockBajoResult,
+      ventasSemanaResult,
+      topProductosResult,
+      ventasTrabajadoresResult,
+    ] = await Promise.all([
+      // Req 3.1: Total sales for current day
+      query(
+        `SELECT COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE DATE(fecha) = CURRENT_DATE`
+      ),
 
-    // Ventas del día
-    const ventasDiaResult = await query(
-      `SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as cantidad 
-       FROM ventas 
-       WHERE DATE(fecha) = $1`,
-      [today]
-    );
+      // Req 3.2: Total sales for current month
+      query(
+        `SELECT COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE DATE_TRUNC('month', fecha) = DATE_TRUNC('month', CURRENT_DATE)`
+      ),
 
-    // Ventas del mes
-    const ventasMesResult = await query(
-      `SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as cantidad 
-       FROM ventas 
-       WHERE DATE(fecha) >= $1`,
-      [firstDayOfMonth]
-    );
+      // Req 3.3: Total expenses for current month (used to calculate ganancia_mes)
+      query(
+        `SELECT COALESCE(SUM(monto), 0) AS total
+         FROM gastos
+         WHERE DATE_TRUNC('month', fecha::timestamp) = DATE_TRUNC('month', CURRENT_DATE)`
+      ),
 
-    // Gastos del mes
-    const gastosMesResult = await query(
-      `SELECT COALESCE(SUM(monto), 0) as total 
-       FROM gastos 
-       WHERE fecha >= $1`,
-      [firstDayOfMonth]
-    );
+      // Req 3.5: Count pending orders (estado pendiente or en preparación)
+      query(
+        `SELECT COUNT(*) AS total
+         FROM pedidos
+         WHERE estado IN ('pendiente', 'en preparación')`
+      ),
 
-    // Ganancia del mes
-    const ganancia_mes = parseFloat(ventasMesResult.rows[0].total) - parseFloat(gastosMesResult.rows[0].total);
-    const margen_mes = ventasMesResult.rows[0].total > 0 
-      ? (ganancia_mes / parseFloat(ventasMesResult.rows[0].total)) * 100 
+      // Req 3.6: Count orders for current day
+      query(
+        `SELECT COUNT(*) AS total
+         FROM pedidos
+         WHERE DATE(fecha_pedido) = CURRENT_DATE`
+      ),
+
+      // Count orders for current month
+      query(
+        `SELECT COUNT(*) AS total
+         FROM pedidos
+         WHERE DATE_TRUNC('month', fecha_pedido) = DATE_TRUNC('month', CURRENT_DATE)`
+      ),
+
+      // Req 3.7: Items where stock <= stock_min, ordered by stock ASC
+      query(
+        `SELECT id, nombre, stock, stock_min, tipo
+         FROM inventario
+         WHERE stock <= stock_min
+         ORDER BY stock ASC`
+      ),
+
+      // Req 3.8: Sales totals for last 7 days grouped by date (today included)
+      query(
+        `SELECT DATE(fecha) AS fecha, COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE DATE(fecha) >= CURRENT_DATE - INTERVAL '6 days'
+         GROUP BY DATE(fecha)
+         ORDER BY DATE(fecha) ASC`
+      ),
+
+      // Req 3.9: Top 5 products by sales quantity for current month
+      query(
+        `SELECT p.id, p.nombre, SUM(vp.cantidad) AS cantidad
+         FROM ventas_productos vp
+         JOIN productos p ON vp.producto_id = p.id
+         JOIN ventas v ON vp.venta_id = v.id
+         WHERE DATE_TRUNC('month', v.fecha) = DATE_TRUNC('month', CURRENT_DATE)
+         GROUP BY p.id, p.nombre
+         ORDER BY cantidad DESC
+         LIMIT 5`
+      ),
+
+      // Req 3.10: Sales totals by worker for current month
+      query(
+        `SELECT u.nombre, COALESCE(SUM(v.total), 0) AS total
+         FROM usuarios u
+         LEFT JOIN ventas v ON u.id = v.trabajador_id
+           AND DATE_TRUNC('month', v.fecha) = DATE_TRUNC('month', CURRENT_DATE)
+         WHERE u.activo = true AND u.rol IN ('admin', 'empleado')
+         GROUP BY u.id, u.nombre
+         ORDER BY total DESC`
+      ),
+    ]);
+
+    // Req 3.3: ganancia_mes = ventas_mes - gastos_mes
+    const ventas_mes = parseFloat(ventasMesResult.rows[0].total);
+    const gastos_mes = parseFloat(gastosMesResult.rows[0].total);
+    const ganancia_mes = ventas_mes - gastos_mes;
+
+    // Req 3.4: margen_mes = (ganancia_mes / ventas_mes * 100) when ventas_mes > 0, else 0
+    const margen_mes = ventas_mes > 0
+      ? parseFloat(((ganancia_mes / ventas_mes) * 100).toFixed(2))
       : 0;
-
-    // Pedidos pendientes
-    const pedidosPendientesResult = await query(
-      `SELECT COUNT(*) as total 
-       FROM pedidos 
-       WHERE estado IN ('pendiente', 'en preparación')`
-    );
-
-    // Stock bajo
-    const stockBajoResult = await query(
-      `SELECT id, nombre, stock, stock_min, tipo 
-       FROM inventario 
-       WHERE stock <= stock_min 
-       ORDER BY stock ASC 
-       LIMIT 10`
-    );
-
-    // Ventas de la semana (últimos 7 días)
-    const ventasSemanaResult = await query(
-      `SELECT DATE(fecha) as fecha, COALESCE(SUM(total), 0) as total 
-       FROM ventas 
-       WHERE fecha >= CURRENT_DATE - INTERVAL '7 days' 
-       GROUP BY DATE(fecha) 
-       ORDER BY DATE(fecha) ASC`
-    );
-
-    // Top 5 productos más vendidos del mes
-    const topProductosResult = await query(
-      `SELECT p.nombre, SUM(vp.cantidad) as cantidad 
-       FROM ventas_productos vp 
-       JOIN productos p ON vp.producto_id = p.id 
-       JOIN ventas v ON vp.venta_id = v.id 
-       WHERE DATE(v.fecha) >= $1 
-       GROUP BY p.id, p.nombre 
-       ORDER BY cantidad DESC 
-       LIMIT 5`,
-      [firstDayOfMonth]
-    );
-
-    // Pedidos recientes
-    const pedidosRecientesResult = await query(
-      `SELECT p.*, c.nombre as cliente_nombre 
-       FROM pedidos p 
-       LEFT JOIN clientes c ON p.cliente_id = c.id 
-       ORDER BY p.created_at DESC 
-       LIMIT 5`
-    );
-
-    // Ventas por trabajador del mes
-    const ventasTrabajadoresResult = await query(
-      `SELECT u.nombre, COALESCE(SUM(v.total), 0) as total 
-       FROM usuarios u 
-       LEFT JOIN ventas v ON u.id = v.trabajador_id AND DATE(v.fecha) >= $1 
-       WHERE u.activo = true AND u.rol IN ('admin', 'empleado') 
-       GROUP BY u.id, u.nombre 
-       ORDER BY total DESC`,
-      [firstDayOfMonth]
-    );
 
     return {
       ventas_dia: parseFloat(ventasDiaResult.rows[0].total),
-      ventas_mes: parseFloat(ventasMesResult.rows[0].total),
-      ganancia_mes: ganancia_mes,
-      margen_mes: parseFloat(margen_mes.toFixed(2)),
-      pedidos_pendientes: parseInt(pedidosPendientesResult.rows[0].total),
-      pedidos_hoy: parseInt(ventasDiaResult.rows[0].cantidad),
-      pedidos_mes: parseInt(ventasMesResult.rows[0].cantidad),
+      ventas_mes,
+      ganancia_mes: parseFloat(ganancia_mes.toFixed(2)),
+      margen_mes,
+      pedidos_pendientes: parseInt(pedidosPendientesResult.rows[0].total, 10),
+      pedidos_hoy: parseInt(pedidosHoyResult.rows[0].total, 10),
+      pedidos_mes: parseInt(pedidosMesResult.rows[0].total, 10),
       stock_bajo: stockBajoResult.rows.map(item => ({
         id: item.id,
         nombre: item.nombre,
-        stock_actual: item.stock,
-        stock_min: item.stock_min,
-        tipo: item.tipo
+        stock_actual: parseInt(item.stock, 10),
+        stock_min: parseInt(item.stock_min, 10),
+        tipo: item.tipo,
       })),
       ventas_semana: ventasSemanaResult.rows.map(v => ({
         fecha: v.fecha,
-        total: parseFloat(v.total)
+        total: parseFloat(v.total),
       })),
       top_productos: topProductosResult.rows.map(p => ({
         nombre: p.nombre,
-        cantidad: parseInt(p.cantidad)
+        cantidad: parseInt(p.cantidad, 10),
       })),
-      pedidos_recientes: pedidosRecientesResult.rows,
       ventas_trabajadores: ventasTrabajadoresResult.rows.map(t => ({
         nombre: t.nombre,
-        total: parseFloat(t.total)
-      }))
+        total: parseFloat(t.total),
+      })),
     };
   }
 }

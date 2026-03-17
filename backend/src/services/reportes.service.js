@@ -2,108 +2,124 @@ const { query } = require('../config/database');
 
 class ReportesService {
   /**
-   * Get monthly reports
+   * Get monthly report for the specified month (YYYY-MM)
+   * Requirements: 11.1-11.9, 21.3
    */
   async getMonthlyReport(mes) {
-    // Parse month (format: YYYY-MM)
-    const [year, month] = mes.split('-');
-    const firstDay = `${year}-${month}-01`;
-    const lastDay = new Date(year, month, 0).toISOString().split('T')[0];
+    // Requirement 11.1: Validate mes parameter format
+    if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
+      const error = new Error('El parámetro mes debe estar en formato YYYY-MM');
+      error.statusCode = 400;
+      throw error;
+    }
 
-    // Total ventas del mes
-    const ventasResult = await query(
-      `SELECT COALESCE(SUM(total), 0) as total, COUNT(*) as cantidad 
-       FROM ventas 
-       WHERE DATE(fecha) >= $1 AND DATE(fecha) <= $2`,
-      [firstDay, lastDay]
-    );
+    // Run all queries in parallel for performance (< 3 seconds requirement)
+    const [
+      ventasResult,
+      gastosResult,
+      pedidosResult,
+      ventasDiasResult,
+      metodosPagoResult,
+      topProductosResult,
+      ventasTrabajadoresResult,
+    ] = await Promise.all([
+      // Requirement 11.2: Total sales for specified month
+      query(
+        `SELECT COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE TO_CHAR(fecha, 'YYYY-MM') = $1`,
+        [mes]
+      ),
+      // Requirement 11.3: Total expenses for specified month
+      query(
+        `SELECT COALESCE(SUM(monto), 0) AS total
+         FROM gastos
+         WHERE TO_CHAR(fecha, 'YYYY-MM') = $1`,
+        [mes]
+      ),
+      // Requirement 11.4: Total orders for specified month
+      query(
+        `SELECT COUNT(*) AS total
+         FROM pedidos
+         WHERE TO_CHAR(fecha_pedido, 'YYYY-MM') = $1`,
+        [mes]
+      ),
+      // Requirement 11.5: Daily sales totals grouped by date
+      query(
+        `SELECT DATE(fecha) AS fecha, COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE TO_CHAR(fecha, 'YYYY-MM') = $1
+         GROUP BY DATE(fecha)
+         ORDER BY DATE(fecha) ASC`,
+        [mes]
+      ),
+      // Requirement 11.6: Sales totals grouped by metodo_pago
+      query(
+        `SELECT metodo_pago AS metodo, COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE TO_CHAR(fecha, 'YYYY-MM') = $1
+         GROUP BY metodo_pago
+         ORDER BY total DESC`,
+        [mes]
+      ),
+      // Requirement 11.7: Top 10 products by sales quantity
+      query(
+        `SELECT p.id, p.nombre,
+                SUM(vp.cantidad) AS cantidad,
+                COALESCE(SUM(vp.subtotal), 0) AS total
+         FROM ventas_productos vp
+         JOIN productos p ON vp.producto_id = p.id
+         JOIN ventas v ON vp.venta_id = v.id
+         WHERE TO_CHAR(v.fecha, 'YYYY-MM') = $1
+         GROUP BY p.id, p.nombre
+         ORDER BY cantidad DESC
+         LIMIT 10`,
+        [mes]
+      ),
+      // Requirement 11.8: Sales totals by worker
+      query(
+        `SELECT u.id AS trabajador_id, u.nombre,
+                COALESCE(SUM(v.total), 0) AS total
+         FROM usuarios u
+         JOIN ventas v ON u.id = v.trabajador_id
+         WHERE TO_CHAR(v.fecha, 'YYYY-MM') = $1
+         GROUP BY u.id, u.nombre
+         ORDER BY total DESC`,
+        [mes]
+      ),
+    ]);
 
-    // Total gastos del mes
-    const gastosResult = await query(
-      `SELECT COALESCE(SUM(monto), 0) as total 
-       FROM gastos 
-       WHERE fecha >= $1 AND fecha <= $2`,
-      [firstDay, lastDay]
-    );
-
-    // Ventas por día
-    const ventasDiasResult = await query(
-      `SELECT DATE(fecha) as dia, COALESCE(SUM(total), 0) as total 
-       FROM ventas 
-       WHERE DATE(fecha) >= $1 AND DATE(fecha) <= $2 
-       GROUP BY DATE(fecha) 
-       ORDER BY DATE(fecha) ASC`,
-      [firstDay, lastDay]
-    );
-
-    // Ventas por método de pago
-    const metodosPagoResult = await query(
-      `SELECT metodo_pago as metodo, COALESCE(SUM(total), 0) as total 
-       FROM ventas 
-       WHERE DATE(fecha) >= $1 AND DATE(fecha) <= $2 
-       GROUP BY metodo_pago 
-       ORDER BY total DESC`,
-      [firstDay, lastDay]
-    );
-
-    // Top 5 productos más vendidos
-    const topProductosResult = await query(
-      `SELECT p.nombre, SUM(vp.cantidad) as cantidad, COALESCE(SUM(vp.subtotal), 0) as total 
-       FROM ventas_productos vp 
-       JOIN productos p ON vp.producto_id = p.id 
-       JOIN ventas v ON vp.venta_id = v.id 
-       WHERE DATE(v.fecha) >= $1 AND DATE(v.fecha) <= $2 
-       GROUP BY p.id, p.nombre 
-       ORDER BY cantidad DESC 
-       LIMIT 5`,
-      [firstDay, lastDay]
-    );
-
-    // Ventas por trabajador
-    const ventasTrabajadoresResult = await query(
-      `SELECT u.nombre, COALESCE(SUM(v.total), 0) as total, COUNT(v.id) as cantidad_ventas 
-       FROM usuarios u 
-       LEFT JOIN ventas v ON u.id = v.trabajador_id 
-         AND DATE(v.fecha) >= $1 AND DATE(v.fecha) <= $2 
-       WHERE u.activo = true AND u.rol IN ('admin', 'empleado') 
-       GROUP BY u.id, u.nombre 
-       HAVING COUNT(v.id) > 0 
-       ORDER BY total DESC`,
-      [firstDay, lastDay]
-    );
-
-    // Total pedidos del mes
-    const pedidosResult = await query(
-      `SELECT COUNT(*) as total 
-       FROM pedidos 
-       WHERE DATE(fecha_pedido) >= $1 AND DATE(fecha_pedido) <= $2`,
-      [firstDay, lastDay]
-    );
+    const ventas_total = parseFloat(ventasResult.rows[0].total);
+    const gastos_total = parseFloat(gastosResult.rows[0].total);
+    const ganancia = ventas_total - gastos_total;
+    const margen = ventas_total > 0 ? (ganancia / ventas_total) * 100 : 0;
 
     return {
-      ventas_total: parseFloat(ventasResult.rows[0].total),
-      gastos_total: parseFloat(gastosResult.rows[0].total),
-      ganancia_neta: parseFloat(ventasResult.rows[0].total) - parseFloat(gastosResult.rows[0].total),
+      mes,
+      ventas_total,
+      gastos_total,
+      ganancia,
+      margen: parseFloat(margen.toFixed(2)),
       total_pedidos: parseInt(pedidosResult.rows[0].total),
-      cantidad_ventas: parseInt(ventasResult.rows[0].cantidad),
-      ventas_dias: ventasDiasResult.rows.map(v => ({
-        dia: v.dia,
-        total: parseFloat(v.total)
+      ventas_dias: ventasDiasResult.rows.map(r => ({
+        fecha: r.fecha,
+        total: parseFloat(r.total),
       })),
-      metodos_pago: metodosPagoResult.rows.map(m => ({
-        metodo: m.metodo,
-        total: parseFloat(m.total)
+      metodos_pago: metodosPagoResult.rows.map(r => ({
+        metodo: r.metodo,
+        total: parseFloat(r.total),
       })),
-      top_productos: topProductosResult.rows.map(p => ({
-        nombre: p.nombre,
-        cantidad: parseInt(p.cantidad),
-        total: parseFloat(p.total)
+      top_productos: topProductosResult.rows.map(r => ({
+        id: r.id,
+        nombre: r.nombre,
+        cantidad: parseInt(r.cantidad),
+        total: parseFloat(r.total),
       })),
-      ventas_trabajadores: ventasTrabajadoresResult.rows.map(t => ({
-        nombre: t.nombre,
-        total: parseFloat(t.total),
-        cantidad_ventas: parseInt(t.cantidad_ventas)
-      }))
+      ventas_trabajadores: ventasTrabajadoresResult.rows.map(r => ({
+        trabajador_id: r.trabajador_id,
+        nombre: r.nombre,
+        total: parseFloat(r.total),
+      })),
     };
   }
 }

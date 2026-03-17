@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+// Validate JWT_SECRET is set in production
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set in production environment');
+}
+
 const config = {
   secret: process.env.JWT_SECRET || 'floreria-encantos-eternos-secret-key',
   expiresIn: process.env.JWT_EXPIRES_IN || '24h',

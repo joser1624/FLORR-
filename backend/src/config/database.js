@@ -8,7 +8,9 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'floreria_system_core',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD,
-  min: 2, // Minimum number of clients in the pool
+  // In test env, min=0 prevents the pool from opening real connections on import,
+  // which avoids Jest "open handles" warnings.
+  min: process.env.NODE_ENV === 'test' ? 0 : 2,
   max: 10, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
@@ -16,12 +18,17 @@ const pool = new Pool({
 
 // Test database connection
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('✅ Connected to PostgreSQL database');
+  }
 });
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
+  // Do not call process.exit in test environment — it kills the Jest worker.
+  if (process.env.NODE_ENV !== 'test') {
+    process.exit(-1);
+  }
 });
 
 // Helper function to execute queries
@@ -32,8 +39,8 @@ const query = async (text, params) => {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
     
-    // Log queries in development mode
-    if (process.env.NODE_ENV !== 'production') {
+    // Log queries in development mode (not in test)
+    if (process.env.NODE_ENV === 'development') {
       console.log('📊 Database Query:', {
         query: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
         params: params,
@@ -52,31 +59,9 @@ const query = async (text, params) => {
 };
 
 // Helper function to get a client from the pool (for transactions)
+// Returns a client that must be released after use with client.release()
 const getClient = async () => {
-  const client = await pool.connect();
-  const query = client.query.bind(client);
-  const release = client.release.bind(client);
-  
-  // Set a timeout of 5 seconds, after which we will log this client's last query
-  const timeout = setTimeout(() => {
-    console.error('A client has been checked out for more than 5 seconds!');
-  }, 5000);
-  
-  // Monkey patch the query method to keep track of the last query executed
-  client.query = (...args) => {
-    client.lastQuery = args;
-    return query(...args);
-  };
-  
-  client.release = () => {
-    clearTimeout(timeout);
-    // Set the methods back to their old un-monkey-patched version
-    client.query = query;
-    client.release = release;
-    return release();
-  };
-  
-  return client;
+  return await pool.connect();
 };
 
 // Helper function to check database connectivity

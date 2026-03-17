@@ -3,24 +3,17 @@ const reportesService = require('../services/reportes.service');
 class ReportesController {
   /**
    * GET /api/reportes?mes=YYYY-MM
+   * Requirements: 2.6, 20.1, 20.2
    */
   async getMonthlyReport(req, res, next) {
     try {
       const { mes } = req.query;
 
-      if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
-        return res.status(400).json({
-          error: true,
-          mensaje: 'Formato de mes inválido. Use YYYY-MM'
-        });
-      }
+      const reporte = await reportesService.getMonthlyReport(mes);
 
-      const report = await reportesService.getMonthlyReport(mes);
-      
       res.json({
         success: true,
-        mes,
-        ...report
+        data: { reporte },
       });
     } catch (error) {
       next(error);
