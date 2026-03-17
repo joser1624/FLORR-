@@ -525,3 +525,478 @@ describe('CORS Configuration', () => {
     process.env.CORS_ORIGIN = originalOrigin;
   });
 });
+
+// ─── 9. Sales Flow ────────────────────────────────────────────────────────────
+describe('Sales Flow', () => {
+  function mockClientTransaction() {
+    const mockClient = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    // BEGIN
+    mockClient.query.mockResolvedValueOnce({});
+    return mockClient;
+  }
+
+  test('POST /api/ventas returns 400 when productos array is empty', async () => {
+    const token = makeToken({ rol: 'empleado' });
+
+    const res = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ productos: [], metodo_pago: 'Efectivo' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(true);
+  });
+
+  test('POST /api/ventas returns 400 when metodo_pago is invalid', async () => {
+    const token = makeToken({ rol: 'empleado' });
+
+    const res = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        productos: [{ producto_id: 1, cantidad: 1, precio_unitario: 10 }],
+        metodo_pago: 'Bitcoin',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(true);
+  });
+
+  test('POST /api/ventas returns 400 when stock is insufficient', async () => {
+    const token = makeToken({ rol: 'empleado' });
+
+    const mockClient = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    getClient.mockResolvedValueOnce(mockClient);
+    // BEGIN
+    mockClient.query.mockResolvedValueOnce({});
+    // SELECT producto (stock insuficiente)
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 1, nombre: 'Rosa Roja', stock: 2 }],
+    });
+    // ROLLBACK
+    mockClient.query.mockResolvedValueOnce({});
+
+    const res = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        productos: [{ producto_id: 1, cantidad: 10, precio_unitario: 5 }],
+        metodo_pago: 'Efectivo',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(true);
+    expect(res.body.mensaje).toContain('Stock insuficiente');
+  });
+
+  test('POST /api/ventas creates sale and returns 201', async () => {
+    const token = makeToken({ rol: 'empleado', id: 1 });
+
+    const mockClient = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    getClient.mockResolvedValueOnce(mockClient);
+    // BEGIN
+    mockClient.query.mockResolvedValueOnce({});
+    // SELECT producto (stock suficiente)
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 1, nombre: 'Rosa Roja', stock: 20 }],
+    });
+    // INSERT venta
+    mockClient.query.mockResolvedValueOnce({
+      rows: [{ id: 5, total: 50, metodo_pago: 'Efectivo', trabajador_id: 1, cliente_id: null }],
+    });
+    // INSERT ventas_productos
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // UPDATE stock
+    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // COMMIT
+    mockClient.query.mockResolvedValueOnce({});
+
+    // getById call after creation
+    query.mockResolvedValueOnce({
+      rows: [{ id: 5, total: 50, metodo_pago: 'Efectivo', trabajador_id: 1 }],
+    });
+    query.mockResolvedValueOnce({ rows: [] }); // ventas_productos
+
+    const res = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        productos: [{ producto_id: 1, cantidad: 5, precio_unitario: 10 }],
+        metodo_pago: 'Efectivo',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.venta).toBeDefined();
+  });
+
+  test('POST /api/ventas rolls back transaction on error', async () => {
+    const token = makeToken({ rol: 'empleado', id: 1 });
+
+    const mockClient = {
+      query: jest.fn(),
+      release: jest.fn(),
+    };
+    getClient.mockResolvedValueOnce(mockClient);
+    // BEGIN
+    mockClient.query.mockResolvedValueOnce({});
+    // SELECT producto — throws error
+    mockClient.query.mockRejectedValueOnce(new Error('DB error'));
+    // ROLLBACK
+    mockClient.query.mockResolvedValueOnce({});
+
+    const res = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        productos: [{ producto_id: 1, cantidad: 1, precio_unitario: 10 }],
+        metodo_pago: 'Efectivo',
+      });
+
+    expect(res.status).toBe(500);
+    // Verify ROLLBACK was called
+    const rollbackCall = mockClient.query.mock.calls.find(
+      call => call[0] === 'ROLLBACK'
+    );
+    expect(rollbackCall).toBeDefined();
+  });
+});
+
+// ─── 10. Order Workflow ───────────────────────────────────────────────────────
+describe('Order Workflow', () => {
+  test('POST /api/pedidos creates order with estado pendiente and returns 201', async () => {
+    const token = makeToken({ rol: 'empleado' });
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        cliente_nombre: 'María García',
+        cliente_telefono: '987654321',
+        estado: 'pendiente',
+        fecha_pedido: new Date().toISOString(),
+        fecha_entrega: '2025-12-31',
+        descripcion: 'Ramo de rosas rojas',
+      }],
+    });
+
+    const res = await request(app)
+      .post('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        cliente_nombre: 'María García',
+        cliente_telefono: '987654321',
+        fecha_entrega: '2025-12-31',
+        descripcion: 'Ramo de rosas rojas',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.pedido.estado).toBe('pendiente');
+  });
+
+  test('POST /api/pedidos returns 400 when required fields are missing', async () => {
+    const token = makeToken({ rol: 'empleado' });
+
+    const res = await request(app)
+      .post('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ cliente_nombre: 'María' }); // missing telefono, fecha_entrega, descripcion
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(true);
+  });
+
+  test('PUT /api/pedidos/:id updates estado and returns 200', async () => {
+    const token = makeToken({ rol: 'empleado' });
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        estado: 'en preparación',
+        cliente_nombre: 'María García',
+      }],
+    });
+
+    const res = await request(app)
+      .put('/api/pedidos/1')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ estado: 'en preparación' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  test('GET /api/pedidos returns list with pagination', async () => {
+    const token = makeToken({ rol: 'empleado' });
+    query.mockResolvedValueOnce({ rows: [{ total: '3' }] });
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: 1, estado: 'pendiente', cliente_nombre: 'Ana' },
+        { id: 2, estado: 'en preparación', cliente_nombre: 'Luis' },
+        { id: 3, estado: 'listo para entrega', cliente_nombre: 'Carlos' },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.pedidos.data)).toBe(true);
+  });
+});
+
+// ─── 11. Cash Register Flow ───────────────────────────────────────────────────
+describe('Cash Register Flow', () => {
+  test('GET /api/caja/hoy returns 404 when no register is open', async () => {
+    const token = makeToken({ rol: 'empleado' });
+    query.mockRejectedValueOnce(Object.assign(new Error('No hay caja abierta'), { statusCode: 404 }));
+
+    // The service throws with statusCode 404 — mock the query to return empty rows
+    query.mockReset();
+    query.mockResolvedValueOnce({ rows: [] }); // getHoy returns empty
+
+    const res = await request(app)
+      .get('/api/caja/hoy')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe(true);
+  });
+
+  test('POST /api/caja/apertura opens register and returns 201', async () => {
+    const token = makeToken({ rol: 'empleado', id: 1 });
+    // Check existing open caja — none found
+    query.mockResolvedValueOnce({ rows: [] });
+    // INSERT caja
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        fecha: new Date().toISOString().split('T')[0],
+        monto_apertura: '500.00',
+        estado: 'abierta',
+        trabajador_apertura_id: 1,
+      }],
+    });
+
+    const res = await request(app)
+      .post('/api/caja/apertura')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ monto_apertura: 500 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toBeDefined();
+  });
+
+  test('POST /api/caja/apertura returns 400 when monto_apertura is negative', async () => {
+    const token = makeToken({ rol: 'empleado', id: 1 });
+
+    const res = await request(app)
+      .post('/api/caja/apertura')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ monto_apertura: -100 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(true);
+  });
+
+  test('POST /api/caja/cierre closes register and returns totals', async () => {
+    const token = makeToken({ rol: 'empleado', id: 1 });
+    // SELECT caja abierta
+    query.mockResolvedValueOnce({
+      rows: [{ id: 1, fecha: new Date().toISOString().split('T')[0], estado: 'abierta' }],
+    });
+    // SELECT totals from ventas
+    query.mockResolvedValueOnce({
+      rows: [{ total_efectivo: '300.00', total_digital: '150.00', total_tarjeta: '50.00', total_ventas: '500.00' }],
+    });
+    // SELECT gastos
+    query.mockResolvedValueOnce({ rows: [{ total_gastos: '100.00' }] });
+    // UPDATE caja
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        monto_apertura: '500.00',
+        monto_cierre: null,
+        total_efectivo: '300.00',
+        total_digital: '150.00',
+        total_tarjeta: '50.00',
+        total_ventas: '500.00',
+        total_gastos: '100.00',
+        estado: 'cerrada',
+      }],
+    });
+
+    const res = await request(app)
+      .post('/api/caja/cierre')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.total_ventas).toBe(500);
+    expect(res.body.data.total_gastos).toBe(100);
+  });
+});
+
+// ─── 12. Dashboard Statistics ─────────────────────────────────────────────────
+describe('Dashboard Statistics', () => {
+  test('GET /api/dashboard returns all required fields', async () => {
+    const token = makeToken({ rol: 'admin' });
+
+    // Mock all 10 parallel queries in getDashboardStats
+    query
+      .mockResolvedValueOnce({ rows: [{ total: '1500.00' }] })           // ventas_dia
+      .mockResolvedValueOnce({ rows: [{ total: '45000.00' }] })          // ventas_mes
+      .mockResolvedValueOnce({ rows: [{ total: '12000.00' }] })          // gastos_mes
+      .mockResolvedValueOnce({ rows: [{ total: '5' }] })                 // pedidos_pendientes
+      .mockResolvedValueOnce({ rows: [{ total: '3' }] })                 // pedidos_hoy
+      .mockResolvedValueOnce({ rows: [{ total: '42' }] })                // pedidos_mes
+      .mockResolvedValueOnce({ rows: [] })                               // stock_bajo
+      .mockResolvedValueOnce({ rows: [] })                               // ventas_semana
+      .mockResolvedValueOnce({ rows: [] })                               // top_productos
+      .mockResolvedValueOnce({ rows: [] });                              // ventas_trabajadores
+
+    const res = await request(app)
+      .get('/api/dashboard')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    const data = res.body.data;
+    expect(data).toHaveProperty('ventas_dia');
+    expect(data).toHaveProperty('ventas_mes');
+    expect(data).toHaveProperty('ganancia_mes');
+    expect(data).toHaveProperty('margen_mes');
+    expect(data).toHaveProperty('pedidos_pendientes');
+    expect(data).toHaveProperty('stock_bajo');
+    expect(data).toHaveProperty('ventas_semana');
+    expect(data).toHaveProperty('top_productos');
+    expect(data).toHaveProperty('ventas_trabajadores');
+  });
+
+  test('GET /api/dashboard calculates ganancia_mes correctly', async () => {
+    const token = makeToken({ rol: 'admin' });
+
+    query
+      .mockResolvedValueOnce({ rows: [{ total: '1000.00' }] })   // ventas_dia
+      .mockResolvedValueOnce({ rows: [{ total: '10000.00' }] })  // ventas_mes
+      .mockResolvedValueOnce({ rows: [{ total: '3000.00' }] })   // gastos_mes
+      .mockResolvedValueOnce({ rows: [{ total: '2' }] })
+      .mockResolvedValueOnce({ rows: [{ total: '1' }] })
+      .mockResolvedValueOnce({ rows: [{ total: '10' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/dashboard')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    // ganancia_mes = 10000 - 3000 = 7000
+    expect(res.body.data.ganancia_mes).toBe(7000);
+    // margen_mes = (7000 / 10000) * 100 = 70
+    expect(res.body.data.margen_mes).toBe(70);
+  });
+});
+
+// ─── 13. Monthly Reports ──────────────────────────────────────────────────────
+describe('Monthly Reports', () => {
+  test('GET /api/reportes returns report with all required fields', async () => {
+    const token = makeToken({ rol: 'admin' });
+
+    // Mock all 7 parallel queries in getMonthlyReport
+    query
+      .mockResolvedValueOnce({ rows: [{ total: '50000.00' }] })   // ventas_total
+      .mockResolvedValueOnce({ rows: [{ total: '15000.00' }] })   // gastos_total
+      .mockResolvedValueOnce({ rows: [{ total: '80' }] })         // total_pedidos
+      .mockResolvedValueOnce({ rows: [] })                        // ventas_dias
+      .mockResolvedValueOnce({ rows: [                            // metodos_pago
+        { metodo: 'Efectivo', total: '30000.00' },
+        { metodo: 'Yape', total: '20000.00' },
+      ] })
+      .mockResolvedValueOnce({ rows: [] })                        // top_productos
+      .mockResolvedValueOnce({ rows: [] });                       // ventas_trabajadores
+
+    const res = await request(app)
+      .get('/api/reportes?mes=2025-03')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    const reporte = res.body.data.reporte;
+    expect(reporte).toHaveProperty('mes', '2025-03');
+    expect(reporte).toHaveProperty('ventas_total');
+    expect(reporte).toHaveProperty('gastos_total');
+    expect(reporte).toHaveProperty('ganancia');
+    expect(reporte).toHaveProperty('metodos_pago');
+    expect(reporte).toHaveProperty('top_productos');
+    expect(reporte).toHaveProperty('ventas_trabajadores');
+  });
+
+  test('GET /api/reportes returns 400 for invalid mes format', async () => {
+    const token = makeToken({ rol: 'admin' });
+
+    const res = await request(app)
+      .get('/api/reportes?mes=marzo-2025')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(true);
+  });
+
+  test('GET /api/reportes returns 400 when mes is missing', async () => {
+    const token = makeToken({ rol: 'admin' });
+
+    const res = await request(app)
+      .get('/api/reportes')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(true);
+  });
+
+  test('GET /api/reportes calculates ganancia correctly', async () => {
+    const token = makeToken({ rol: 'admin' });
+
+    query
+      .mockResolvedValueOnce({ rows: [{ total: '20000.00' }] })  // ventas_total
+      .mockResolvedValueOnce({ rows: [{ total: '5000.00' }] })   // gastos_total
+      .mockResolvedValueOnce({ rows: [{ total: '30' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/reportes?mes=2025-01')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    // ganancia = 20000 - 5000 = 15000
+    expect(res.body.data.reporte.ganancia).toBe(15000);
+  });
+
+  test('GET /api/reportes is restricted to admin and duena roles', async () => {
+    const token = makeToken({ rol: 'empleado' });
+
+    const res = await request(app)
+      .get('/api/reportes?mes=2025-03')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe(true);
+  });
+});
