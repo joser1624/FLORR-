@@ -234,6 +234,37 @@
   margin-bottom: .75rem;
 }
 
+/* ── Chips (filter buttons) ── */
+.chip {
+  background: transparent;
+  color: var(--rosa-500);
+  border: 1.5px solid var(--rosa-300);
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: .02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip:hover {
+  background: var(--rosa-50);
+  border-color: var(--rosa-400);
+  color: var(--rosa-600);
+}
+.chip.active {
+  background: var(--rosa-500);
+  color: #fff;
+  border-color: var(--rosa-500);
+}
+.chip.active:hover {
+  background: var(--rosa-600);
+  border-color: var(--rosa-600);
+}
+
 /* ── Grid de productos ── */
 .products-grid {
   display: grid;
