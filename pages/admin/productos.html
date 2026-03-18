@@ -6,6 +6,169 @@
   <title>Productos — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    /* ════════════════════════════════════════
+       PRODUCTOS — Responsive móvil
+       Tabla → Cards en pantallas pequeñas
+    ════════════════════════════════════════ */
+
+    /* ── Buscar y ordenar: full width en móvil ── */
+    @media (max-width: 768px) {
+      #buscar          { max-width: 100% !important; }
+      #ordenar-productos { max-width: 100% !important; margin-left: 0 !important; }
+    }
+
+    /* ════════════════════════════════════════
+       TABLA → CARDS (≤ 640px)
+    ════════════════════════════════════════ */
+    @media (max-width: 640px) {
+
+      /* Ocultar thead */
+      #tabla-productos thead { display: none; }
+
+      /* Cada fila = card */
+      #tabla-productos tbody tr {
+        display: block;
+        background: var(--bg-card);
+        border: 1.5px solid rgba(255,61,138,.10);
+        border-radius: var(--radius-lg);
+        margin-bottom: .75rem;
+        padding: .875rem;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+      }
+      #tabla-productos tbody tr:hover {
+        border-color: rgba(255,61,138,.25);
+        box-shadow: var(--shadow-md);
+      }
+
+      /* Todas las celdas: block */
+      #tabla-productos tbody td {
+        display: block;
+        padding: 0;
+        border: none;
+        font-size: 13px;
+      }
+
+      /* ── Celda 1: Producto (nombre + emoji) — fila principal ── */
+      #tabla-productos tbody td:nth-child(1) {
+        margin-bottom: .625rem;
+        padding-bottom: .625rem;
+        border-bottom: 1px solid var(--gris-100);
+      }
+      #tabla-productos tbody td:nth-child(1) > div {
+        gap: 8px;
+      }
+      #tabla-productos tbody td:nth-child(1) span[style*="font-size:22px"] {
+        font-size: 26px !important;
+      }
+      #tabla-productos tbody td:nth-child(1) div[style*="font-size:13px"] {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+      }
+
+      /* ── Fila de badges: categoría + estado ── */
+      #tabla-productos tbody td:nth-child(2),
+      #tabla-productos tbody td:nth-child(8) {
+        display: inline-block;
+        margin-right: 6px;
+        margin-bottom: .5rem;
+      }
+
+      /* ── Fila de datos: precio, costo, margen, stock ── */
+      #tabla-productos tbody td:nth-child(3),
+      #tabla-productos tbody td:nth-child(4),
+      #tabla-productos tbody td:nth-child(5),
+      #tabla-productos tbody td:nth-child(6) {
+        display: inline-block;
+        margin-right: 12px;
+        margin-bottom: .375rem;
+        font-size: 12px;
+      }
+
+      /* Labels para los datos numéricos */
+      #tabla-productos tbody td:nth-child(3)::before { content: "Precio: "; color: var(--gris-400); font-size: 11px; }
+      #tabla-productos tbody td:nth-child(4)::before { content: "Costo: ";  color: var(--gris-400); font-size: 11px; }
+      #tabla-productos tbody td:nth-child(5)::before { content: "Margen: "; color: var(--gris-400); font-size: 11px; }
+      #tabla-productos tbody td:nth-child(6)::before { content: "Stock: ";  color: var(--gris-400); font-size: 11px; }
+
+      /* ── Fecha: discreta, pequeña ── */
+      #tabla-productos tbody td:nth-child(7) {
+        display: block;
+        font-size: 11px;
+        color: var(--gris-400);
+        margin-bottom: .625rem;
+      }
+      #tabla-productos tbody td:nth-child(7)::before {
+        content: "📅 ";
+      }
+
+      /* ── Acciones: fila horizontal al fondo ── */
+      #tabla-productos tbody td:nth-child(9) {
+        display: block;
+        padding-top: .625rem;
+        border-top: 1px solid var(--gris-100);
+        margin-top: .25rem;
+      }
+      #tabla-productos tbody td:nth-child(9) .tbl-actions-cell {
+        flex-direction: row;
+        gap: 8px;
+      }
+      #tabla-productos tbody td:nth-child(9) .btn-tbl {
+        flex: 1;
+        text-align: center;
+        padding: 8px 10px;
+        font-size: 12px;
+        justify-content: center;
+      }
+
+      /* Mensaje vacío */
+      #tabla-productos tbody tr td[colspan] {
+        display: table-cell;
+        text-align: center;
+        padding: 2rem !important;
+      }
+    }
+
+    /* ── Tabla normal en desktop: scroll horizontal ── */
+    @media (min-width: 641px) and (max-width: 900px) {
+      #tabla-productos thead th:nth-child(4),
+      #tabla-productos thead th:nth-child(7),
+      #tabla-productos tbody td:nth-child(4),
+      #tabla-productos tbody td:nth-child(7) {
+        display: none;
+      }
+    }
+
+    /* ── En modo card: quitar overflow del wrapper ── */
+    @media (max-width: 640px) {
+      .table-wrap {
+        overflow-x: visible;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+      }
+      #tabla-productos {
+        display: block;
+        width: 100%;
+      }
+      #tabla-productos tbody {
+        display: block;
+      }
+      /* Fila de mensaje vacío / cargando */
+      #tabla-productos tbody tr:has(td[colspan]) {
+        background: var(--bg-card);
+        border: 1.5px solid rgba(255,61,138,.10);
+        border-radius: var(--radius-lg);
+        padding: 0;
+      }
+      #tabla-productos tbody tr:has(td[colspan]) td {
+        display: table-cell !important;
+        padding: 2rem !important;
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
