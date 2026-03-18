@@ -5,30 +5,64 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Jost:wght@300;400;500;600&display=swap');
 
 :root {
-  /* Paleta principal */
-  --rosa-50:    #FDF2F6;
-  --rosa-100:   #FAE0EB;
-  --rosa-200:   #F5C0D5;
-  --rosa-300:   #EC8FB2;
-  --rosa-400:   #E05F8E;
-  --rosa-500:   #CC3870;
-  --rosa-600:   #A82058;
-  --rosa-700:   #8B1847;
-  --rosa-800:   #731538;
-  --rosa-900:   #5C1130;
+  /* Paleta principal - Primavera */
+  --rosa-50:    #FFF5F9;
+  --rosa-100:   #FFE4F0;
+  --rosa-200:   #FFC9E1;
+  --rosa-300:   #FF9DC8;
+  --rosa-400:   #FF6BA8;
+  --rosa-500:   #FF3D8A;
+  --rosa-600:   #E91E7A;
+  --rosa-700:   #C41565;
+  --rosa-800:   #9E1154;
+  --rosa-900:   #7D0E45;
 
-  --dorado-50:  #FFFBF0;
-  --dorado-100: #FFF3CC;
-  --dorado-200: #FFE599;
-  --dorado-300: #FFD454;
-  --dorado-400: #F5C020;
-  --dorado-500: #D4A017;
-  --dorado-600: #A87B0C;
-  --dorado-700: #8A6009;
-  --dorado-800: #6B4A07;
-  --dorado-900: #4A3205;
+  --dorado-50:  #FFFEF5;
+  --dorado-100: #FFF9E0;
+  --dorado-200: #FFF0B3;
+  --dorado-300: #FFE380;
+  --dorado-400: #FFD24D;
+  --dorado-500: #FFC107;
+  --dorado-600: #FFB300;
+  --dorado-700: #FF9800;
+  --dorado-800: #F57C00;
+  --dorado-900: #E65100;
 
-  --crema:      #FDF8F3;
+  /* Nuevos colores primaverales */
+  --morado-50:  #F9F5FF;
+  --morado-100: #F3E8FF;
+  --morado-200: #E9D5FF;
+  --morado-300: #D8B4FE;
+  --morado-400: #C084FC;
+  --morado-500: #A855F7;
+  --morado-600: #9333EA;
+  --morado-700: #7E22CE;
+  --morado-800: #6B21A8;
+  --morado-900: #581C87;
+
+  --verde-50:   #F0FDF4;
+  --verde-100:  #DCFCE7;
+  --verde-200:  #BBF7D0;
+  --verde-300:  #86EFAC;
+  --verde-400:  #4ADE80;
+  --verde-500:  #22C55E;
+  --verde-600:  #16A34A;
+  --verde-700:  #15803D;
+  --verde-800:  #166534;
+  --verde-900:  #14532D;
+
+  --lavanda-50:  #FAF5FF;
+  --lavanda-100: #F3E8FF;
+  --lavanda-200: #E9D5FF;
+  --lavanda-300: #D8B4FE;
+  --lavanda-400: #C084FC;
+  --lavanda-500: #A78BFA;
+  --lavanda-600: #8B5CF6;
+  --lavanda-700: #7C3AED;
+  --lavanda-800: #6D28D9;
+  --lavanda-900: #5B21B6;
+
+  --crema:      #FFFEF5;
   --blanco:     #FFFFFF;
 
   /* Grises */
@@ -43,16 +77,16 @@
   --gris-800:   #252222;
   --gris-900:   #151313;
 
-  /* Semánticos */
-  --success:    #2D8C4E;
-  --warning:    #C87B1A;
-  --danger:     #C43232;
-  --info:       #1E6FA8;
+  /* Semánticos - Primavera */
+  --success:    #22C55E;
+  --warning:    #FFC107;
+  --danger:     #FF3D8A;
+  --info:       #A855F7;
 
-  --success-bg: #EDF7F1;
-  --warning-bg: #FEF5E7;
-  --danger-bg:  #FDECEC;
-  --info-bg:    #E8F3FB;
+  --success-bg: #F0FDF4;
+  --warning-bg: #FFFEF5;
+  --danger-bg:  #FFF5F9;
+  --info-bg:    #F9F5FF;
 
   /* Tipografía */
   --font-display: 'Playfair Display', Georgia, serif;
@@ -65,11 +99,12 @@
   --radius-xl:   24px;
   --radius-full: 999px;
 
-  /* Sombras */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:  0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
-  --shadow-lg:  0 8px 24px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
-  --shadow-rosa: 0 4px 20px rgba(204,56,112,.18);
+  /* Sombras - Primavera */
+  --shadow-sm:  0 1px 3px rgba(255,61,138,.06), 0 1px 2px rgba(168,85,247,.04);
+  --shadow-md:  0 4px 12px rgba(255,61,138,.08), 0 2px 4px rgba(168,85,247,.04);
+  --shadow-lg:  0 8px 24px rgba(255,61,138,.12), 0 4px 8px rgba(168,85,247,.06);
+  --shadow-rosa: 0 4px 20px rgba(255,61,138,.25);
+  --shadow-floral: 0 8px 32px rgba(255,61,138,.15), 0 4px 16px rgba(168,85,247,.1), 0 2px 8px rgba(34,197,94,.08);
 
   /* Transiciones */
   --transition: 200ms ease;
@@ -86,9 +121,28 @@ html { font-size: 16px; scroll-behavior: smooth; }
 body {
   font-family: var(--font-body);
   color: var(--gris-800);
-  background: var(--crema);
+  background: linear-gradient(135deg, #FFFEF5 0%, #FFF5F9 50%, #F9F5FF 100%);
+  background-attachment: fixed;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+/* Patrón de flores de fondo */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(255,61,138,.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(168,85,247,.03) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(34,197,94,.03) 0%, transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(255,193,7,.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -127,39 +181,78 @@ input, textarea, select, button { font-family: var(--font-body); }
 }
 
 .btn-primary {
-  background: var(--rosa-500);
+  background: linear-gradient(135deg, var(--rosa-500) 0%, var(--morado-500) 100%);
   color: #fff;
-  box-shadow: var(--shadow-rosa);
+  box-shadow: var(--shadow-floral);
+  position: relative;
+  overflow: hidden;
 }
-.btn-primary:hover { background: var(--rosa-600); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(204,56,112,.28); }
-.btn-primary:active { transform: translateY(0); }
+.btn-primary::before {
+  content: '🌸';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  opacity: 0.2;
+}
+.btn-primary:hover { 
+  background: linear-gradient(135deg, var(--rosa-600) 0%, var(--morado-600) 100%);
+  transform: translateY(-2px) scale(1.02); 
+  box-shadow: 0 12px 32px rgba(255,61,138,.3), 0 6px 16px rgba(168,85,247,.2);
+}
+.btn-primary:active { transform: translateY(0) scale(1); }
 
 .btn-outline {
   background: transparent;
   color: var(--rosa-500);
   border: 1.5px solid var(--rosa-400);
 }
-.btn-outline:hover { background: var(--rosa-50); }
+.btn-outline:hover { 
+  background: var(--rosa-50);
+  border-color: var(--rosa-500);
+  transform: translateY(-1px);
+}
 
 .btn-gold {
-  background: var(--dorado-500);
+  background: linear-gradient(135deg, var(--dorado-500) 0%, var(--dorado-600) 100%);
   color: var(--gris-900);
-  box-shadow: 0 4px 16px rgba(212,160,23,.25);
+  box-shadow: 0 4px 16px rgba(255,193,7,.3);
+  position: relative;
+  overflow: hidden;
 }
-.btn-gold:hover { background: var(--dorado-600); color: #fff; transform: translateY(-1px); }
+.btn-gold::before {
+  content: '✨';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  opacity: 0.3;
+}
+.btn-gold:hover { 
+  background: linear-gradient(135deg, var(--dorado-600) 0%, var(--dorado-700) 100%);
+  color: #fff; 
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(255,193,7,.4), 0 4px 12px rgba(255,152,0,.2);
+}
 
 .btn-ghost {
   background: transparent;
   color: var(--gris-600);
   border: 1px solid var(--gris-200);
 }
-.btn-ghost:hover { background: var(--gris-100); color: var(--gris-800); }
+.btn-ghost:hover { 
+  background: var(--gris-100); 
+  color: var(--gris-800);
+  border-color: var(--gris-300);
+}
 
 .btn-sm { padding: 7px 16px; font-size: 13px; }
 .btn-lg { padding: 14px 32px; font-size: 16px; }
 .btn-icon { padding: 8px; border-radius: var(--radius-md); }
 
-/* Badges */
+/* Badges - Primavera */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -169,24 +262,70 @@ input, textarea, select, button { font-family: var(--font-body); }
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .04em;
+  border: 1px solid;
 }
-.badge-rosa    { background: var(--rosa-100);   color: var(--rosa-700); }
-.badge-dorado  { background: var(--dorado-100); color: var(--dorado-700); }
-.badge-success { background: var(--success-bg); color: var(--success); }
-.badge-warning { background: var(--warning-bg); color: var(--warning); }
-.badge-danger  { background: var(--danger-bg);  color: var(--danger); }
-.badge-info    { background: var(--info-bg);    color: var(--info); }
-.badge-gray    { background: var(--gris-100);   color: var(--gris-600); }
+.badge-rosa    { 
+  background: linear-gradient(135deg, var(--rosa-100) 0%, var(--rosa-50) 100%);
+  color: var(--rosa-700);
+  border-color: var(--rosa-200);
+}
+.badge-dorado  { 
+  background: linear-gradient(135deg, var(--dorado-100) 0%, var(--dorado-50) 100%);
+  color: var(--dorado-800);
+  border-color: var(--dorado-200);
+}
+.badge-success { 
+  background: linear-gradient(135deg, var(--verde-100) 0%, var(--verde-50) 100%);
+  color: var(--verde-700);
+  border-color: var(--verde-200);
+}
+.badge-warning { 
+  background: linear-gradient(135deg, var(--dorado-100) 0%, var(--dorado-50) 100%);
+  color: var(--dorado-800);
+  border-color: var(--dorado-200);
+}
+.badge-danger  { 
+  background: linear-gradient(135deg, var(--rosa-100) 0%, var(--rosa-50) 100%);
+  color: var(--rosa-700);
+  border-color: var(--rosa-200);
+}
+.badge-info    { 
+  background: linear-gradient(135deg, var(--morado-100) 0%, var(--morado-50) 100%);
+  color: var(--morado-700);
+  border-color: var(--morado-200);
+}
+.badge-gray    { 
+  background: linear-gradient(135deg, var(--gris-100) 0%, var(--gris-50) 100%);
+  color: var(--gris-600);
+  border-color: var(--gris-200);
+}
 
-/* Cards */
+/* Cards - Primavera */
 .card {
-  background: var(--blanco);
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F9 50%, #F9F5FF 100%);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--rosa-100);
+  box-shadow: var(--shadow-floral);
+  border: 2px solid;
+  border-image: linear-gradient(135deg, var(--rosa-200), var(--morado-200), var(--verde-200)) 1;
   padding: 1.5rem;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
 }
-.card:hover { box-shadow: var(--shadow-md); }
+.card::before {
+  content: '🌸';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 60px;
+  opacity: 0.05;
+  transform: rotate(15deg);
+}
+.card:hover { 
+  box-shadow: 0 12px 32px rgba(255,61,138,.15), 0 6px 16px rgba(168,85,247,.1);
+  transform: translateY(-4px);
+  border-image: linear-gradient(135deg, var(--rosa-300), var(--morado-300), var(--verde-300)) 1;
+}
 
 /* Inputs */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -214,31 +353,77 @@ input, textarea, select, button { font-family: var(--font-body); }
 select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23A09C9C' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
 /* Tabla */
-.table-wrap { background: var(--blanco); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--rosa-100); overflow: hidden; }
+.table-wrap { 
+  background: linear-gradient(135deg, #FFFFFF 0%, #FDF8F3 100%);
+  border-radius: var(--radius-lg); 
+  box-shadow: 0 4px 16px rgba(204,56,112,.08);
+  border: 1px solid var(--rosa-100);
+  overflow: hidden;
+}
 .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.data-table thead th { background: var(--rosa-50); color: var(--gris-600); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--rosa-100); white-space: nowrap; }
-.data-table tbody td { padding: 12px 16px; border-bottom: 1px solid var(--gris-50); vertical-align: middle; color: var(--gris-700); }
+.data-table thead th { 
+  background: linear-gradient(90deg, rgba(204,56,112,.08) 0%, rgba(212,160,23,.08) 100%);
+  color: var(--gris-700); 
+  font-weight: 600; 
+  font-size: 11px; 
+  text-transform: uppercase; 
+  letter-spacing: .06em; 
+  padding: 12px 16px; 
+  text-align: left; 
+  border-bottom: 2px solid var(--rosa-100);
+  white-space: nowrap;
+}
+.data-table tbody td { 
+  padding: 12px 16px; 
+  border-bottom: 1px solid var(--gris-50); 
+  vertical-align: middle; 
+  color: var(--gris-700);
+}
 .data-table tbody tr:last-child td { border-bottom: none; }
-.data-table tbody tr:hover td { background: var(--rosa-50); }
+.data-table tbody tr:hover td { 
+  background: linear-gradient(90deg, rgba(204,56,112,.04) 0%, rgba(212,160,23,.04) 100%);
+}
 
 /* Alertas */
-.alert { padding: 12px 16px; border-radius: var(--radius-md); font-size: 13px; display: flex; align-items: flex-start; gap: 10px; }
-.alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #A8D8BA; }
-.alert-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #F0C884; }
-.alert-danger  { background: var(--danger-bg);  color: var(--danger);  border: 1px solid #F0AAAA; }
+.alert { 
+  padding: 12px 16px; 
+  border-radius: var(--radius-md); 
+  font-size: 13px; 
+  display: flex; 
+  align-items: flex-start; 
+  gap: 10px;
+  border-left: 4px solid;
+}
+.alert-success { 
+  background: linear-gradient(135deg, var(--success-bg) 0%, rgba(45,140,78,.05) 100%);
+  color: var(--success); 
+  border-left-color: var(--success);
+}
+.alert-warning { 
+  background: linear-gradient(135deg, var(--warning-bg) 0%, rgba(200,123,26,.05) 100%);
+  color: var(--warning); 
+  border-left-color: var(--warning);
+}
+.alert-danger  { 
+  background: linear-gradient(135deg, var(--danger-bg) 0%, rgba(196,50,50,.05) 100%);
+  color: var(--danger);
+  border-left-color: var(--danger);
+}
 
 /* Divider */
 .divider { border: none; border-top: 1px solid var(--gris-100); margin: 1.5rem 0; }
 
-/* Avatar */
+/* Avatar - Primavera */
 .avatar {
   width: 36px; height: 36px;
   border-radius: var(--radius-full);
-  background: var(--rosa-100);
+  background: linear-gradient(135deg, var(--rosa-200) 0%, var(--morado-200) 100%);
   color: var(--rosa-700);
   display: inline-flex; align-items: center; justify-content: center;
   font-weight: 600; font-size: 13px;
   flex-shrink: 0;
+  border: 2px solid var(--rosa-300);
+  box-shadow: 0 2px 8px rgba(255,61,138,.2);
 }
 
 /* Loader */
