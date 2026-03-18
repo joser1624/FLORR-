@@ -10,6 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/variables.css" />
   <link rel="stylesheet" href="css/public.css" />
+  <script>
+    // Aplicar dark mode antes del render para evitar flash
+    if (localStorage.getItem('ee_dark') === '1') document.documentElement.classList.add('dark-mode-pre');
+  </script>
 </head>
 <body>
 
@@ -43,6 +47,7 @@
     <li><a href="#contacto">Contacto</a></li>
   </ul>
   <div class="navbar-actions">
+    <button class="btn-dark-toggle" id="btn-dark" onclick="toggleDark()" title="Modo oscuro" aria-label="Cambiar tema">🌙</button>
     <a href="pages/cliente/mis-pedidos.html" class="btn btn-ghost btn-sm">Mis pedidos</a>
     <a href="pages/admin/login.html" class="btn btn-outline btn-sm">Panel</a>
     <button class="btn-menu-mob" onclick="toggleMobileNav()" id="btn-menu" aria-label="Menú">☰</button>

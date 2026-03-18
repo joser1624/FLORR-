@@ -182,6 +182,32 @@ const Fmt = {
   nro: (n) => parseInt(n || 0).toLocaleString('es-PE'),
 };
 
+/* ── Dark Mode ── */
+const DarkMode = {
+  init() {
+    if (localStorage.getItem('ee_dark') === '1') {
+      document.body.classList.add('dark-mode');
+    }
+    this.updateBtn();
+  },
+  toggle() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('ee_dark', isDark ? '1' : '0');
+    this.updateBtn();
+  },
+  updateBtn() {
+    const isDark = document.body.classList.contains('dark-mode');
+    document.querySelectorAll('.btn-dark-toggle, #btn-dark').forEach(btn => {
+      btn.textContent = isDark ? '☀️' : '🌙';
+      btn.title = isDark ? 'Modo claro' : 'Modo oscuro';
+    });
+  }
+};
+
+function toggleDark() { DarkMode.toggle(); }
+
+document.addEventListener('DOMContentLoaded', () => DarkMode.init());
+
 /* ── Debounce ── */
 function debounce(fn, delay = 350) {
   let t;
