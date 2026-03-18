@@ -26,7 +26,7 @@ quick-start.bat
 
 ### Option 2: Manual Setup
 
-See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions.
+See [SETUP_GUIDE.md](docs/setup/SETUP_GUIDE.md) for detailed instructions.
 
 ## 📁 Project Structure
 
@@ -181,7 +181,21 @@ npm run dev
 
 Server runs on: `http://localhost:3000`
 
-### 2. Start Frontend
+### 2. Generate Historical Data (Optional)
+Para probar el sistema con datos realistas de los últimos 2 meses:
+```bash
+cd backend
+npm run seed:historicos
+```
+
+Esto generará:
+- ~150 ventas históricas
+- ~50 gastos históricos
+- Movimientos de capital
+
+Ver [GUIA_DATOS_HISTORICOS.md](GUIA_DATOS_HISTORICOS.md) para más detalles.
+
+### 3. Start Frontend
 Open `index.html` in a browser or use a static server:
 ```bash
 # Using Python
@@ -196,20 +210,32 @@ npx http-server -p 5500
 
 Frontend runs on: `http://localhost:5500`
 
-### 3. Login
+### 4. Login
 - Navigate to: `http://localhost:5500/pages/admin/login.html`
-- Email: `maria@floreria.com`
-- Password: `password123`
+- Email: `admin@encantoseternos.com`
+- Password: `admin123`
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [SETUP_GUIDE.md](SETUP_GUIDE.md) | Complete setup instructions |
-| [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) | Project overview and architecture |
-| [BACKEND_ANALYSIS.md](BACKEND_ANALYSIS.md) | Technical analysis and design |
-| [backend/README.md](backend/README.md) | API documentation |
-| [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md) | Implementation status |
+Toda la documentación está organizada en la carpeta [docs/](docs/):
+
+### 🔧 Setup y Configuración
+- **[SETUP_GUIDE.md](docs/setup/SETUP_GUIDE.md)** - Guía completa de instalación
+- **[INSTRUCCIONES_REINICIAR_BACKEND.md](docs/setup/INSTRUCCIONES_REINICIAR_BACKEND.md)** - Cómo reiniciar el servidor
+
+### 🔌 Integraciones
+- **[CLIENTES_INTEGRACION_BACKEND.md](docs/integraciones/CLIENTES_INTEGRACION_BACKEND.md)** - Módulo de clientes
+- **[TRABAJADORES_INTEGRACION_BACKEND.md](docs/integraciones/TRABAJADORES_INTEGRACION_BACKEND.md)** - Módulo de trabajadores
+- **[VENTAS_INTEGRACION_BACKEND.md](docs/integraciones/VENTAS_INTEGRACION_BACKEND.md)** - Módulo de ventas
+
+### 📊 Datos de Prueba
+- **[GUIA_DATOS_HISTORICOS.md](GUIA_DATOS_HISTORICOS.md)** - Generar datos sintéticos de 2 meses
+- **[README_DATOS_HISTORICOS.md](backend/src/scripts/README_DATOS_HISTORICOS.md)** - Documentación técnica de scripts
+
+### 🎨 Diseño
+- **[TEMA_PRIMAVERAL_COMPLETO.md](docs/diseno/TEMA_PRIMAVERAL_COMPLETO.md)** - Tema visual primaveral
+
+Ver el [índice completo de documentación](docs/README.md) para más detalles.
 
 ## 🧪 Testing
 

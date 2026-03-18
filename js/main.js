@@ -115,8 +115,29 @@ const Toast = {
 
 /* ── Modal ── */
 const Modal = {
-  open(id) { document.getElementById(id)?.classList.add('active'); },
-  close(id) { document.getElementById(id)?.classList.remove('active'); },
+  open(id) { 
+    console.log('Abriendo modal:', id);
+    const modal = document.getElementById(id);
+    if (modal) {
+      // Forzar reflow para asegurar que la transición funcione
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        modal.classList.add('active');
+        console.log('Modal abierto, clases:', modal.className);
+      }, 10);
+    } else {
+      console.error('Modal no encontrado:', id);
+    }
+  },
+  close(id) { 
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.classList.remove('active');
+      setTimeout(() => {
+        modal.style.display = '';
+      }, 300);
+    }
+  },
   confirm(msg, onConfirm) {
     const id = 'modal-confirm-' + Date.now();
     const m = document.createElement('div');

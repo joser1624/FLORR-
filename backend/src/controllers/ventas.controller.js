@@ -16,7 +16,9 @@ class VentasController {
       const filters = {
         fecha: req.query.fecha,
         metodo_pago: req.query.metodo_pago,
-        trabajador_id: req.query.trabajador_id
+        trabajador_id: req.query.trabajador_id,
+        page: req.query.page,
+        limit: req.query.limit
       };
 
       const ventas = await ventasService.getAll(filters);

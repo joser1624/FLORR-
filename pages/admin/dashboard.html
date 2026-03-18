@@ -288,19 +288,27 @@
     document.getElementById('capital-retiros').textContent = Fmt.moneda(desglose.retiros);
 
     // Mostrar botones solo para administradores
-    const user = Auth.getUser(); // Usar Auth.getUser() en lugar de localStorage
+    const user = Auth.getUser();
     const botonesContainer = document.getElementById('capital-botones');
     
     if (user && user.rol === 'admin') {
       botonesContainer.innerHTML = `
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Modal.open('modal-aporte')">+ Aporte</button>
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Modal.open('modal-retiro')">- Retiro</button>
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="abrirHistorialCapital()">📋 Historial</button>
+        <button class="btn btn-sm btn-capital-aporte" style="background:rgba(255,255,255,0.2);color:white;border:none">+ Aporte</button>
+        <button class="btn btn-sm btn-capital-retiro" style="background:rgba(255,255,255,0.2);color:white;border:none">- Retiro</button>
+        <button class="btn btn-sm btn-capital-historial" style="background:rgba(255,255,255,0.2);color:white;border:none">📋 Historial</button>
       `;
+      
+      // Agregar event listeners
+      document.querySelector('.btn-capital-aporte')?.addEventListener('click', () => Modal.open('modal-aporte'));
+      document.querySelector('.btn-capital-retiro')?.addEventListener('click', () => Modal.open('modal-retiro'));
+      document.querySelector('.btn-capital-historial')?.addEventListener('click', abrirHistorialCapital);
     } else {
       botonesContainer.innerHTML = `
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="abrirHistorialCapital()">📋 Ver Historial</button>
+        <button class="btn btn-sm btn-capital-historial" style="background:rgba(255,255,255,0.2);color:white;border:none">📋 Ver Historial</button>
       `;
+      
+      // Agregar event listener
+      document.querySelector('.btn-capital-historial')?.addEventListener('click', abrirHistorialCapital);
     }
   }
 
