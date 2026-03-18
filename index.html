@@ -354,27 +354,35 @@
   let todosProd=[],catActual='',selLab={},inventarioPub=[];
 
   /* ── CATÁLOGO ── */
+  const PRODUCTOS_FALLBACK=[
+    {id:1,nombre:'Ramo romántico de rosas',categoria:'Ramos',precio:85,stock:15,descripcion:'12 rosas premium con papel dorado'},
+    {id:2,nombre:'Arreglo primaveral en caja',categoria:'Arreglos',precio:120,stock:3,descripcion:'Flores variadas en caja decorativa'},
+    {id:3,nombre:'Peluche + rosas rojas',categoria:'Peluches',precio:95,stock:8,descripcion:'Osito + 6 rosas rojas'},
+    {id:4,nombre:'Caja sorpresa especial',categoria:'Cajas sorpresa',precio:150,stock:0,descripcion:'Caja personalizada con flores'},
+    {id:5,nombre:'Ramo de girasoles y lirios',categoria:'Ramos',precio:70,stock:12,descripcion:'Flores de campo naturales'},
+    {id:6,nombre:'Arreglo de cumpleaños',categoria:'Arreglos',precio:110,stock:5,descripcion:'Arreglo festivo multicolor'},
+    {id:7,nombre:'Globos + rosas',categoria:'Globos',precio:60,stock:10,descripcion:'5 globos metalizados + rosas'},
+    {id:8,nombre:'Caja corazón con rosas',categoria:'Cajas sorpresa',precio:180,stock:4,descripcion:'Caja corazón con 24 rosas'},
+  ];
+
   async function cargarCatalogo(){
     try{
       const d=await API.get('/productos');
-      todosProd=d.data||d.productos||d||[];
-      console.log('Productos cargados en index.html:',todosProd.length,'productos');
-      if(todosProd.length>0)document.getElementById('stat-productos').textContent='+'+todosProd.length;
-    }catch(error){
-      console.error('Error al cargar productos en index.html:',error);
-      todosProd=[
-        {id:1,nombre:'Ramo romántico de rosas',categoria:'Ramos',precio:85,stock:15,descripcion:'12 rosas premium con papel dorado'},
-        {id:2,nombre:'Arreglo primaveral en caja',categoria:'Arreglos',precio:120,stock:3,descripcion:'Flores variadas en caja decorativa'},
-        {id:3,nombre:'Peluche + rosas rojas',categoria:'Peluches',precio:95,stock:8,descripcion:'Osito + 6 rosas rojas'},
-        {id:4,nombre:'Caja sorpresa especial',categoria:'Cajas sorpresa',precio:150,stock:0,descripcion:'Caja personalizada con flores'},
-        {id:5,nombre:'Ramo de girasoles y lirios',categoria:'Ramos',precio:70,stock:12,descripcion:'Flores de campo naturales'},
-        {id:6,nombre:'Arreglo de cumpleaños',categoria:'Arreglos',precio:110,stock:5,descripcion:'Arreglo festivo multicolor'},
-        {id:7,nombre:'Globos + rosas',categoria:'Globos',precio:60,stock:10,descripcion:'5 globos metalizados + rosas'},
-        {id:8,nombre:'Caja corazón con rosas',categoria:'Cajas sorpresa',precio:180,stock:4,descripcion:'Caja corazón con 24 rosas'},
-      ];
+      const nuevos=d.data?.data||d.data||d.productos||d||[];
+      if(!Array.isArray(nuevos)||!nuevos.length) throw new Error('sin datos');
+      const cambio=JSON.stringify(nuevos)!==JSON.stringify(todosProd);
+      todosProd=nuevos;
+      document.getElementById('stat-productos').textContent='+'+todosProd.length;
+      if(cambio)renderCatalogo();
+    }catch(e){
+      // Fallback siempre que la API no devuelva productos
+      todosProd=PRODUCTOS_FALLBACK;
+      renderCatalogo();
     }
-    renderCatalogo();
   }
+
+  // Polling: refresca el catálogo cada 30 segundos automáticamente
+  setInterval(cargarCatalogo, 30000);
 
   function renderCatalogo(){
     const lista=catActual?todosProd.filter(p=>p.categoria===catActual):todosProd;
@@ -390,7 +398,7 @@
           <div class="product-name">${p.nombre}</div>
           ${p.descripcion?`<div class="product-desc">${p.descripcion}</div>`:''}
           <div class="product-footer">
-            <div class="product-price">S/ ${p.precio.toFixed(2)}</div>
+            <div class="product-price">S/ ${parseFloat(p.precio).toFixed(2)}</div>
             ${p.stock>0?`<button class="btn-pedir" onclick="event.stopPropagation();pedirProducto('${p.nombre.replace(/'/g,"\\'")}',${p.precio})">Pedir 📱</button>`:'<span style="font-size:12px;color:#dc2626;font-weight:600">Agotado</span>'}
           </div>
         </div>
@@ -404,7 +412,8 @@
   }
 
   function pedirProducto(nombre,precio){
-    const msg=`🌸 ¡Hola! Vi "${nombre}" en su catálogo y me interesa pedirlo.\n\n💰 Precio: S/ ${precio.toFixed(2)}\n\n¿Tienen disponibilidad? ¿Cuáles son los tiempos de entrega?`;
+    const p=parseFloat(precio);
+    const msg=`🌸 ¡Hola! Vi "${nombre}" en su catálogo y me interesa pedirlo.\n\n💰 Precio: S/ ${p.toFixed(2)}\n\n¿Tienen disponibilidad? ¿Cuáles son los tiempos de entrega?`;
     window.open(`https://wa.me/51972542802?text=${encodeURIComponent(msg)}`,'_blank');
   }
 

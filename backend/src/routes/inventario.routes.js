@@ -33,17 +33,17 @@ const updateInventoryValidation = [
 
 /**
  * GET /api/inventario
- * Requirement 2.5: All authenticated roles can access
+ * Public: accessible without authentication (laboratorio público)
  * Returns list of inventory items with optional filters (tipo, stock_bajo)
  */
-router.get('/', verifyToken, inventarioController.getAll.bind(inventarioController));
+router.get('/', inventarioController.getAll.bind(inventarioController));
 
 /**
  * GET /api/inventario/:id
- * Requirement 2.5: All authenticated roles can access
+ * Public: accessible without authentication
  * Returns single inventory item by ID
  */
-router.get('/:id', verifyToken, inventarioController.getById.bind(inventarioController));
+router.get('/:id', inventarioController.getById.bind(inventarioController));
 
 /**
  * POST /api/inventario
