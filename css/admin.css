@@ -457,3 +457,228 @@ body.dark-mode .btn-tbl-view   { background: rgba(255,255,255,.05); border-color
 body.dark-mode .margen-preview { background: rgba(255,61,138,.08); border-color: rgba(255,61,138,.15); }
 body.dark-mode .margen-bar-wrap { background: rgba(255,61,138,.15); }
 body.dark-mode .btn-hamburger:hover { background: rgba(255,255,255,.08); }
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE MÓVIL — Panel Admin
+   Optimizado para uso en celular (dueña)
+══════════════════════════════════════════════ */
+
+/* ── Tablas: scroll horizontal en móvil ── */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid rgba(255,61,138,.10);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Cards de capital: 5 cols → 2-3 en móvil ── */
+@media (max-width: 768px) {
+  /* Capital desglose */
+  [style*="grid-template-columns:repeat(5,1fr)"] {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Botones de capital: stack vertical */
+  #capital-botones {
+    flex-direction: column !important;
+    gap: 6px !important;
+    width: 100%;
+    margin-top: 10px;
+  }
+  #capital-botones .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Capital card header: stack */
+  .card [style*="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem"] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* Dashboard: gráfico + pedidos recientes → stack */
+  [style*="grid-template-columns:1fr 380px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Dashboard: productos + trabajadores → stack */
+  [style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Pedidos kanban: 5 cols → 2 cols + scroll */
+  [style*="grid-template-columns:repeat(5,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Ventas stats: 4 cols → 2 cols */
+  .stats-grid[style*="grid-template-columns:repeat(4,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Detalle venta: 2 cols → 1 col */
+  [style*="grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Topbar: reducir padding */
+  .topbar { padding: 0 .75rem; height: 54px; }
+  .page-title { font-size: 14px; }
+
+  /* Content padding */
+  .admin-content { padding: .875rem; }
+
+  /* Page header: botón full width en móvil */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .page-header > .btn,
+  .page-header > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Filter bar: stack */
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .filter-bar .form-control,
+  .filter-bar select {
+    max-width: 100% !important;
+    width: 100%;
+  }
+  .filter-bar [style*="margin-left:auto"] {
+    margin-left: 0 !important;
+  }
+
+  /* Chips: scroll horizontal */
+  .filter-chips {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  /* Modal: full screen en móvil */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    max-width: 100% !important;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    animation: modalUp .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes modalUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .modal-footer {
+    justify-content: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .modal-footer .btn { width: 100%; justify-content: center; }
+
+  /* Stat cards: valor más pequeño */
+  .stat-value { font-size: 20px; }
+  .stat-card  { padding: 1rem; }
+
+  /* Formularios: grid 2 → 1 col */
+  .form-grid-2 { grid-template-columns: 1fr !important; }
+
+  /* Botones de tabla: más compactos */
+  .btn-tbl { padding: 5px 9px; font-size: 11px; }
+  .tbl-actions-cell { gap: 4px; }
+
+  /* Alertas de stock: scroll horizontal para badges */
+  .alert { flex-wrap: wrap; gap: 6px; }
+}
+
+@media (max-width: 480px) {
+  /* Capital: 3 cols → 2 cols */
+  [style*="grid-template-columns:repeat(5,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Stats: 2 cols → 1 col en pantallas muy pequeñas */
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: .625rem; }
+
+  /* Topbar: ocultar breadcrumb */
+  .page-breadcrumb { display: none; }
+
+  /* Sidebar más ancho para dedos */
+  .sidebar { width: 280px; }
+
+  /* Texto de tabla más pequeño */
+  .data-table td, .data-table th { font-size: 12px; padding: 8px 10px; }
+
+  /* Kanban pedidos: 2 cols → scroll horizontal */
+  [style*="grid-template-columns:repeat(5,1fr)"] {
+    display: flex !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px !important;
+    padding-bottom: 4px;
+  }
+  [style*="grid-template-columns:repeat(5,1fr)"] > div {
+    min-width: 100px;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Touch: botones más grandes para dedos ── */
+@media (hover: none) and (pointer: coarse) {
+  .btn-tbl { min-height: 36px; padding: 6px 12px; }
+  .nav-item { padding: 12px 1.25rem; }
+  .chip { padding: 7px 16px; }
+  .btn { min-height: 40px; }
+  .form-control { min-height: 42px; font-size: 16px; } /* evita zoom en iOS */
+  select.form-control { font-size: 16px; } /* evita zoom en iOS */
+}
+
+/* ── Clases de layout para dashboard y pedidos ── */
+.dash-grid-main {
+  grid-template-columns: 1fr 380px;
+}
+.dash-grid-half {
+  grid-template-columns: 1fr 1fr;
+}
+.capital-desglose {
+  grid-template-columns: repeat(5, 1fr);
+}
+.pedidos-kanban {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 900px) {
+  .dash-grid-main  { grid-template-columns: 1fr; }
+  .dash-grid-half  { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .capital-desglose { grid-template-columns: repeat(3, 1fr); }
+  .pedidos-kanban   { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .capital-desglose { grid-template-columns: repeat(2, 1fr); }
+  .pedidos-kanban   {
+    grid-template-columns: repeat(5, minmax(90px, 1fr));
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Stats grid variantes ── */
+.stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 768px) {
+  .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
+}

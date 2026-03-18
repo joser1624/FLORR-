@@ -48,7 +48,7 @@
 
       <!-- Capital del Negocio -->
       <div class="card" style="padding:1.5rem;margin-bottom:1.25rem;background:linear-gradient(135deg, #2D8C4E 0%, #1E6FA8 100%);color:white">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
           <div>
             <div style="font-size:13px;opacity:0.9;margin-bottom:4px">💰 Capital del Negocio</div>
             <div style="font-size:32px;font-weight:700;letter-spacing:-0.5px" id="capital-actual">S/ —</div>
@@ -57,7 +57,7 @@
         </div>
         
         <!-- Desglose del capital -->
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2)">
+        <div class="capital-desglose" style="display:grid;gap:12px;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2)">
           <div style="text-align:center">
             <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Capital Inicial</div>
             <div style="font-size:16px;font-weight:600" id="capital-inicial">S/ —</div>
@@ -85,7 +85,7 @@
       <div id="alertas-stock"></div>
 
       <!-- Gráficos + Pedidos recientes -->
-      <div style="display:grid;grid-template-columns:1fr 380px;gap:1.25rem;margin-bottom:1.25rem">
+      <div class="dash-grid-main" style="display:grid;gap:1.25rem;margin-bottom:1.25rem">
 
         <!-- Gráfico ventas semana -->
         <div class="card" style="padding:1.25rem">
@@ -115,7 +115,7 @@
       </div>
 
       <!-- Productos más vendidos + Ventas por trabajador -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+      <div class="dash-grid-half" style="display:grid;gap:1.25rem">
 
         <div class="card" style="padding:1.25rem">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
