@@ -18,6 +18,7 @@ class DashboardService {
       ventasSemanaResult,
       topProductosResult,
       ventasTrabajadoresResult,
+      bottomProductosResult,
     ] = await Promise.all([
       // Req 3.1: Total sales for current day
       query(
@@ -100,6 +101,18 @@ class DashboardService {
          GROUP BY u.id, u.nombre
          ORDER BY total DESC`
       ),
+
+      // Bottom 5 products by sales quantity for current month (least sold)
+      query(
+        `SELECT p.id, p.nombre, SUM(vp.cantidad) AS cantidad
+         FROM ventas_productos vp
+         JOIN productos p ON vp.producto_id = p.id
+         JOIN ventas v ON vp.venta_id = v.id
+         WHERE DATE_TRUNC('month', v.fecha) = DATE_TRUNC('month', CURRENT_DATE)
+         GROUP BY p.id, p.nombre
+         ORDER BY cantidad ASC
+         LIMIT 5`
+      ),
     ]);
 
     // Req 3.3: ganancia_mes = ventas_mes - gastos_mes
@@ -132,6 +145,10 @@ class DashboardService {
         total: parseFloat(v.total),
       })),
       top_productos: topProductosResult.rows.map(p => ({
+        nombre: p.nombre,
+        cantidad: parseInt(p.cantidad, 10),
+      })),
+      bottom_productos: bottomProductosResult.rows.map(p => ({
         nombre: p.nombre,
         cantidad: parseInt(p.cantidad, 10),
       })),
