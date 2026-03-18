@@ -36,6 +36,17 @@
           <span class="chip" onclick="filtrarCategoria(this,'Otros')">Otros</span>
           <span class="chip" onclick="filtrarStockBajo(this)" style="color:var(--warning)">⚠ Stock bajo</span>
         </div>
+        <select class="form-control" id="ordenar-productos" onchange="filtrarProductos()" style="max-width:180px;margin-left:auto">
+          <option value="nombre">Ordenar: Nombre A-Z</option>
+          <option value="nombre_desc">Ordenar: Nombre Z-A</option>
+          <option value="categoria">Ordenar: Categoría</option>
+          <option value="precio_asc">Ordenar: Precio (menor)</option>
+          <option value="precio_desc">Ordenar: Precio (mayor)</option>
+          <option value="stock_asc">Ordenar: Stock (menor)</option>
+          <option value="stock_desc">Ordenar: Stock (mayor)</option>
+          <option value="fecha_desc">Ordenar: Más reciente</option>
+          <option value="fecha_asc">Ordenar: Más antiguo</option>
+        </select>
       </div>
 
       <!-- Tabla -->
@@ -49,12 +60,13 @@
               <th>Costo</th>
               <th>Margen</th>
               <th>Stock</th>
+              <th>Última modificación</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-productos">
-            <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando productos...</td></tr>
+            <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando productos...</td></tr>
           </tbody>
         </table>
         <div style="padding:10px 16px;font-size:11px;color:var(--gris-400);border-top:1px solid var(--gris-50)">
@@ -229,20 +241,55 @@
 
   function renderTabla() {
     const q = (document.getElementById('buscar').value || '').toLowerCase();
+    const ordenar = document.getElementById('ordenar-productos').value;
+    
     let lista = todosProductos;
     if (categoriaActual) lista = lista.filter(p => p.categoria === categoriaActual);
     if (soloBajos) lista = lista.filter(p => p.stock <= 3);
     if (q) lista = lista.filter(p => p.nombre.toLowerCase().includes(q));
 
+    // Ordenamiento
+    lista = [...lista]; // Clonar para no mutar el original
+    switch(ordenar) {
+      case 'nombre':
+        lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        break;
+      case 'nombre_desc':
+        lista.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        break;
+      case 'categoria':
+        lista.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nombre.localeCompare(b.nombre));
+        break;
+      case 'precio_asc':
+        lista.sort((a, b) => a.precio - b.precio);
+        break;
+      case 'precio_desc':
+        lista.sort((a, b) => b.precio - a.precio);
+        break;
+      case 'stock_asc':
+        lista.sort((a, b) => a.stock - b.stock);
+        break;
+      case 'stock_desc':
+        lista.sort((a, b) => b.stock - a.stock);
+        break;
+      case 'fecha_desc':
+        lista.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+        break;
+      case 'fecha_asc':
+        lista.sort((a, b) => new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at));
+        break;
+    }
+
     document.getElementById('total-count').textContent = lista.length;
     const tbody = document.getElementById('tbody-productos');
     if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">No se encontraron productos</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">No se encontraron productos</td></tr>';
       return;
     }
 
     tbody.innerHTML = lista.map(p => {
       const margen = p.precio > 0 ? ((p.precio - p.costo) / p.precio * 100).toFixed(1) : 0;
+      const fechaMod = p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
       
       // Para arreglos, mostrar stock calculado con tooltip explicativo
       let stockBadge;
@@ -286,6 +333,7 @@
         <td style="color:var(--gris-500)">${Fmt.moneda(p.costo)}</td>
         <td><span style="font-weight:600;color:${margenColor}">${margen}%</span></td>
         <td>${stockBadge}</td>
+        <td style="font-size:12px;color:var(--gris-500)">${fechaMod}</td>
         <td><span class="badge ${p.activo !== false ? 'badge-success' : 'badge-gray'}">${p.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
         <td>
           <div class="tbl-actions-cell">

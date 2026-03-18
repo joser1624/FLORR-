@@ -29,12 +29,23 @@
           <span class="chip" onclick="filtrarTipo(this,'accesorios')">Accesorios</span>
           <span class="chip" style="color:var(--warning)" onclick="filtrarBajos(this)">⚠ Stock bajo</span>
         </div>
-        <input class="form-control" placeholder="Buscar..." id="buscar-inv" oninput="renderInv()" style="max-width:200px;margin-left:auto" />
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <select class="form-control" id="ordenar-inv" onchange="renderInv()" style="max-width:180px">
+            <option value="nombre">Ordenar: Nombre A-Z</option>
+            <option value="nombre_desc">Ordenar: Nombre Z-A</option>
+            <option value="tipo">Ordenar: Tipo</option>
+            <option value="stock_asc">Ordenar: Stock (menor)</option>
+            <option value="stock_desc">Ordenar: Stock (mayor)</option>
+            <option value="fecha_desc">Ordenar: Más reciente</option>
+            <option value="fecha_asc">Ordenar: Más antiguo</option>
+          </select>
+          <input class="form-control" placeholder="Buscar..." id="buscar-inv" oninput="renderInv()" style="max-width:200px" />
+        </div>
       </div>
 
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Ítem</th><th>Tipo</th><th>Stock actual</th><th>Stock mínimo</th><th>Unidad</th><th>Costo unit. (S/)</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Ítem</th><th>Tipo</th><th>Stock actual</th><th>Stock mínimo</th><th>Unidad</th><th>Costo unit. (S/)</th><th>Última modificación</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody id="tbody-inv"></tbody>
         </table>
       </div>
@@ -236,15 +247,45 @@
 
   function renderInv() {
     const q = (document.getElementById('buscar-inv').value||'').toLowerCase();
+    const ordenar = document.getElementById('ordenar-inv').value;
+    
     let lista = items;
     if (tipoFiltro) lista = lista.filter(i => i.tipo === tipoFiltro);
     if (soloBajoInv) lista = lista.filter(i => i.stock <= (i.stock_min||5));
     if (q) lista = lista.filter(i => i.nombre.toLowerCase().includes(q));
+    
+    // Ordenamiento
+    lista = [...lista]; // Clonar para no mutar el original
+    switch(ordenar) {
+      case 'nombre':
+        lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        break;
+      case 'nombre_desc':
+        lista.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        break;
+      case 'tipo':
+        lista.sort((a, b) => a.tipo.localeCompare(b.tipo) || a.nombre.localeCompare(b.nombre));
+        break;
+      case 'stock_asc':
+        lista.sort((a, b) => a.stock - b.stock);
+        break;
+      case 'stock_desc':
+        lista.sort((a, b) => b.stock - a.stock);
+        break;
+      case 'fecha_desc':
+        lista.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+        break;
+      case 'fecha_asc':
+        lista.sort((a, b) => new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at));
+        break;
+    }
+    
     const tbody = document.getElementById('tbody-inv');
-    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
+    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
     tbody.innerHTML = lista.map(i => {
       const bajo = i.stock <= (i.stock_min||5);
       const badge = i.stock === 0 ? '<span class="badge badge-danger">Agotado</span>' : bajo ? '<span class="badge badge-warning">Bajo</span>' : '<span class="badge badge-success">OK</span>';
+      const fechaMod = i.updated_at ? new Date(i.updated_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
       return `<tr>
         <td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">${TIPO_EMOJI[i.tipo]||'📦'}</span><span style="font-weight:500">${i.nombre}</span></div></td>
         <td><span class="badge badge-gray">${i.tipo}</span></td>
@@ -252,6 +293,7 @@
         <td style="color:var(--gris-400)">${i.stock_min||'—'}</td>
         <td style="color:var(--gris-500)">${i.unidad}</td>
         <td>${i.costo ? Fmt.moneda(i.costo) : '—'}</td>
+        <td style="font-size:12px;color:var(--gris-500)">${fechaMod}</td>
         <td>${badge}</td>
         <td><div class="tbl-actions-cell">
           <button class="btn-tbl btn-tbl-view" onclick="verDetalles(${i.id})" title="Ver detalles">ℹ️</button>

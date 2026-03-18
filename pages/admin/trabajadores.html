@@ -69,78 +69,106 @@
   let trabajadores = [];
 
   async function cargarTrabajadores() {
-    try { const d = await API.get('/trabajadores'); trabajadores = d.trabajadores || d || []; }
-    catch {
-      trabajadores = [
-        { id:1, nombre:'Ana López', cargo:'Vendedora', telefono:'987111222', ingreso:'2024-01-15', ventas_mes:1820, rol:'empleado' },
-        { id:2, nombre:'María Quispe', cargo:'Florista', telefono:'987333444', ingreso:'2024-03-01', ventas_mes:1540, rol:'empleado' },
-        { id:3, nombre:'Rosa Flores', cargo:'Delivery', telefono:'987555666', ingreso:'2025-06-01', ventas_mes:980, rol:'empleado' },
-      ];
+    try {
+      const response = await API.get('/trabajadores');
+      const data = response.data || response;
+      trabajadores = data.data || data.trabajadores || data || [];
+      console.log('Trabajadores cargados:', trabajadores.length);
+    } catch (error) {
+      console.error('Error al cargar trabajadores:', error);
+      Toast.error('No se pudieron cargar los trabajadores');
+      trabajadores = [];
     }
     renderCards();
   }
 
   function renderCards() {
     const el = document.getElementById('cards-trab');
-    if (!trabajadores.length) { el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No hay trabajadores</div>'; return; }
+    if (!trabajadores.length) { el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No hay trabajadores registrados</div>'; return; }
     const CARGO_COLOR = { 'Vendedora':'badge-rosa','Vendedor/a':'badge-rosa', Florista:'badge-dorado', Delivery:'badge-info', 'Administrador/a':'badge-success' };
-    el.innerHTML = trabajadores.map(t => {
+    const ROL_COLOR = { admin:'badge-success', empleado:'badge-info', duena:'badge-rosa' };
+    const ROL_LABEL = { admin:'Administrador', empleado:'Empleado', duena:'Dueña' };
+    
+    el.innerHTML = trabajadores.filter(t => t.activo !== false).map(t => {
       const initials = t.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const fechaIngreso = t.fecha_ingreso || t.ingreso;
       return `
         <div class="card" style="padding:1.25rem">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem">
             <div class="avatar" style="width:44px;height:44px;font-size:15px">${initials}</div>
-            <div>
+            <div style="flex:1">
               <div style="font-weight:600;font-size:14px">${t.nombre}</div>
               <span class="badge ${CARGO_COLOR[t.cargo]||'badge-gray'}">${t.cargo}</span>
             </div>
           </div>
           <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--gris-600);margin-bottom:1rem">
+            ${t.email ? `<div>✉️ ${t.email}</div>` : ''}
             ${t.telefono ? `<div>📱 ${Fmt.tel(t.telefono)}</div>` : ''}
-            ${t.ingreso ? `<div>📅 Desde ${Fmt.fecha(t.ingreso)}</div>` : ''}
-            <div>🔑 Rol: <span class="badge badge-gray">${t.rol}</span></div>
+            ${fechaIngreso ? `<div>📅 Desde ${Fmt.fecha(fechaIngreso)}</div>` : ''}
+            <div>🔑 Rol: <span class="badge ${ROL_COLOR[t.rol]||'badge-gray'}">${ROL_LABEL[t.rol]||t.rol}</span></div>
           </div>
-          ${t.ventas_mes != null ? `
-          <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span style="font-size:11px;color:var(--gris-500)">Ventas este mes</span>
-            <span style="font-weight:700;color:var(--rosa-600)">${Fmt.moneda(t.ventas_mes)}</span>
-          </div>` : ''}
           <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="editarTrabajador(${t.id})">Editar</button>
-            <button class="btn btn-outline btn-sm" style="flex:1" onclick="Toast.info('Ver ventas de ${t.nombre}')">Ver ventas</button>
+            <button class="btn btn-outline btn-sm" style="flex:1;color:var(--danger);border-color:var(--danger)" onclick="eliminarTrabajador(${t.id},'${t.nombre.replace(/'/g,"\\'")}')">Desactivar</button>
           </div>
         </div>`;
     }).join('');
   }
 
-  function editarTrabajador(id) {
-    const t = trabajadores.find(x => x.id === id);
-    if (!t) return;
-    document.getElementById('titulo-modal-trab').textContent = 'Editar trabajador';
-    document.getElementById('trab-nombre').value = t.nombre;
-    document.getElementById('trab-telefono').value = t.telefono || '';
-    document.getElementById('trab-cargo').value = t.cargo;
-    document.getElementById('trab-ingreso').value = t.ingreso || '';
-    document.getElementById('trab-rol').value = t.rol || 'empleado';
-    Modal.open('modal-trab');
-  }
-
   async function guardarTrabajador() {
     const payload = {
-      nombre:   document.getElementById('trab-nombre').value,
-      telefono: document.getElementById('trab-telefono').value,
-      cargo:    document.getElementById('trab-cargo').value,
-      ingreso:  document.getElementById('trab-ingreso').value,
-      email:    document.getElementById('trab-email').value,
-      password: document.getElementById('trab-pass').value,
-      rol:      document.getElementById('trab-rol').value,
+      nombre:        document.getElementById('trab-nombre').value.trim(),
+      telefono:      document.getElementById('trab-telefono').value.trim(),
+      cargo:         document.getElementById('trab-cargo').value,
+      fecha_ingreso: document.getElementById('trab-ingreso').value,
+      email:         document.getElementById('trab-email').value.trim(),
+      password:      document.getElementById('trab-pass').value,
+      rol:           document.getElementById('trab-rol').value,
     };
-    if (!payload.nombre) { Toast.warning('El nombre es obligatorio'); return; }
-    try { await API.post('/trabajadores', payload); }
-    catch { trabajadores.push({ id: Date.now(), ...payload, ventas_mes: 0 }); }
-    Toast.success('Trabajador guardado');
-    Modal.close('modal-trab');
-    renderCards();
+    
+    // Validaciones
+    if (!payload.nombre) {
+      Toast.warning('El nombre es obligatorio');
+      return;
+    }
+    if (!payload.email) {
+      Toast.warning('El correo electrónico es obligatorio');
+      return;
+    }
+    if (!payload.password || payload.password.length < 6) {
+      Toast.warning('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    
+    try {
+      await API.post('/trabajadores', payload);
+      Toast.success('Trabajador registrado correctamente');
+      Modal.close('modal-trab');
+      
+      // Limpiar formulario
+      document.getElementById('trab-nombre').value = '';
+      document.getElementById('trab-telefono').value = '';
+      document.getElementById('trab-email').value = '';
+      document.getElementById('trab-pass').value = '';
+      document.getElementById('trab-ingreso').value = '';
+      
+      await cargarTrabajadores(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al guardar trabajador:', error);
+      Toast.error(error.message || 'Error al guardar el trabajador');
+    }
+  }
+
+  async function eliminarTrabajador(id, nombre) {
+    Modal.confirm(`¿Desactivar al trabajador "${nombre}"? No podrá acceder al sistema.`, async () => {
+      try {
+        await API.delete('/trabajadores/' + id);
+        Toast.success('Trabajador desactivado correctamente');
+        await cargarTrabajadores(); // Recargar desde el backend
+      } catch (error) {
+        console.error('Error al eliminar trabajador:', error);
+        Toast.error(error.message || 'Error al desactivar el trabajador');
+      }
+    });
   }
 
   cargarTrabajadores();

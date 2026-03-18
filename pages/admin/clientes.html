@@ -15,31 +15,64 @@
     <div class="admin-content">
       <div class="page-header">
         <div><h2>Clientes</h2><p>Registro y historial de compras de clientes</p></div>
-        <button class="btn btn-primary" onclick="Modal.open('modal-cliente')">+ Nuevo cliente</button>
+        <button class="btn btn-primary" onclick="abrirModalCliente()">+ Nuevo cliente</button>
       </div>
 
       <div class="filter-bar">
         <input class="form-control" placeholder="Buscar por nombre o teléfono..." id="buscar-cli" oninput="renderClientes()" style="max-width:280px" />
+        <select class="form-control" id="ordenar-clientes" onchange="renderClientes()" style="max-width:200px;margin-left:auto">
+          <option value="nombre">Ordenar: Nombre A-Z</option>
+          <option value="nombre_desc">Ordenar: Nombre Z-A</option>
+          <option value="telefono">Ordenar: Teléfono</option>
+          <option value="fecha_desc">Ordenar: Más reciente</option>
+          <option value="fecha_asc">Ordenar: Más antiguo</option>
+        </select>
+        <div style="font-size:12px;color:var(--gris-500);display:flex;align-items:center">
+          <span id="total-clientes">0</span> clientes
+        </div>
       </div>
 
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Cliente</th><th>Teléfono</th><th>Dirección</th><th>Total pedidos</th><th>Última compra</th><th>Acciones</th></tr></thead>
-          <tbody id="tbody-clientes"></tbody>
+          <thead><tr><th>Cliente</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Registrado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-clientes">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando clientes...</td></tr>
+          </tbody>
         </table>
       </div>
+      
+      <!-- Paginación -->
+      <div id="paginacion-clientes" style="display:flex;justify-content:center;gap:8px;margin-top:1rem"></div>
     </div>
   </main>
 </div>
 
+<!-- Modal Cliente (Crear/Editar) -->
 <div class="modal-overlay" id="modal-cliente">
   <div class="modal">
-    <div class="modal-header"><h3>Nuevo cliente</h3><button class="btn-close" onclick="Modal.close('modal-cliente')">×</button></div>
+    <div class="modal-header">
+      <h3 id="titulo-modal-cliente">Nuevo cliente</h3>
+      <button class="btn-close" onclick="Modal.close('modal-cliente')">×</button>
+    </div>
     <div class="modal-body">
       <div class="form-stack">
-        <div class="form-group"><label class="form-label">Nombre completo <span class="req">*</span></label><input class="form-control" id="cli-nombre" required /></div>
-        <div class="form-group"><label class="form-label">Teléfono <span class="req">*</span></label><input class="form-control" id="cli-telefono" type="tel" required /></div>
-        <div class="form-group"><label class="form-label">Dirección (opcional)</label><input class="form-control" id="cli-direccion" /></div>
+        <input type="hidden" id="cli-id" />
+        <div class="form-group">
+          <label class="form-label">Nombre completo <span class="req">*</span></label>
+          <input class="form-control" id="cli-nombre" required placeholder="Ej: María García" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono <span class="req">*</span></label>
+          <input class="form-control" id="cli-telefono" type="tel" required placeholder="Ej: 987654321" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email (opcional)</label>
+          <input class="form-control" id="cli-email" type="email" placeholder="Ej: maria@ejemplo.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dirección (opcional)</label>
+          <input class="form-control" id="cli-direccion" placeholder="Ej: Av. Los Rosales 123" />
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -49,49 +82,352 @@
   </div>
 </div>
 
+<!-- Modal Detalles del Cliente -->
+<div class="modal-overlay" id="modal-detalles-cliente">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3>Detalles del cliente</h3>
+      <button class="btn-close" onclick="Modal.close('modal-detalles-cliente')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detalles-cliente-content" style="padding:1rem">
+        <!-- Contenido dinámico -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-detalles-cliente')">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="editarDesdeDetalles()">Editar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
   initAdminLayout('clientes', 'Clientes', 'Negocio');
+  
   let clientes = [];
+  let paginaActual = 1;
+  let totalPaginas = 1;
+  let clienteEditando = null;
+  const LIMITE_POR_PAGINA = 50;
 
-  async function cargarClientes() {
-    try { const d = await API.get('/clientes'); clientes = d.clientes || d || []; }
-    catch {
-      clientes = [
-        { id:1, nombre:'Ana García', telefono:'987654321', direccion:'Av. Los Rosales 123', total_pedidos:8, ultima_compra:'2026-03-10' },
-        { id:2, nombre:'Luis Pérez', telefono:'912345678', direccion:'', total_pedidos:3, ultima_compra:'2026-03-08' },
-        { id:3, nombre:'María Torres', telefono:'998877665', direccion:'Calle Jardín 789', total_pedidos:12, ultima_compra:'2026-03-12' },
-      ];
+  async function cargarClientes(pagina = 1) {
+    try {
+      const response = await API.get(`/clientes?page=${pagina}&limit=${LIMITE_POR_PAGINA}`);
+      const result = response.data || response;
+      
+      // Backend retorna: { clientes: [...], total, page, limit, pages }
+      clientes = result.clientes || [];
+      paginaActual = result.page || 1;
+      totalPaginas = result.pages || 1;
+      
+      console.log('Clientes cargados:', clientes.length, 'de', result.total);
+      document.getElementById('total-clientes').textContent = result.total || clientes.length;
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
+      Toast.error('No se pudieron cargar los clientes');
+      clientes = [];
     }
     renderClientes();
+    renderPaginacion();
   }
 
   function renderClientes() {
-    const q = (document.getElementById('buscar-cli').value||'').toLowerCase();
-    const lista = clientes.filter(c => !q || c.nombre.toLowerCase().includes(q) || c.telefono.includes(q));
+    const q = (document.getElementById('buscar-cli').value || '').toLowerCase();
+    const ordenar = document.getElementById('ordenar-clientes').value;
+    
+    let lista = clientes.filter(c => 
+      !q || 
+      c.nombre.toLowerCase().includes(q) || 
+      c.telefono.includes(q) ||
+      (c.email && c.email.toLowerCase().includes(q))
+    );
+    
+    // Ordenamiento
+    lista = [...lista]; // Clonar para no mutar el original
+    switch(ordenar) {
+      case 'nombre':
+        lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        break;
+      case 'nombre_desc':
+        lista.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        break;
+      case 'telefono':
+        lista.sort((a, b) => a.telefono.localeCompare(b.telefono));
+        break;
+      case 'fecha_desc':
+        lista.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        break;
+      case 'fecha_asc':
+        lista.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+        break;
+    }
+    
     const tbody = document.getElementById('tbody-clientes');
-    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin clientes</td></tr>'; return; }
+    if (!lista.length) { 
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin clientes</td></tr>'; 
+      return; 
+    }
+    
     tbody.innerHTML = lista.map(c => {
-      const initials = c.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const initials = c.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const fechaRegistro = c.created_at ? new Date(c.created_at).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      }) : '—';
+      
       return `<tr>
-        <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar">${initials}</div><span style="font-weight:500">${c.nombre}</span></div></td>
-        <td><a href="https://wa.me/51${c.telefono}" target="_blank" style="color:var(--rosa-500)">${Fmt.tel(c.telefono)}</a></td>
-        <td style="font-size:12px;color:var(--gris-500)">${c.direccion||'—'}</td>
-        <td><span class="badge badge-rosa">${c.total_pedidos||0} pedidos</span></td>
-        <td style="font-size:12px">${c.ultima_compra ? Fmt.fecha(c.ultima_compra) : '—'}</td>
-        <td><div class="tbl-actions-cell"><button class="btn-tbl btn-tbl-view" onclick="Toast.info('Historial de ${c.nombre}')">Historial</button></div></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar">${initials}</div>
+            <span style="font-weight:500">${c.nombre}</span>
+          </div>
+        </td>
+        <td>
+          <a href="https://wa.me/51${c.telefono}" target="_blank" style="color:var(--rosa-500);text-decoration:none" title="Abrir WhatsApp">
+            📱 ${Fmt.tel(c.telefono)}
+          </a>
+        </td>
+        <td style="font-size:12px;color:var(--gris-500)">${c.email || '—'}</td>
+        <td style="font-size:12px;color:var(--gris-500)">${c.direccion || '—'}</td>
+        <td style="font-size:12px;color:var(--gris-500)">${fechaRegistro}</td>
+        <td>
+          <div class="tbl-actions-cell">
+            <button class="btn-tbl btn-tbl-view" onclick="verDetalles(${c.id})" title="Ver detalles">ℹ️</button>
+            <button class="btn-tbl btn-tbl-edit" onclick="editarCliente(${c.id})" title="Editar">✏️</button>
+            <button class="btn-tbl btn-tbl-delete" onclick="eliminarCliente(${c.id}, '${c.nombre.replace(/'/g, "\\'")}')">🗑️</button>
+          </div>
+        </td>
       </tr>`;
     }).join('');
   }
 
+  function renderPaginacion() {
+    const container = document.getElementById('paginacion-clientes');
+    
+    if (totalPaginas <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let botones = '';
+    
+    if (paginaActual > 1) {
+      botones += `<button class="btn btn-outline btn-sm" onclick="cargarClientes(${paginaActual - 1})">← Anterior</button>`;
+    }
+
+    for (let i = 1; i <= totalPaginas; i++) {
+      if (i === paginaActual) {
+        botones += `<button class="btn btn-primary btn-sm">${i}</button>`;
+      } else if (i === 1 || i === totalPaginas || (i >= paginaActual - 1 && i <= paginaActual + 1)) {
+        botones += `<button class="btn btn-outline btn-sm" onclick="cargarClientes(${i})">${i}</button>`;
+      } else if (i === paginaActual - 2 || i === paginaActual + 2) {
+        botones += `<span style="padding:0 8px">...</span>`;
+      }
+    }
+
+    if (paginaActual < totalPaginas) {
+      botones += `<button class="btn btn-outline btn-sm" onclick="cargarClientes(${paginaActual + 1})">Siguiente →</button>`;
+    }
+
+    container.innerHTML = botones;
+  }
+
+  async function verDetalles(id) {
+    try {
+      const response = await API.get('/clientes/' + id);
+      const cliente = response.data || response;
+      
+      if (!cliente) {
+        Toast.error('No se pudo cargar el cliente');
+        return;
+      }
+
+      const initials = cliente.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const fechaRegistro = cliente.created_at ? new Date(cliente.created_at).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'long', 
+        year: 'numeric' 
+      }) : 'No disponible';
+      
+      const fechaActualizacion = cliente.updated_at ? new Date(cliente.updated_at).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'long', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : 'No disponible';
+
+      const detallesHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--gris-200)">
+          <div class="avatar" style="width:64px;height:64px;font-size:24px">${initials}</div>
+          <div>
+            <h3 style="margin:0;font-size:1.5rem">${cliente.nombre}</h3>
+            <p style="margin:0.25rem 0 0 0;color:var(--gris-500)">ID: ${cliente.id}</p>
+          </div>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Teléfono</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:500">
+              <a href="https://wa.me/51${cliente.telefono}" target="_blank" style="color:var(--rosa-500);text-decoration:none">
+                📱 ${Fmt.tel(cliente.telefono)}
+              </a>
+            </p>
+          </div>
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Email</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:500">${cliente.email || 'No registrado'}</p>
+          </div>
+          <div style="grid-column:1/-1">
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Dirección</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:500">${cliente.direccion || 'No registrada'}</p>
+          </div>
+        </div>
+        
+        <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--gris-200)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div>
+              <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Registrado</p>
+              <p style="margin:0.25rem 0 0 0;font-weight:500">${fechaRegistro}</p>
+            </div>
+            <div>
+              <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Última actualización</p>
+              <p style="margin:0.25rem 0 0 0;font-weight:500;font-size:0.875rem">${fechaActualizacion}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('detalles-cliente-content').innerHTML = detallesHTML;
+      clienteEditando = cliente.id;
+      Modal.open('modal-detalles-cliente');
+    } catch (error) {
+      console.error('Error al cargar detalles:', error);
+      Toast.error('No se pudo cargar los detalles del cliente');
+    }
+  }
+
+  function abrirModalCliente() {
+    document.getElementById('titulo-modal-cliente').textContent = 'Nuevo cliente';
+    limpiarFormulario();
+    Modal.open('modal-cliente');
+  }
+
+  async function editarCliente(id) {
+    try {
+      const response = await API.get('/clientes/' + id);
+      const cliente = response.data || response;
+      
+      if (!cliente) {
+        Toast.error('No se pudo cargar el cliente');
+        return;
+      }
+
+      // Llenar el formulario con los datos del cliente
+      document.getElementById('cli-id').value = cliente.id;
+      document.getElementById('cli-nombre').value = cliente.nombre;
+      document.getElementById('cli-telefono').value = cliente.telefono;
+      document.getElementById('cli-email').value = cliente.email || '';
+      document.getElementById('cli-direccion').value = cliente.direccion || '';
+      document.getElementById('titulo-modal-cliente').textContent = 'Editar cliente';
+      
+      clienteEditando = cliente.id;
+      Modal.open('modal-cliente');
+    } catch (error) {
+      console.error('Error al cargar cliente para editar:', error);
+      Toast.error('No se pudo cargar el cliente para editar');
+    }
+  }
+
+  function editarDesdeDetalles() {
+    Modal.close('modal-detalles-cliente');
+    if (clienteEditando) {
+      editarCliente(clienteEditando);
+    }
+  }
+
   async function guardarCliente() {
-    const payload = { nombre: document.getElementById('cli-nombre').value, telefono: document.getElementById('cli-telefono').value, direccion: document.getElementById('cli-direccion').value };
-    if (!payload.nombre || !payload.telefono) { Toast.warning('Nombre y teléfono son obligatorios'); return; }
-    try { await API.post('/clientes', payload); } catch { clientes.unshift({ id: Date.now(), ...payload, total_pedidos:0 }); }
-    Toast.success('Cliente registrado');
-    Modal.close('modal-cliente');
-    renderClientes();
+    const id = document.getElementById('cli-id').value;
+    const payload = {
+      nombre: document.getElementById('cli-nombre').value.trim(),
+      telefono: document.getElementById('cli-telefono').value.trim(),
+      email: document.getElementById('cli-email').value.trim(),
+      direccion: document.getElementById('cli-direccion').value.trim()
+    };
+    
+    // Validaciones
+    if (!payload.nombre) {
+      Toast.warning('El nombre es obligatorio');
+      return;
+    }
+    
+    if (!payload.telefono) {
+      Toast.warning('El teléfono es obligatorio');
+      return;
+    }
+    
+    // Validar formato de teléfono (9 dígitos)
+    if (!/^\d{9}$/.test(payload.telefono)) {
+      Toast.warning('El teléfono debe tener 9 dígitos');
+      return;
+    }
+    
+    // Validar email si se proporciona
+    if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+      Toast.warning('El email no es válido');
+      return;
+    }
+    
+    try {
+      if (id) {
+        // Modo edición
+        await API.put('/clientes/' + id, payload);
+        Toast.success('Cliente actualizado correctamente');
+      } else {
+        // Modo creación
+        await API.post('/clientes', payload);
+        Toast.success('Cliente registrado correctamente');
+      }
+      
+      Modal.close('modal-cliente');
+      limpiarFormulario();
+      await cargarClientes(paginaActual); // Recargar la página actual
+    } catch (error) {
+      console.error('Error al guardar cliente:', error);
+      Toast.error(error.message || (id ? 'Error al actualizar el cliente' : 'Error al registrar el cliente'));
+    }
+  }
+
+  async function eliminarCliente(id, nombre) {
+    Modal.confirm(`¿Eliminar al cliente "${nombre}"? Esta acción no se puede deshacer.`, async () => {
+      try {
+        await API.delete('/clientes/' + id);
+        Toast.success('Cliente eliminado correctamente');
+        
+        // Si era el último de la página y no es la primera, ir a la anterior
+        if (clientes.length === 1 && paginaActual > 1) {
+          await cargarClientes(paginaActual - 1);
+        } else {
+          await cargarClientes(paginaActual);
+        }
+      } catch (error) {
+        console.error('Error al eliminar cliente:', error);
+        Toast.error(error.message || 'Error al eliminar el cliente');
+      }
+    });
+  }
+
+  function limpiarFormulario() {
+    document.getElementById('cli-id').value = '';
+    document.getElementById('cli-nombre').value = '';
+    document.getElementById('cli-telefono').value = '';
+    document.getElementById('cli-email').value = '';
+    document.getElementById('cli-direccion').value = '';
+    clienteEditando = null;
   }
 
   cargarClientes();

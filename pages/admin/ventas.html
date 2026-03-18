@@ -15,7 +15,7 @@
     <div class="admin-content">
       <div class="page-header">
         <div><h2>Ventas</h2><p>Registra y consulta las ventas de la florería</p></div>
-        <button class="btn btn-primary" onclick="Modal.open('modal-venta')">+ Nueva venta</button>
+        <button class="btn btn-primary" onclick="abrirModalVenta()">+ Nueva venta</button>
       </div>
 
       <!-- Resumen del día -->
@@ -28,13 +28,20 @@
 
       <div class="filter-bar">
         <input class="form-control" type="date" id="fecha-filtro" oninput="cargarVentas()" style="max-width:160px" />
-        <select class="form-control" id="metodo-filtro" onchange="cargarVentas()" style="max-width:160px">
+        <select class="form-control" id="metodo-filtro" onchange="cargarVentas()" style="max-width:180px">
           <option value="">Todos los métodos</option>
           <option>Efectivo</option><option>Yape</option><option>Plin</option>
           <option>Tarjeta</option><option>Transferencia bancaria</option>
         </select>
         <select class="form-control" id="trabajador-filtro" onchange="cargarVentas()" style="max-width:180px">
           <option value="">Todos los trabajadores</option>
+        </select>
+        <select class="form-control" id="ordenar-ventas" onchange="renderVentas()" style="max-width:180px;margin-left:auto">
+          <option value="fecha_desc">Ordenar: Más reciente</option>
+          <option value="fecha_asc">Ordenar: Más antiguo</option>
+          <option value="total_desc">Ordenar: Mayor monto</option>
+          <option value="total_asc">Ordenar: Menor monto</option>
+          <option value="metodo">Ordenar: Método de pago</option>
         </select>
       </div>
 
@@ -44,6 +51,9 @@
           <tbody id="tbody-ventas"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando ventas...</td></tr></tbody>
         </table>
       </div>
+      
+      <!-- Paginación -->
+      <div id="paginacion-ventas" style="display:flex;justify-content:center;gap:8px;margin-top:1rem"></div>
     </div>
   </main>
 </div>
@@ -74,8 +84,10 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Trabajador <span class="req">*</span></label>
-            <select class="form-control" id="venta-trabajador" required></select>
+            <label class="form-label">Cliente (opcional)</label>
+            <select class="form-control" id="venta-cliente">
+              <option value="">Sin cliente</option>
+            </select>
           </div>
         </div>
         <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:12px;display:flex;justify-content:space-between;align-items:center">
@@ -87,6 +99,24 @@
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-venta')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="registrarVenta()">Registrar venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle de Venta -->
+<div class="modal-overlay" id="modal-detalle-venta">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3>Detalle de venta</h3>
+      <button class="btn-close" onclick="Modal.close('modal-detalle-venta')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detalle-venta-content" style="padding:1rem">
+        <!-- Contenido dinámico -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-detalle-venta')">Cerrar</button>
     </div>
   </div>
 </div>
