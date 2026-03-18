@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario Create Item Test - Task 2.3</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 3px;
+    }
+    .pass {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .fail {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Inventario Create Item - Unit Tests (Task 2.3)</h1>
+  <p>Testing create inventory item functionality via POST /api/inventario</p>
+  
+  <div class="info">
+    <strong>Task 2.3 Requirements:</strong>
+    <ul>
+      <li>Collect form data (nombre, tipo, stock, costo, stock_min, unidad)</li>
+      <li>Send POST request with proper headers</li>
+      <li>Handle validation errors and display to user</li>
+      <li>Refresh inventory list on success</li>
+    </ul>
+  </div>
+  
+  <div id="test-results"></div>
+
+  <script>
+    // Test utilities
+    const testResults = [];
+    let mockFetchCalls = [];
+    
+    function assert(condition, testName, message) {
+      const result = {
+        name: testName,
+        passed: condition,
+        message: message || (condition ? 'Test passed' : 'Test failed')
+      };
+      testResults.push(result);
+      return condition;
+    }
+
+    function displayResults() {
+      const container = document.getElementById('test-results');
+      const passed = testResults.filter(r => r.passed).length;
+      const total = testResults.length;
+      
+      let html = `<div class="test-section">
+        <h2>Test Summary: ${passed}/${total} tests passed</h2>`;
+      
+      testResults.forEach(result => {
+        html += `<div class="test-result ${result.passed ? 'pass' : 'fail'}">
+          <strong>${result.name}</strong>: ${result.message}
+        </div>`;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // Mock API and utilities
+    const API_BASE = 'http://localhost:3000/api';
+    const Auth = {
+      getToken: () => 'mock-token-123',
+    };
+
+    const Toast = {
+      messages: [],
+      success: (msg) => Toast.messages.push({ type: 'success', msg }),
+      warning: (msg) => Toast.messages.push({ type: 'warning', msg }),
+      error: (msg) => Toast.messages.push({ type: 'error', msg }),
+      clear: () => Toast.messages = []
+    };
+
+    const Modal = {
+      closed: [],
+      close: (id) => Modal.closed.push(id)
+    };
+
+    // Mock API implementation
+    const API = {
+      headers: () => ({
+        'Content-Type': 'application/json',
+        ...(Auth.getToken() ? { Authorization: `Bearer ${Auth.getToken()}` } : {})
+      }),
+
+      handleResponse: async (response) => {
+        if (response.status === 401) {
+          throw new Error('Unauthorized');
+        }
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          throw new Error(`Error del servidor (${response.status})`);
+        }
+
+        if (!response.ok) {
+          const errorMsg = data.error || data.mensaje || data.message || `Error ${response.status}`;
+          const error = new Error(errorMsg);
+          error.status = response.status;
+          error.detalles = data.detalles || data.details || [];
+          throw error;
+        }
+
+        return data;
+      },
+
+      post: async (endpoint, data) => {
+        mockFetchCalls.push({ method: 'POST', endpoint, data });
+        const response = await fetch(API_BASE + endpoint, {
+          method: 'POST', 
+          headers: API.headers(), 
+          body: JSON.stringify(data)
+        });
+        return await API.handleResponse(response);
+      }
+    };
+
+    // Mock cargarInventario function
+    let inventoryReloaded = false;
+    async function cargarInventario() {
+      inventoryReloaded = true;
+    }
+
+    // Mock DOM elements
+    function setupMockDOM() {
+      const mockInputs = {
+        'item-nombre': '',
+        'item-tipo': 'flores',
+        'item-unidad': 'unidad',
+        'item-stock': '0',
+        'item-stock-min': '0',
+        'item-costo': '0'
+      };
+
+      document.getElementById = (id) => {
+        if (mockInputs.hasOwnProperty(id)) {
+          return {
+            value: mockInputs[id],
+            setValue: (val) => { mockInputs[id] = val; }
+          };
+        }
+        return null;
+      };
+
+      return mockInputs;
+    }
+
+    // The guardarItem function from inventario.html
+    async function guardarItem() {
+      const payload = {
+        nombre:    document.getElementById('item-nombre').value.trim(),
+        tipo:      document.getElementById('item-tipo').value,
+        unidad:    document.getElementById('item-unidad').value,
+        stock:     parseInt(document.getElementById('item-stock').value)||0,
+        stock_min: parseInt(document.getElementById('item-stock-min').value)||0,
+        costo:     parseFloat(document.getElementById('item-costo').value)||0,
+      };
+      
+      // Client-side validation
+      if (!payload.nombre) { 
+        Toast.warning('El nombre es obligatorio'); 
+        return; 
+      }
+      if (payload.stock < 0) {
+        Toast.warning('El stock no puede ser negativo');
+        return;
+      }
+      if (payload.costo < 0) {
+        Toast.warning('El costo no puede ser negativo');
+        return;
+      }
+      
+      try {
+        await API.post('/inventario', payload);
+        Toast.success('Ítem agregado correctamente');
+        Modal.close('modal-item');
+        // Clear form fields
+        document.getElementById('item-nombre').value = '';
+        document.getElementById('item-stock').value = '';
+        document.getElementById('item-stock-min').value = '';
+        document.getElementById('item-costo').value = '';
+        // Reload inventory from backend to get the new item with its ID
+        await cargarInventario();
+      } catch (error) {
+        console.error('Error al guardar ítem:', error);
+        
+        // Handle validation errors (400)
+        if (error.status === 400 && error.detalles && error.detalles.length > 0) {
+          const mensajes = error.detalles.map(d => d.msg || d.message).join(', ');
+          Toast.error(`Errores de validación: ${mensajes}`);
+          return;
+        }
+        
+        // Handle other errors
+        if (error.message.includes('conexión') || error.message.includes('internet')) {
+          Toast.error('Error de conexión. Verifica tu conexión a internet.');
+        } else {
+          Toast.error(error.message || 'Error al guardar el ítem');
+        }
+      }
+    }
+
+    // Test 1: Client-side validation - empty nombre
+    async function testEmptyNombre() {
+      Toast.clear();
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = '';
+      
+      await guardarItem();
+      
+      const hasWarning = Toast.messages.some(m => 
+        m.type === 'warning' && m.msg.includes('nombre es obligatorio')
+      );
+      
+      assert(hasWarning, 'Test 1: Empty nombre validation', 
+        'Should show warning when nombre is empty');
+    }
+
+    // Test 2: Client-side validation - negative stock
+    async function testNegativeStock() {
+      Toast.clear();
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = 'Test Item';
+      mockInputs['item-stock'] = '-5';
+      
+      await guardarItem();
+      
+      const hasWarning = Toast.messages.some(m => 
+        m.type === 'warning' && m.msg.includes('stock no puede ser negativo')
+      );
+      
+      assert(hasWarning, 'Test 2: Negative stock validation', 
+        'Should show warning when stock is negative');
+    }
+
+    // Test 3: Client-side validation - negative costo
+    async function testNegativeCosto() {
+      Toast.clear();
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = 'Test Item';
+      mockInputs['item-stock'] = '10';
+      mockInputs['item-costo'] = '-3.50';
+      
+      await guardarItem();
+      
+      const hasWarning = Toast.messages.some(m => 
+        m.type === 'warning' && m.msg.includes('costo no puede ser negativo')
+      );
+      
+      assert(hasWarning, 'Test 3: Negative costo validation', 
+        'Should show warning when costo is negative');
+    }
+
+    // Test 4: Payload structure
+    async function testPayloadStructure() {
+      mockFetchCalls = [];
+      Toast.clear();
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = 'Rosas rojas';
+      mockInputs['item-tipo'] = 'flores';
+      mockInputs['item-stock'] = '45';
+      mockInputs['item-stock-min'] = '10';
+      mockInputs['item-unidad'] = 'unidad';
+      mockInputs['item-costo'] = '3.50';
+      
+      // Mock successful response
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 1, nombre: 'Rosas rojas' })
+      });
+      
+      await guardarItem();
+      
+      const postCall = mockFetchCalls.find(c => c.method === 'POST');
+      const hasCorrectFields = postCall && 
+        postCall.data.nombre === 'Rosas rojas' &&
+        postCall.data.tipo === 'flores' &&
+        postCall.data.stock === 45 &&
+        postCall.data.stock_min === 10 &&
+        postCall.data.unidad === 'unidad' &&
+        postCall.data.costo === 3.50;
+      
+      assert(hasCorrectFields, 'Test 4: Payload structure', 
+        'Payload should contain all required fields with correct values');
+    }
+
+    // Test 5: Success message and modal close
+    async function testSuccessFlow() {
+      Toast.clear();
+      Modal.closed = [];
+      inventoryReloaded = false;
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = 'Test Item';
+      
+      // Mock successful response
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 201,
+        json: async () => ({ id: 1, nombre: 'Test Item' })
+      });
+      
+      await guardarItem();
+      
+      const hasSuccess = Toast.messages.some(m => 
+        m.type === 'success' && m.msg.includes('agregado correctamente')
+      );
+      const modalClosed = Modal.closed.includes('modal-item');
+      
+      assert(hasSuccess, 'Test 5a: Success message', 
+        'Should show success toast on successful creation');
+      assert(modalClosed, 'Test 5b: Modal closed', 
+        'Should close modal after successful creation');
+      assert(inventoryReloaded, 'Test 5c: Inventory reloaded', 
+        'Should reload inventory list after successful creation');
+    }
+
+    // Test 6: Handle validation errors (400)
+    async function testValidationErrors() {
+      Toast.clear();
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = 'Test';
+      
+      // Mock validation error response
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          error: 'Validation failed',
+          detalles: [
+            { msg: 'Nombre debe tener al menos 3 caracteres' },
+            { msg: 'Stock debe ser mayor a 0' }
+          ]
+        })
+      });
+      
+      await guardarItem();
+      
+      const hasError = Toast.messages.some(m => 
+        m.type === 'error' && 
+        m.msg.includes('Errores de validación') &&
+        m.msg.includes('Nombre debe tener al menos 3 caracteres')
+      );
+      
+      assert(hasError, 'Test 6: Validation error handling', 
+        'Should display validation errors from backend');
+    }
+
+    // Test 7: Handle network errors
+    async function testNetworkError() {
+      Toast.clear();
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = 'Test Item';
+      
+      // Mock network error
+      global.fetch = jest.fn().mockRejectedValue(
+        new Error('Failed to fetch')
+      );
+      
+      await guardarItem();
+      
+      const hasError = Toast.messages.some(m => 
+        m.type === 'error' && 
+        m.msg.includes('conexión')
+      );
+      
+      assert(hasError, 'Test 7: Network error handling', 
+        'Should display connection error message');
+    }
+
+    // Test 8: Trim whitespace from nombre
+    async function testTrimNombre() {
+      mockFetchCalls = [];
+      Toast.clear();
+      const mockInputs = setupMockDOM();
+      mockInputs['item-nombre'] = '  Rosas rojas  ';
+      
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 201,
+        json: async () => ({ id: 1 })
+      });
+      
+      await guardarItem();
+      
+      const postCall = mockFetchCalls.find(c => c.method === 'POST');
+      const isTrimmed = postCall && postCall.data.nombre === 'Rosas rojas';
+      
+      assert(isTrimmed, 'Test 8: Trim whitespace', 
+        'Should trim whitespace from nombre field');
+    }
+
+    // Mock jest for tests
+    const jest = {
+      fn: () => {
+        const mockFn = async (...args) => {
+          mockFn.calls.push(args);
+          if (mockFn.mockResolvedValue_) {
+            return mockFn.mockResolvedValue_;
+          }
+          if (mockFn.mockRejectedValue_) {
+            throw mockFn.mockRejectedValue_;
+          }
+          return {};
+        };
+        mockFn.calls = [];
+        mockFn.mockResolvedValue = (val) => {
+          mockFn.mockResolvedValue_ = val;
+          return mockFn;
+        };
+        mockFn.mockRejectedValue = (val) => {
+          mockFn.mockRejectedValue_ = val;
+          return mockFn;
+        };
+        return mockFn;
+      }
+    };
+
+    // Run all tests
+    console.log('Running Inventario Create Item Tests (Task 2.3)...');
+    
+    (async () => {
+      await testEmptyNombre();
+      await testNegativeStock();
+      await testNegativeCosto();
+      await testPayloadStructure();
+      await testSuccessFlow();
+      await testValidationErrors();
+      await testNetworkError();
+      await testTrimNombre();
+      
+      // Display results
+      displayResults();
+      
+      console.log('Tests completed. Results:', testResults);
+      console.log(`Passed: ${testResults.filter(r => r.passed).length}/${testResults.length}`);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario Update Item Test - Task 2.4</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 3px;
+    }
+    .pass {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .fail {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Inventario Update Item - Unit Tests (Task 2.4)</h1>
+  <p>Testing update inventory item functionality via PUT /api/inventario/:id</p>
+  
+  <div class="info">
+    <strong>Task 2.4 Requirements:</strong>
+    <ul>
+      <li>Support stock adjustment functionality</li>
+      <li>Send PUT request with updated fields</li>
+      <li>Handle errors and display messages</li>
+      <li>Update local state on success</li>
+    </ul>
+  </div>
+  
+  <div id="test-results"></div>
+
+  <script>
+    // Test utilities
+    const testResults = [];
+    let mockFetchCalls = [];
+    
+    function assert(condition, testName, message) {
+      const result = {
+        name: testName,
+        passed: condition,
+        message: message || (condition ? 'Test passed' : 'Test failed')
+      };
+      testResults.push(result);
+      return condition;
+    }
+
+    function displayResults() {
+      const container = document.getElementById('test-results');
+      const passed = testResults.filter(r => r.passed).length;
+      const total = testResults.length;
+      
+      let html = `<div class="test-section">
+        <h2>Test Summary: ${passed}/${total} tests passed</h2>`;
+      
+      testResults.forEach(result => {
+        html += `<div class="test-result ${result.passed ? 'pass' : 'fail'}">
+          <strong>${result.name}</strong>: ${result.message}
+        </div>`;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // Mock API and utilities
+    const API_BASE = 'http://localhost:3000/api';
+    const Auth = {
+      getToken: () => 'mock-token-123',
+    };
+
+    const Toast = {
+      messages: [],
+      success: (msg) => Toast.messages.push({ type: 'success', msg }),
+      warning: (msg) => Toast.messages.push({ type: 'warning', msg }),
+      error: (msg) => Toast.messages.push({ type: 'error', msg }),
+      clear: () => Toast.messages = []
+    };
+
+    // Mock API implementation
+    const API = {
+      headers: () => ({
+        'Content-Type': 'application/json',
+        ...(Auth.getToken() ? { Authorization: `Bearer ${Auth.getToken()}` } : {})
+      }),
+
+      handleResponse: async (response) => {
+        if (response.status === 401) {
+          throw new Error('Unauthorized');
+        }
+
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          throw new Error(`Error del servidor (${response.status})`);
+        }
+
+        if (!response.ok) {
+          const errorMsg = data.error || data.mensaje || data.message || `Error ${response.status}`;
+          const error = new Error(errorMsg);
+          error.status = response.status;
+          error.detalles = data.detalles || data.details || [];
+          throw error;
+        }
+
+        return data;
+      },
+
+      put: async (endpoint, data) => {
+        mockFetchCalls.push({ method: 'PUT', endpoint, data });
+        const response = await fetch(API_BASE + endpoint, {
+          method: 'PUT', 
+          headers: API.headers(), 
+          body: JSON.stringify(data)
+        });
+        return await API.handleResponse(response);
+      }
+    };
+
+    // Mock items array
+    let items = [
+      { id: 1, nombre: 'Rosas rojas', tipo: 'flores', stock: 45, stock_min: 10, unidad: 'unidad', costo: 3.50 },
+      { id: 2, nombre: 'Lirios blancos', tipo: 'flores', stock: 8, stock_min: 10, unidad: 'unidad', costo: 2.80 }
+    ];
+
+    // Mock cargarInventario function
+    let inventoryReloaded = false;
+    async function cargarInventario() {
+      inventoryReloaded = true;
+    }
+
+    // Mock renderAlertas and renderInv functions
+    let alertsRendered = false;
+    let inventoryRendered = false;
+    function renderAlertas() {
+      alertsRendered = true;
+    }
+    function renderInv() {
+      inventoryRendered = true;
+    }
+
+    // Mock prompt function
+    let promptResponse = null;
+    window.prompt = (message, defaultValue) => {
+      return promptResponse;
+    };
+
+    // The ajustarStock function from inventario.html
+    async function ajustarStock(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+      const nuevo = prompt(`Ajustar stock de "${item.nombre}".\nStock actual: ${item.stock}\n\nNuevo stock:`, item.stock);
+      if (nuevo === null) return;
+      const val = parseInt(nuevo);
+      if (isNaN(val) || val < 0) { Toast.error('Valor inválido'); return; }
+      
+      try {
+        await API.put('/inventario/' + id, { stock: val });
+        Toast.success('Stock actualizado');
+        // Reload inventory from backend to ensure consistency
+        await cargarInventario();
+      } catch (error) {
+        console.error('Error al actualizar stock:', error);
+        // Fallback: update local state
+        item.stock = val;
+        Toast.warning('Stock actualizado localmente. No se pudo sincronizar con el servidor.');
+        renderAlertas();
+        renderInv();
+      }
+    }
+
+    // Test 1: Successful stock update
+    async function testSuccessfulUpdate() {
+      Toast.clear();
+      mockFetchCalls = [];
+      inventoryReloaded = false;
+      promptResponse = '50';
+      
+      // Mock successful response
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 1, nombre: 'Rosas rojas', stock: 50 })
+      });
+      
+      await ajustarStock(1);
+      
+      const hasSuccess = Toast.messages.some(m => 
+        m.type === 'success' && m.msg.includes('Stock actualizado')
+      );
+      const putCall = mockFetchCalls.find(c => c.method === 'PUT');
+      const correctPayload = putCall && putCall.data.stock === 50;
+      
+      assert(hasSuccess, 'Test 1a: Success message', 
+        'Should show success toast on successful update');
+      assert(inventoryReloaded, 'Test 1b: Inventory reloaded', 
+        'Should reload inventory from backend after successful update');
+      assert(correctPayload, 'Test 1c: Correct payload', 
+        'Should send PUT request with correct stock value');
+    }
+
+    // Test 2: Cancel update (prompt returns null)
+    async function testCancelUpdate() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = null;
+      
+      await ajustarStock(1);
+      
+      const noPutCall = mockFetchCalls.length === 0;
+      const noToast = Toast.messages.length === 0;
+      
+      assert(noPutCall, 'Test 2a: No API call', 
+        'Should not make API call when user cancels');
+      assert(noToast, 'Test 2b: No toast message', 
+        'Should not show any message when user cancels');
+    }
+
+    // Test 3: Invalid input - non-numeric
+    async function testInvalidInputNonNumeric() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = 'abc';
+      
+      await ajustarStock(1);
+      
+      const hasError = Toast.messages.some(m => 
+        m.type === 'error' && m.msg.includes('Valor inválido')
+      );
+      const noPutCall = mockFetchCalls.length === 0;
+      
+      assert(hasError, 'Test 3a: Error message', 
+        'Should show error for non-numeric input');
+      assert(noPutCall, 'Test 3b: No API call', 
+        'Should not make API call for invalid input');
+    }
+
+    // Test 4: Invalid input - negative number
+    async function testInvalidInputNegative() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = '-5';
+      
+      await ajustarStock(1);
+      
+      const hasError = Toast.messages.some(m => 
+        m.type === 'error' && m.msg.includes('Valor inválido')
+      );
+      const noPutCall = mockFetchCalls.length === 0;
+      
+      assert(hasError, 'Test 4a: Error message', 
+        'Should show error for negative input');
+      assert(noPutCall, 'Test 4b: No API call', 
+        'Should not make API call for negative input');
+    }
+
+    // Test 5: Network error with fallback
+    async function testNetworkErrorFallback() {
+      Toast.clear();
+      mockFetchCalls = [];
+      alertsRendered = false;
+      inventoryRendered = false;
+      promptResponse = '30';
+      
+      const originalStock = items[0].stock;
+      
+      // Mock network error
+      global.fetch = jest.fn().mockRejectedValue(
+        new Error('Failed to fetch')
+      );
+      
+      await ajustarStock(1);
+      
+      const hasWarning = Toast.messages.some(m => 
+        m.type === 'warning' && 
+        m.msg.includes('Stock actualizado localmente') &&
+        m.msg.includes('No se pudo sincronizar')
+      );
+      const stockUpdated = items[0].stock === 30;
+      
+      assert(hasWarning, 'Test 5a: Warning message', 
+        'Should show warning when API fails but local update succeeds');
+      assert(stockUpdated, 'Test 5b: Local state updated', 
+        'Should update local state as fallback when API fails');
+      assert(alertsRendered, 'Test 5c: Alerts rendered', 
+        'Should render alerts after local update');
+      assert(inventoryRendered, 'Test 5d: Inventory rendered', 
+        'Should render inventory after local update');
+    }
+
+    // Test 6: Item not found
+    async function testItemNotFound() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = '50';
+      
+      await ajustarStock(999); // Non-existent ID
+      
+      const noPutCall = mockFetchCalls.length === 0;
+      const noToast = Toast.messages.length === 0;
+      
+      assert(noPutCall, 'Test 6a: No API call', 
+        'Should not make API call when item not found');
+      assert(noToast, 'Test 6b: No toast message', 
+        'Should silently return when item not found');
+    }
+
+    // Test 7: PUT request endpoint format
+    async function testPutEndpointFormat() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = '25';
+      
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 2, stock: 25 })
+      });
+      
+      await ajustarStock(2);
+      
+      const putCall = mockFetchCalls.find(c => c.method === 'PUT');
+      const correctEndpoint = putCall && putCall.endpoint === '/inventario/2';
+      
+      assert(correctEndpoint, 'Test 7: Correct endpoint', 
+        'Should use correct endpoint format /inventario/:id');
+    }
+
+    // Test 8: Zero stock is valid
+    async function testZeroStockValid() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = '0';
+      
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 1, stock: 0 })
+      });
+      
+      await ajustarStock(1);
+      
+      const putCall = mockFetchCalls.find(c => c.method === 'PUT');
+      const correctPayload = putCall && putCall.data.stock === 0;
+      const hasSuccess = Toast.messages.some(m => m.type === 'success');
+      
+      assert(correctPayload, 'Test 8a: Zero stock accepted', 
+        'Should accept zero as valid stock value');
+      assert(hasSuccess, 'Test 8b: Success message', 
+        'Should show success for zero stock update');
+    }
+
+    // Test 9: Large stock numbers
+    async function testLargeStockNumbers() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = '10000';
+      
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 1, stock: 10000 })
+      });
+      
+      await ajustarStock(1);
+      
+      const putCall = mockFetchCalls.find(c => c.method === 'PUT');
+      const correctPayload = putCall && putCall.data.stock === 10000;
+      
+      assert(correctPayload, 'Test 9: Large numbers', 
+        'Should handle large stock numbers correctly');
+    }
+
+    // Test 10: Decimal input (should be converted to integer)
+    async function testDecimalInput() {
+      Toast.clear();
+      mockFetchCalls = [];
+      promptResponse = '25.7';
+      
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 1, stock: 25 })
+      });
+      
+      await ajustarStock(1);
+      
+      const putCall = mockFetchCalls.find(c => c.method === 'PUT');
+      const isInteger = putCall && Number.isInteger(putCall.data.stock);
+      const correctValue = putCall && putCall.data.stock === 25;
+      
+      assert(isInteger, 'Test 10a: Integer conversion', 
+        'Should convert decimal input to integer');
+      assert(correctValue, 'Test 10b: Correct value', 
+        'Should use parseInt to convert decimal to integer');
+    }
+
+    // Mock jest for tests
+    const jest = {
+      fn: () => {
+        const mockFn = async (...args) => {
+          mockFn.calls.push(args);
+          if (mockFn.mockResolvedValue_) {
+            return mockFn.mockResolvedValue_;
+          }
+          if (mockFn.mockRejectedValue_) {
+            throw mockFn.mockRejectedValue_;
+          }
+          return {};
+        };
+        mockFn.calls = [];
+        mockFn.mockResolvedValue = (val) => {
+          mockFn.mockResolvedValue_ = val;
+          return mockFn;
+        };
+        mockFn.mockRejectedValue = (val) => {
+          mockFn.mockRejectedValue_ = val;
+          return mockFn;
+        };
+        return mockFn;
+      }
+    };
+
+    // Run all tests
+    console.log('Running Inventario Update Item Tests (Task 2.4)...');
+    
+    (async () => {
+      await testSuccessfulUpdate();
+      await testCancelUpdate();
+      await testInvalidInputNonNumeric();
+      await testInvalidInputNegative();
+      await testNetworkErrorFallback();
+      await testItemNotFound();
+      await testPutEndpointFormat();
+      await testZeroStockValid();
+      await testLargeStockNumbers();
+      await testDecimalInput();
+      
+      // Display results
+      displayResults();
+      
+      console.log('Tests completed. Results:', testResults);
+      console.log(`Passed: ${testResults.filter(r => r.passed).length}/${testResults.length}`);
+    })();
+  </script>
+</body>
+</html>

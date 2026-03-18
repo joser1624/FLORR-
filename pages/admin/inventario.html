@@ -86,18 +86,14 @@
 
   async function cargarInventario() {
     try {
-      const data = await API.get('/inventario');
-      items = data.items || data || [];
-    } catch {
-      items = [
-        { id:1, nombre:'Rosas rojas', tipo:'flores', stock:45, stock_min:10, unidad:'unidad', costo:3.50 },
-        { id:2, nombre:'Lirios blancos', tipo:'flores', stock:8, stock_min:10, unidad:'unidad', costo:2.80 },
-        { id:3, nombre:'Girasoles', tipo:'flores', stock:25, stock_min:8, unidad:'unidad', costo:2.00 },
-        { id:4, nombre:'Papel decorativo dorado', tipo:'materiales', stock:3, stock_min:5, unidad:'rollo', costo:8.50 },
-        { id:5, nombre:'Cintas satinadas', tipo:'materiales', stock:12, stock_min:5, unidad:'rollo', costo:4.00 },
-        { id:6, nombre:'Cajas decorativas', tipo:'accesorios', stock:7, stock_min:5, unidad:'unidad', costo:12.00 },
-        { id:7, nombre:'Peluches medianos', tipo:'accesorios', stock:2, stock_min:5, unidad:'unidad', costo:18.00 },
-      ];
+      const response = await API.get('/inventario');
+      // Backend puede retornar: { data: { data: [...] } } o { data: [...] } o directamente [...]
+      items = response.data?.data || response.data || response.items || response || [];
+      console.log('Inventario cargado:', items.length, 'items');
+    } catch (error) {
+      console.error('Error al cargar inventario:', error);
+      Toast.error('No se pudo cargar el inventario desde el servidor');
+      items = [];
     }
     renderAlertas();
     renderInv();
@@ -140,46 +136,67 @@
   function filtrarTipo(el, tipo) { document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); tipoFiltro=tipo; soloBajoInv=false; renderInv(); }
   function filtrarBajos(el) { document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); tipoFiltro=''; soloBajoInv=true; renderInv(); }
 
-  function ajustarStock(id) {
+  async function ajustarStock(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
     const nuevo = prompt(`Ajustar stock de "${item.nombre}".\nStock actual: ${item.stock}\n\nNuevo stock:`, item.stock);
     if (nuevo === null) return;
     const val = parseInt(nuevo);
     if (isNaN(val) || val < 0) { Toast.error('Valor inválido'); return; }
-    item.stock = val;
-    API.put('/inventario/' + id, { stock: val }).catch(()=>{});
-    Toast.success('Stock actualizado');
-    renderAlertas();
-    renderInv();
+    
+    try {
+      await API.put('/inventario/' + id, { stock: val });
+      Toast.success('Stock actualizado');
+      await cargarInventario(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al actualizar stock:', error);
+      Toast.error('Error al actualizar el stock');
+    }
   }
 
-  function eliminarItem(id) {
+  async function eliminarItem(id) {
     const item = items.find(i => i.id === id);
-    Modal.confirm(`¿Eliminar "${item?.nombre}"?`, () => {
-      items = items.filter(i => i.id !== id);
-      API.delete('/inventario/' + id).catch(()=>{});
-      renderInv();
-      Toast.success('Ítem eliminado');
+    Modal.confirm(`¿Eliminar "${item?.nombre}"?`, async () => {
+      try {
+        await API.delete('/inventario/' + id);
+        Toast.success('Ítem eliminado');
+        await cargarInventario(); // Recargar desde el backend
+      } catch (error) {
+        console.error('Error al eliminar ítem:', error);
+        Toast.error('Error al eliminar el ítem');
+      }
     });
   }
 
   async function guardarItem() {
     const payload = {
-      nombre:    document.getElementById('item-nombre').value,
+      nombre:    document.getElementById('item-nombre').value.trim(),
       tipo:      document.getElementById('item-tipo').value,
       unidad:    document.getElementById('item-unidad').value,
       stock:     parseInt(document.getElementById('item-stock').value)||0,
       stock_min: parseInt(document.getElementById('item-stock-min').value)||0,
       costo:     parseFloat(document.getElementById('item-costo').value)||0,
     };
-    if (!payload.nombre) { Toast.warning('El nombre es obligatorio'); return; }
-    try { await API.post('/inventario', payload); }
-    catch { items.push({ id: Date.now(), ...payload }); }
-    Toast.success('Ítem agregado');
-    Modal.close('modal-item');
-    renderAlertas();
-    renderInv();
+    
+    if (!payload.nombre) { 
+      Toast.warning('El nombre es obligatorio'); 
+      return; 
+    }
+    
+    try {
+      await API.post('/inventario', payload);
+      Toast.success('Ítem agregado correctamente');
+      Modal.close('modal-item');
+      // Limpiar formulario
+      document.getElementById('item-nombre').value = '';
+      document.getElementById('item-stock').value = '';
+      document.getElementById('item-stock-min').value = '';
+      document.getElementById('item-costo').value = '';
+      await cargarInventario(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al guardar ítem:', error);
+      Toast.error('Error al guardar el ítem');
+    }
   }
 
   cargarInventario();

@@ -35,6 +35,10 @@ const API = {
   get: async (endpoint) => {
     const r = await fetch(API_BASE + endpoint, { headers: API.headers() });
     if (r.status === 401) { Auth.clear(); window.location.href = '/pages/admin/login.html'; }
+    if (!r.ok) {
+      const errorData = await r.json();
+      throw new Error(errorData.mensaje || errorData.error || 'Error en la solicitud');
+    }
     return r.json();
   },
 
@@ -42,6 +46,10 @@ const API = {
     const r = await fetch(API_BASE + endpoint, {
       method: 'POST', headers: API.headers(), body: JSON.stringify(data)
     });
+    if (!r.ok) {
+      const errorData = await r.json();
+      throw new Error(errorData.mensaje || errorData.error || 'Error en la solicitud');
+    }
     return r.json();
   },
 
@@ -49,11 +57,19 @@ const API = {
     const r = await fetch(API_BASE + endpoint, {
       method: 'PUT', headers: API.headers(), body: JSON.stringify(data)
     });
+    if (!r.ok) {
+      const errorData = await r.json();
+      throw new Error(errorData.mensaje || errorData.error || 'Error en la solicitud');
+    }
     return r.json();
   },
 
   delete: async (endpoint) => {
     const r = await fetch(API_BASE + endpoint, { method: 'DELETE', headers: API.headers() });
+    if (!r.ok) {
+      const errorData = await r.json();
+      throw new Error(errorData.mensaje || errorData.error || 'Error en la solicitud');
+    }
     return r.json();
   },
 

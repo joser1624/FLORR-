@@ -153,17 +153,43 @@
 
   async function cargarProductos() {
     try {
-      const data = await API.get('/productos');
-      todosProductos = data.productos || data || [];
-    } catch {
-      todosProductos = [
-        { id:1, nombre:'Ramo romántico de rosas', categoria:'Ramos', precio:85, costo:52, stock:15, descripcion:'12 rosas premium' },
-        { id:2, nombre:'Arreglo primaveral en caja', categoria:'Arreglos', precio:120, costo:68, stock:3, descripcion:'Flores variadas' },
-        { id:3, nombre:'Peluche + rosas rojas', categoria:'Peluches', precio:95, costo:58, stock:8, descripcion:'Oso + 6 rosas' },
-        { id:4, nombre:'Caja sorpresa San Valentín', categoria:'Cajas sorpresa', precio:150, costo:89, stock:0, descripcion:'Caja especial' },
-        { id:5, nombre:'Ramo de girasoles y lirios', categoria:'Ramos', precio:70, costo:41, stock:12, descripcion:'Flores de campo' },
-        { id:6, nombre:'Arreglo de cumpleaños', categoria:'Arreglos', precio:110, costo:60, stock:2, descripcion:'Arreglo festivo' },
-      ];
+      // Cargar productos y arreglos en paralelo
+      const [productosResponse, arreglosResponse] = await Promise.all([
+        API.get('/productos').catch(err => { console.error('Error cargando productos:', err); return { data: [] }; }),
+        API.get('/arreglos').catch(err => { console.error('Error cargando arreglos:', err); return { data: [] }; })
+      ]);
+      
+      const productos = productosResponse.data || productosResponse.productos || [];
+      const arreglos = arreglosResponse.data || arreglosResponse.arreglos || [];
+      
+      // Asegurar que sean arrays
+      const productosArray = Array.isArray(productos) ? productos : [];
+      const arreglosArray = Array.isArray(arreglos) ? arreglos : [];
+      
+      console.log('Productos cargados:', productosArray.length);
+      console.log('Arreglos cargados:', arreglosArray.length);
+      
+      // Convertir arreglos a formato de producto para mostrarlos en la tabla
+      const arreglosComoProductos = arreglosArray.map(arr => ({
+        id: `arr_${arr.id}`, // Prefijo para distinguir de productos normales
+        nombre: arr.nombre,
+        categoria: 'Arreglos',
+        precio: arr.precio_venta || 0,
+        costo: arr.costo_total || 0,
+        stock: 0, // Los arreglos se hacen bajo demanda
+        descripcion: `Arreglo personalizado (${arr.items?.length || 0} componentes)`,
+        activo: true,
+        esArreglo: true, // Flag para identificar que viene de arreglos
+        arregloId: arr.id // ID original del arreglo
+      }));
+      
+      // Combinar productos y arreglos
+      todosProductos = [...productosArray, ...arreglosComoProductos];
+      console.log('Total items en tabla:', todosProductos.length);
+    } catch (error) {
+      console.error('Error al cargar productos:', error);
+      Toast.error('No se pudo cargar los productos desde el servidor');
+      todosProductos = [];
     }
     renderTabla();
   }
@@ -191,12 +217,18 @@
           : `<span class="badge badge-success">${p.stock} uds</span>`;
       const margenColor = margen >= 30 ? 'var(--success)' : margen >= 15 ? 'var(--warning)' : 'var(--danger)';
       const emoji = CATS_EMOJI[p.categoria] || '🌸';
+      
+      // Badge especial para arreglos del laboratorio
+      const origenBadge = p.esArreglo 
+        ? '<span class="badge badge-info" style="font-size:10px;margin-left:6px">🧪 Laboratorio</span>'
+        : '';
+      
       return `<tr>
         <td>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-size:22px">${emoji}</span>
             <div>
-              <div style="font-weight:500;font-size:13px">${p.nombre}</div>
+              <div style="font-weight:500;font-size:13px">${p.nombre}${origenBadge}</div>
               ${p.descripcion ? `<div style="font-size:11px;color:var(--gris-400)">${p.descripcion}</div>` : ''}
             </div>
           </div>
@@ -209,8 +241,8 @@
         <td><span class="badge ${p.activo !== false ? 'badge-success' : 'badge-gray'}">${p.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
         <td>
           <div class="tbl-actions-cell">
-            <button class="btn-tbl btn-tbl-edit" onclick="editarProducto(${p.id})">Editar</button>
-            <button class="btn-tbl btn-tbl-delete" onclick="eliminarProducto(${p.id},'${p.nombre.replace(/'/g,"\\'")}')">Eliminar</button>
+            <button class="btn-tbl btn-tbl-edit" onclick="editarProducto('${p.id}')">${p.esArreglo ? 'Ver' : 'Editar'}</button>
+            <button class="btn-tbl btn-tbl-delete" onclick="eliminarProducto('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">Eliminar</button>
           </div>
         </td>
       </tr>`;
@@ -246,6 +278,13 @@
   function editarProducto(id) {
     const p = todosProductos.find(x => x.id === id);
     if (!p) return;
+    
+    // Si es un arreglo, no permitir edición (los arreglos se gestionan desde laboratorio)
+    if (p.esArreglo) {
+      Toast.info('Los arreglos se editan desde el Laboratorio de flores');
+      return;
+    }
+    
     document.getElementById('modal-producto-titulo').textContent = 'Editar producto';
     document.getElementById('prod-id').value = p.id;
     document.getElementById('prod-nombre').value = p.nombre;
@@ -282,46 +321,53 @@
     e.preventDefault();
     const id = document.getElementById('prod-id').value;
     const payload = {
-      nombre:      document.getElementById('prod-nombre').value,
+      nombre:      document.getElementById('prod-nombre').value.trim(),
       precio:      parseFloat(document.getElementById('prod-precio').value),
       costo:       parseFloat(document.getElementById('prod-costo').value),
       stock:       parseInt(document.getElementById('prod-stock').value),
       categoria:   document.getElementById('prod-categoria').value,
-      descripcion: document.getElementById('prod-descripcion').value,
+      descripcion: document.getElementById('prod-descripcion').value.trim(),
     };
+    
+    if (!payload.nombre) {
+      Toast.warning('El nombre es obligatorio');
+      return;
+    }
+    
     try {
-      const res = id
+      const response = id
         ? await API.put('/productos/' + id, payload)
         : await API.post('/productos', payload);
-      if (res.error) { Toast.error(res.error); return; }
-      Toast.success(id ? 'Producto actualizado' : 'Producto creado');
+      
+      console.log('Producto guardado:', response);
+      Toast.success(id ? 'Producto actualizado' : 'Producto creado correctamente');
       Modal.close('modal-producto');
-      cargarProductos();
-    } catch {
-      Toast.error('No se pudo conectar con el servidor');
-      // Actualizar localmente para demo
-      if (id) {
-        const i = todosProductos.findIndex(x => x.id == id);
-        if (i >= 0) todosProductos[i] = { ...todosProductos[i], ...payload };
-      } else {
-        todosProductos.push({ id: Date.now(), ...payload });
-      }
-      Modal.close('modal-producto');
-      renderTabla();
-      Toast.success(id ? 'Actualizado (demo)' : 'Creado (demo)');
+      await cargarProductos(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al guardar producto:', error);
+      Toast.error('Error al guardar el producto');
     }
   }
 
   function eliminarProducto(id, nombre) {
+    const p = todosProductos.find(x => x.id === id);
+    
     Modal.confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`, async () => {
       try {
-        await API.delete('/productos/' + id);
-        Toast.success('Producto eliminado');
-      } catch {
-        Toast.info('Eliminado (demo)');
+        // Si es un arreglo, eliminar desde /api/arreglos
+        if (p && p.esArreglo) {
+          await API.delete('/arreglos/' + p.arregloId);
+          Toast.success('Arreglo eliminado');
+        } else {
+          // Si es un producto normal, eliminar desde /api/productos
+          await API.delete('/productos/' + id);
+          Toast.success('Producto eliminado');
+        }
+        await cargarProductos(); // Recargar desde el backend
+      } catch (error) {
+        console.error('Error al eliminar:', error);
+        Toast.error('Error al eliminar el producto');
       }
-      todosProductos = todosProductos.filter(p => p.id !== id);
-      renderTabla();
     });
   }
 
