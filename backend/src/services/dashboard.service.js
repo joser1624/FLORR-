@@ -141,6 +141,22 @@ class DashboardService {
       })),
     };
   }
+  /**
+   * Get sales totals grouped by date for the last N days
+   */
+  async getVentasPeriodo(dias = 7) {
+    const result = await query(
+      `SELECT DATE(fecha) AS fecha, COALESCE(SUM(total), 0) AS total
+       FROM ventas
+       WHERE DATE(fecha) >= CURRENT_DATE - INTERVAL '${parseInt(dias) - 1} days'
+       GROUP BY DATE(fecha)
+       ORDER BY DATE(fecha) ASC`
+    );
+    return result.rows.map(v => ({
+      fecha: v.fecha,
+      total: parseFloat(v.total),
+    }));
+  }
 }
 
 module.exports = new DashboardService();

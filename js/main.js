@@ -116,15 +116,9 @@ const Toast = {
 /* ── Modal ── */
 const Modal = {
   open(id) { 
-    console.log('Abriendo modal:', id);
     const modal = document.getElementById(id);
     if (modal) {
-      // Forzar reflow para asegurar que la transición funcione
-      modal.style.display = 'flex';
-      setTimeout(() => {
-        modal.classList.add('active');
-        console.log('Modal abierto, clases:', modal.className);
-      }, 10);
+      modal.classList.add('active');
     } else {
       console.error('Modal no encontrado:', id);
     }
@@ -133,9 +127,6 @@ const Modal = {
     const modal = document.getElementById(id);
     if (modal) {
       modal.classList.remove('active');
-      setTimeout(() => {
-        modal.style.display = '';
-      }, 300);
     }
   },
   confirm(msg, onConfirm) {

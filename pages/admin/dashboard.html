@@ -243,22 +243,22 @@
 
   async function loadDashboard() {
     try {
-      const data = await API.get('/dashboard');
+      const response = await API.get('/dashboard');
+      const data = response.data || response;
       renderStats(data);
       renderAlertasStock(data.stock_bajo || []);
       renderChartVentas(data.ventas_semana || []);
       renderChartProductos(data.top_productos || []);
       renderPedidosRecientes(data.pedidos_recientes || []);
       renderVentasTrabajadores(data.ventas_trabajadores || []);
-    } catch {
+    } catch (e) {
+      console.error('Error cargando dashboard:', e);
       renderStatsMock();
       renderChartVentasMock();
       renderChartProductosMock();
       renderPedidosRecietesMock();
       renderVentasTrabajadoresMock();
     }
-    
-    // Cargar capital
     await loadCapital();
   }
 
@@ -548,13 +548,20 @@
       </div>`;
   }
 
+  function fmtEjeX(fechaStr) {
+    // fechaStr puede ser 'Lun' (mock) o '2026-03-18' (real)
+    if (!fechaStr || fechaStr.length <= 4) return fechaStr;
+    const d = new Date(fechaStr + 'T00:00:00');
+    return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+  }
+
   function renderChartVentas(ventas) {
     const ctx = document.getElementById('chart-ventas').getContext('2d');
     if (chartVentas) chartVentas.destroy();
     chartVentas = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ventas.map(v => v.fecha),
+        labels: ventas.map(v => fmtEjeX(v.fecha)),
         datasets: [{
           label: 'Ventas (S/)',
           data: ventas.map(v => v.total),
@@ -570,7 +577,7 @@
         plugins: { legend: { display: false } },
         scales: {
           y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { callback: v => 'S/'+v } },
-          x: { grid: { display: false } }
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } }
         }
       }
     });
@@ -679,9 +686,14 @@
     ]);
   }
 
-  function cambiarPeriodo(dias) {
-    // Al conectar el backend se recarga con el período
-    loadDashboard();
+  async function cambiarPeriodo(dias) {
+    try {
+      const response = await API.get(`/dashboard/ventas-periodo?dias=${dias}`);
+      const ventas = response.data || [];
+      renderChartVentas(ventas);
+    } catch (e) {
+      console.error('Error cargando período:', e);
+    }
   }
 
   loadDashboard();

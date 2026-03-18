@@ -412,17 +412,13 @@
   background: rgba(21,19,19,.65);
   backdrop-filter: blur(8px);
   z-index: 200;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition);
 }
 .modal-overlay.active {
-  opacity: 1;
-  pointer-events: all;
+  display: flex;
 }
 .modal {
   background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F9 50%, #F9F5FF 100%);
@@ -432,23 +428,10 @@
   max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
-  transform: translateY(20px) scale(.92);
-  transition: transform var(--transition);
   border: 2px solid;
   border-image: linear-gradient(135deg, var(--rosa-200), var(--morado-200), var(--verde-200)) 1;
   position: relative;
 }
-.modal::before {
-  content: '🌸';
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  font-size: 100px;
-  opacity: 0.04;
-  transform: rotate(25deg);
-  pointer-events: none;
-}
-.modal-overlay.active .modal { transform: translateY(0) scale(1); }
 
 .modal-header {
   padding: 1.25rem 1.5rem;
