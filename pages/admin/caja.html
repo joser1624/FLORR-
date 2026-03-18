@@ -5,6 +5,65 @@
   <title>Caja del día — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    @media print {
+      /* Ocultar elementos no necesarios en PDF */
+      .sidebar, .sidebar-overlay, .topbar, 
+      .btn, button, .modal-overlay,
+      #estado-caja {
+        display: none !important;
+      }
+      
+      /* Ajustar layout para impresión */
+      .admin-main {
+        margin: 0 !important;
+        padding: 20px !important;
+      }
+      
+      .admin-content {
+        max-width: 100% !important;
+      }
+      
+      /* Mejorar tablas en PDF */
+      .data-table {
+        page-break-inside: avoid;
+      }
+      
+      .data-table th {
+        background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      /* Agregar encabezado de empresa */
+      .page-header::before {
+        content: "ENCANTOS ETERNOS - Cierre de Caja";
+        display: block;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #333;
+      }
+      
+      /* Mejorar cards en PDF */
+      .stat-card {
+        border: 1px solid #ddd !important;
+        page-break-inside: avoid;
+      }
+      
+      /* Agregar fecha de impresión */
+      body::after {
+        content: "Impreso el: " attr(data-fecha-impresion);
+        display: block;
+        text-align: right;
+        font-size: 10px;
+        margin-top: 20px;
+        color: #666;
+      }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -17,10 +76,12 @@
         <div>
           <h2>Caja del día</h2>
           <p id="fecha-hoy-txt" style="color:var(--gris-500);font-size:14px"></p>
+          <div id="estado-caja" style="margin-top:8px"></div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-outline" onclick="imprimirCierre()">🖨 Imprimir cierre</button>
-          <button class="btn btn-primary" onclick="Modal.open('modal-apertura')">Abrir caja</button>
+          <button class="btn btn-outline" onclick="exportarPDF()" id="btn-imprimir">📄 Exportar PDF</button>
+          <button class="btn btn-primary" onclick="Modal.open('modal-apertura')" id="btn-abrir">Abrir caja</button>
+          <button class="btn btn-danger" onclick="confirmarCierre()" id="btn-cerrar" style="display:none">Cerrar caja</button>
         </div>
       </div>
 
@@ -65,7 +126,10 @@
       </div>
 
       <!-- Transacciones del día -->
-      <div style="font-weight:600;font-size:15px;margin-bottom:.75rem">Transacciones del día</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <div style="font-weight:600;font-size:15px">Transacciones del día</div>
+        <button class="btn btn-outline btn-sm" onclick="Modal.open('modal-historial')">📋 Ver historial</button>
+      </div>
       <div class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Hora</th><th>Descripción</th><th>Tipo</th><th>Método</th><th>Monto</th></tr></thead>
@@ -97,6 +161,38 @@
   </div>
 </div>
 
+<!-- Modal historial -->
+<div class="modal-overlay" id="modal-historial">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-header">
+      <h3>Historial de cajas</h3>
+      <button class="btn-close" onclick="Modal.close('modal-historial')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Apertura</th>
+              <th>Ventas</th>
+              <th>Gastos</th>
+              <th>Saldo</th>
+              <th>Estado</th>
+              <th>Trabajador</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-historial"></tbody>
+        </table>
+      </div>
+      <div id="historial-paginacion" style="display:flex;justify-content:center;gap:8px;margin-top:1rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-historial')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -108,37 +204,81 @@
 
   async function cargarCaja() {
     try {
-      const d = await API.get('/caja/hoy');
-      renderCaja(d);
-    } catch {
-      renderCajaMock();
+      const response = await API.get('/caja/hoy');
+      const data = response.data || response;
+      renderCaja(data);
+      actualizarBotones(data.estado);
+    } catch (error) {
+      // Error esperado: no hay caja abierta para hoy
+      if (error.message && error.message.includes('No hay caja abierta')) {
+        console.log('No hay caja abierta para hoy - mostrando vista inicial');
+        renderCajaSinAbrir();
+        actualizarBotones('sin_abrir');
+      } else {
+        // Error inesperado
+        console.error('Error al cargar caja:', error);
+        Toast.error('No se pudo cargar la información de la caja');
+        renderCajaSinAbrir();
+        actualizarBotones('sin_abrir');
+      }
+    }
+  }
+
+  function actualizarBotones(estado) {
+    const btnAbrir = document.getElementById('btn-abrir');
+    const btnCerrar = document.getElementById('btn-cerrar');
+    const btnImprimir = document.getElementById('btn-imprimir');
+    const estadoCaja = document.getElementById('estado-caja');
+
+    if (estado === 'abierta') {
+      btnAbrir.style.display = 'none';
+      btnCerrar.style.display = 'block';
+      btnImprimir.disabled = false;
+      estadoCaja.innerHTML = '<span class="badge badge-success" style="font-size:12px">✓ Caja abierta</span>';
+    } else if (estado === 'cerrada') {
+      btnAbrir.style.display = 'none';
+      btnCerrar.style.display = 'none';
+      btnImprimir.disabled = false;
+      estadoCaja.innerHTML = '<span class="badge badge-gray" style="font-size:12px">🔒 Caja cerrada</span>';
+    } else {
+      btnAbrir.style.display = 'block';
+      btnCerrar.style.display = 'none';
+      btnImprimir.disabled = true;
+      estadoCaja.innerHTML = '<span class="badge badge-warning" style="font-size:12px">⚠ Caja no abierta</span>';
     }
   }
 
   function renderCaja(d) {
+    // Extraer datos de la estructura del backend
     const ventas = d.ventas || [];
-    const efectivo = ventas.filter(v=>v.metodo==='Efectivo').reduce((s,v)=>s+parseFloat(v.total||0),0);
-    const digital  = ventas.filter(v=>['Yape','Plin'].includes(v.metodo)).reduce((s,v)=>s+parseFloat(v.total||0),0);
-    const tarjeta  = ventas.filter(v=>['Tarjeta','Transferencia bancaria'].includes(v.metodo)).reduce((s,v)=>s+parseFloat(v.total||0),0);
-    const total    = efectivo + digital + tarjeta;
-    const gastos   = d.gastos_total || 0;
-    const apertura = d.apertura || 0;
+    const apertura = d.monto_apertura || 0;
+    const gastosTotal = d.gastos_total || 0;
+    
+    // Calcular totales por método de pago
+    const efectivo = ventas.filter(v => v.metodo === 'Efectivo').reduce((s, v) => s + parseFloat(v.total || 0), 0);
+    const digital = ventas.filter(v => ['Yape', 'Plin'].includes(v.metodo)).reduce((s, v) => s + parseFloat(v.total || 0), 0);
+    const tarjeta = ventas.filter(v => ['Tarjeta', 'Transferencia bancaria'].includes(v.metodo)).reduce((s, v) => s + parseFloat(v.total || 0), 0);
+    const total = efectivo + digital + tarjeta;
 
+    // Actualizar cards principales
     document.getElementById('caja-efectivo').textContent = Fmt.moneda(efectivo);
-    document.getElementById('caja-digital').textContent  = Fmt.moneda(digital);
-    document.getElementById('caja-tarjeta').textContent  = Fmt.moneda(tarjeta);
-    document.getElementById('caja-total').textContent    = Fmt.moneda(total);
-    document.getElementById('apertura-monto').textContent   = Fmt.moneda(apertura);
-    document.getElementById('ventas-hoy-caja').textContent  = Fmt.moneda(total);
-    document.getElementById('gastos-hoy-caja').textContent  = Fmt.moneda(gastos);
-    document.getElementById('saldo-final').textContent      = Fmt.moneda(apertura + total - gastos);
+    document.getElementById('caja-digital').textContent = Fmt.moneda(digital);
+    document.getElementById('caja-tarjeta').textContent = Fmt.moneda(tarjeta);
+    document.getElementById('caja-total').textContent = Fmt.moneda(total);
+    
+    // Actualizar resumen del turno
+    document.getElementById('apertura-monto').textContent = Fmt.moneda(apertura);
+    document.getElementById('ventas-hoy-caja').textContent = Fmt.moneda(total);
+    document.getElementById('gastos-hoy-caja').textContent = Fmt.moneda(gastosTotal);
+    document.getElementById('saldo-final').textContent = Fmt.moneda(apertura + total - gastosTotal);
 
+    // Renderizar desglose por método de pago
     const metodos = [
-      { nombre:'Efectivo', monto:efectivo, emoji:'💵' },
-      { nombre:'Yape',     monto:ventas.filter(v=>v.metodo==='Yape').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'📱' },
-      { nombre:'Plin',     monto:ventas.filter(v=>v.metodo==='Plin').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'📲' },
-      { nombre:'Tarjeta',  monto:ventas.filter(v=>v.metodo==='Tarjeta').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'💳' },
-      { nombre:'Transferencia',monto:ventas.filter(v=>v.metodo==='Transferencia bancaria').reduce((s,v)=>s+parseFloat(v.total||0),0), emoji:'🏦' },
+      { nombre: 'Efectivo', monto: efectivo, emoji: '💵' },
+      { nombre: 'Yape', monto: ventas.filter(v => v.metodo === 'Yape').reduce((s, v) => s + parseFloat(v.total || 0), 0), emoji: '📱' },
+      { nombre: 'Plin', monto: ventas.filter(v => v.metodo === 'Plin').reduce((s, v) => s + parseFloat(v.total || 0), 0), emoji: '📲' },
+      { nombre: 'Tarjeta', monto: ventas.filter(v => v.metodo === 'Tarjeta').reduce((s, v) => s + parseFloat(v.total || 0), 0), emoji: '💳' },
+      { nombre: 'Transferencia', monto: ventas.filter(v => v.metodo === 'Transferencia bancaria').reduce((s, v) => s + parseFloat(v.total || 0), 0), emoji: '🏦' },
     ].filter(m => m.monto > 0);
 
     document.getElementById('metodos-desglose').innerHTML = metodos.length
@@ -149,41 +289,270 @@
           </div>`).join('')
       : '<div style="color:var(--gris-400);font-size:13px;text-align:center">Sin ventas registradas</div>';
 
+    // Renderizar tabla de transacciones
     const tbody = document.getElementById('tbody-transacciones');
     tbody.innerHTML = ventas.length
-      ? ventas.map(v => `<tr>
-          <td style="font-size:12px">${new Date(v.fecha).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}</td>
-          <td style="font-size:13px">${(v.productos||[]).map(p=>p.nombre).join(', ') || 'Venta'}</td>
-          <td><span class="badge badge-success">Venta</span></td>
-          <td style="font-size:12px">${v.metodo}</td>
-          <td style="font-weight:600;color:var(--success)">+${Fmt.moneda(v.total)}</td>
-        </tr>`).join('')
+      ? ventas.map(v => {
+          const productosNombres = (v.productos || []).map(p => p.nombre).join(', ') || 'Venta';
+          const hora = new Date(v.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+          return `<tr>
+            <td style="font-size:12px">${hora}</td>
+            <td style="font-size:13px">${productosNombres}</td>
+            <td><span class="badge badge-success">Venta</span></td>
+            <td style="font-size:12px">${v.metodo}</td>
+            <td style="font-weight:600;color:var(--success)">+${Fmt.moneda(v.total)}</td>
+          </tr>`;
+        }).join('')
       : '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin transacciones hoy</td></tr>';
   }
 
-  function renderCajaMock() {
-    renderCaja({
-      apertura: 100,
-      gastos_total: 45,
-      ventas: [
-        { fecha:'2026-03-12T09:30:00', productos:[{nombre:'Ramo rosas'}], metodo:'Yape', total:85 },
-        { fecha:'2026-03-12T11:15:00', productos:[{nombre:'Arreglo caja'}], metodo:'Efectivo', total:120 },
-        { fecha:'2026-03-12T14:00:00', productos:[{nombre:'Peluche + rosas'}], metodo:'Yape', total:95 },
-      ]
-    });
+  function renderCajaSinAbrir() {
+    // Mostrar mensaje de que no hay caja abierta
+    document.getElementById('caja-efectivo').textContent = 'S/ 0.00';
+    document.getElementById('caja-digital').textContent = 'S/ 0.00';
+    document.getElementById('caja-tarjeta').textContent = 'S/ 0.00';
+    document.getElementById('caja-total').textContent = 'S/ 0.00';
+    document.getElementById('apertura-monto').textContent = 'S/ 0.00';
+    document.getElementById('ventas-hoy-caja').textContent = 'S/ 0.00';
+    document.getElementById('gastos-hoy-caja').textContent = 'S/ 0.00';
+    document.getElementById('saldo-final').textContent = 'S/ 0.00';
+    
+    document.getElementById('metodos-desglose').innerHTML = 
+      '<div style="color:var(--gris-400);font-size:13px;text-align:center">Abre la caja para comenzar</div>';
+    
+    document.getElementById('tbody-transacciones').innerHTML = 
+      '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">No hay caja abierta</td></tr>';
   }
 
-  function abrirCaja() {
+  async function abrirCaja() {
     const monto = parseFloat(document.getElementById('monto-apertura').value) || 0;
-    API.post('/caja/apertura', { monto_inicial: monto }).catch(()=>{});
-    document.getElementById('apertura-monto').textContent = Fmt.moneda(monto);
-    Toast.success(`Caja abierta con ${Fmt.moneda(monto)}`);
-    Modal.close('modal-apertura');
+    
+    if (monto < 0) {
+      Toast.warning('El monto debe ser mayor o igual a 0');
+      return;
+    }
+    
+    try {
+      await API.post('/caja/apertura', { monto_apertura: monto });
+      Toast.success(`Caja abierta con ${Fmt.moneda(monto)}`);
+      Modal.close('modal-apertura');
+      document.getElementById('monto-apertura').value = '';
+      await cargarCaja(); // Recargar datos desde el backend
+    } catch (error) {
+      console.error('Error al abrir caja:', error);
+      Toast.error(error.message || 'Error al abrir la caja');
+    }
+  }
+
+  function confirmarCierre() {
+    Modal.confirm(
+      '¿Cerrar la caja del día? Esta acción calculará los totales finales y no se podrá revertir.',
+      async () => {
+        await cerrarCaja();
+      }
+    );
+  }
+
+  async function cerrarCaja() {
+    try {
+      const response = await API.post('/caja/cierre');
+      Toast.success('Caja cerrada correctamente');
+      await cargarCaja(); // Recargar datos desde el backend
+    } catch (error) {
+      console.error('Error al cerrar caja:', error);
+      Toast.error(error.message || 'Error al cerrar la caja');
+    }
   }
 
   function imprimirCierre() {
+    const btnImprimir = document.getElementById('btn-imprimir');
+    if (btnImprimir.disabled) {
+      Toast.warning('Debes abrir la caja primero');
+      return;
+    }
     window.print();
   }
+
+  // ============================================
+  // FASE 3: HISTORIAL, EXPORTAR PDF, NOTIFICACIONES
+  // ============================================
+
+  let historialPaginaActual = 1;
+  const historialLimitePorPagina = 10;
+
+  async function cargarHistorial(pagina = 1) {
+    try {
+      const response = await API.get(`/caja/historial?page=${pagina}&limit=${historialLimitePorPagina}`);
+      const result = response.data || response;
+      const historial = result.data || [];
+      const paginacion = result.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 };
+      
+      historialPaginaActual = pagina;
+      renderHistorial(historial);
+      renderPaginacionHistorial(paginacion);
+    } catch (error) {
+      console.error('Error al cargar historial:', error);
+      Toast.error('No se pudo cargar el historial de cajas');
+      document.getElementById('tbody-historial').innerHTML = 
+        '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Error al cargar historial</td></tr>';
+    }
+  }
+
+  function renderHistorial(historial) {
+    const tbody = document.getElementById('tbody-historial');
+    
+    if (!historial || historial.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin historial de cajas</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = historial.map(caja => {
+      const fecha = new Date(caja.fecha).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+      const apertura = parseFloat(caja.monto_apertura || 0);
+      const ventas = parseFloat(caja.total_ventas || 0);
+      const gastos = parseFloat(caja.total_gastos || 0);
+      const saldo = apertura + ventas - gastos;
+      const estado = caja.estado === 'abierta' 
+        ? '<span class="badge badge-success">Abierta</span>' 
+        : '<span class="badge badge-gray">Cerrada</span>';
+      const trabajador = caja.trabajador_apertura_nombre || 'N/A';
+
+      return `<tr>
+        <td style="font-weight:500">${fecha}</td>
+        <td>${Fmt.moneda(apertura)}</td>
+        <td style="color:var(--success);font-weight:600">${Fmt.moneda(ventas)}</td>
+        <td style="color:var(--danger)">${Fmt.moneda(gastos)}</td>
+        <td style="font-weight:700">${Fmt.moneda(saldo)}</td>
+        <td>${estado}</td>
+        <td style="font-size:12px">${trabajador}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPaginacionHistorial(paginacion) {
+    const container = document.getElementById('historial-paginacion');
+    const { page, totalPages } = paginacion;
+
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let botones = '';
+    
+    // Botón anterior
+    if (page > 1) {
+      botones += `<button class="btn btn-outline btn-sm" onclick="cargarHistorial(${page - 1})">← Anterior</button>`;
+    }
+
+    // Números de página
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === page) {
+        botones += `<button class="btn btn-primary btn-sm">${i}</button>`;
+      } else if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
+        botones += `<button class="btn btn-outline btn-sm" onclick="cargarHistorial(${i})">${i}</button>`;
+      } else if (i === page - 2 || i === page + 2) {
+        botones += `<span style="padding:0 8px">...</span>`;
+      }
+    }
+
+    // Botón siguiente
+    if (page < totalPages) {
+      botones += `<button class="btn btn-outline btn-sm" onclick="cargarHistorial(${page + 1})">Siguiente →</button>`;
+    }
+
+    container.innerHTML = botones;
+  }
+
+  // Cargar historial cuando se abre el modal
+  document.addEventListener('DOMContentLoaded', () => {
+    const modalHistorial = document.getElementById('modal-historial');
+    if (modalHistorial) {
+      modalHistorial.addEventListener('click', (e) => {
+        if (e.target === modalHistorial || e.target.closest('.btn-close')) {
+          return;
+        }
+        if (modalHistorial.classList.contains('active') && !modalHistorial.dataset.loaded) {
+          cargarHistorial(1);
+          modalHistorial.dataset.loaded = 'true';
+        }
+      });
+    }
+  });
+
+  // Exportar a PDF
+  function exportarPDF() {
+    const btnImprimir = document.getElementById('btn-imprimir');
+    if (btnImprimir.disabled) {
+      Toast.warning('Debes abrir la caja primero');
+      return;
+    }
+
+    // Agregar clase para estilos de impresión
+    document.body.classList.add('imprimiendo');
+    
+    // Configurar título del documento
+    const tituloOriginal = document.title;
+    const fecha = new Date().toLocaleDateString('es-PE');
+    document.title = `Cierre de Caja - ${fecha}`;
+
+    // Imprimir
+    window.print();
+
+    // Restaurar
+    document.title = tituloOriginal;
+    document.body.classList.remove('imprimiendo');
+    
+    Toast.success('Documento listo para guardar como PDF');
+  }
+
+  // Notificaciones
+  function verificarCajaAbierta() {
+    const ahora = new Date();
+    const hora = ahora.getHours();
+    
+    // Verificar solo en horario laboral (8 AM - 8 PM)
+    if (hora < 8 || hora > 20) {
+      return;
+    }
+
+    API.get('/caja/hoy')
+      .then(() => {
+        // Caja abierta, todo bien
+        console.log('✓ Caja abierta correctamente');
+      })
+      .catch(error => {
+        if (error.message && error.message.includes('No hay caja abierta')) {
+          // Mostrar notificación
+          mostrarNotificacionCaja();
+        }
+      });
+  }
+
+  function mostrarNotificacionCaja() {
+    const ahora = new Date();
+    const hora = ahora.getHours();
+    
+    // Solo notificar después de las 9 AM
+    if (hora >= 9) {
+      // Verificar si ya se mostró hoy
+      const ultimaNotificacion = localStorage.getItem('ultima_notificacion_caja');
+      const hoy = new Date().toDateString();
+      
+      if (ultimaNotificacion !== hoy) {
+        Toast.warning('⚠️ Recuerda abrir la caja del día', 5000);
+        localStorage.setItem('ultima_notificacion_caja', hoy);
+      }
+    }
+  }
+
+  // Verificar caja al cargar y cada 30 minutos
+  verificarCajaAbierta();
+  setInterval(verificarCajaAbierta, 30 * 60 * 1000); // 30 minutos
 
   cargarCaja();
 </script>

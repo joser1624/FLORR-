@@ -36,6 +36,17 @@
           <span class="chip" onclick="filtrarCategoria(this,'Otros')">Otros</span>
           <span class="chip" onclick="filtrarStockBajo(this)" style="color:var(--warning)">⚠ Stock bajo</span>
         </div>
+        <select class="form-control" id="ordenar-productos" onchange="filtrarProductos()" style="max-width:180px;margin-left:auto">
+          <option value="nombre">Ordenar: Nombre A-Z</option>
+          <option value="nombre_desc">Ordenar: Nombre Z-A</option>
+          <option value="categoria">Ordenar: Categoría</option>
+          <option value="precio_asc">Ordenar: Precio (menor)</option>
+          <option value="precio_desc">Ordenar: Precio (mayor)</option>
+          <option value="stock_asc">Ordenar: Stock (menor)</option>
+          <option value="stock_desc">Ordenar: Stock (mayor)</option>
+          <option value="fecha_desc">Ordenar: Más reciente</option>
+          <option value="fecha_asc">Ordenar: Más antiguo</option>
+        </select>
       </div>
 
       <!-- Tabla -->
@@ -49,12 +60,13 @@
               <th>Costo</th>
               <th>Margen</th>
               <th>Stock</th>
+              <th>Última modificación</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-productos">
-            <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando productos...</td></tr>
+            <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando productos...</td></tr>
           </tbody>
         </table>
         <div style="padding:10px 16px;font-size:11px;color:var(--gris-400);border-top:1px solid var(--gris-50)">
@@ -153,50 +165,165 @@
 
   async function cargarProductos() {
     try {
-      const data = await API.get('/productos');
-      todosProductos = data.productos || data || [];
-    } catch {
-      todosProductos = [
-        { id:1, nombre:'Ramo romántico de rosas', categoria:'Ramos', precio:85, costo:52, stock:15, descripcion:'12 rosas premium' },
-        { id:2, nombre:'Arreglo primaveral en caja', categoria:'Arreglos', precio:120, costo:68, stock:3, descripcion:'Flores variadas' },
-        { id:3, nombre:'Peluche + rosas rojas', categoria:'Peluches', precio:95, costo:58, stock:8, descripcion:'Oso + 6 rosas' },
-        { id:4, nombre:'Caja sorpresa San Valentín', categoria:'Cajas sorpresa', precio:150, costo:89, stock:0, descripcion:'Caja especial' },
-        { id:5, nombre:'Ramo de girasoles y lirios', categoria:'Ramos', precio:70, costo:41, stock:12, descripcion:'Flores de campo' },
-        { id:6, nombre:'Arreglo de cumpleaños', categoria:'Arreglos', precio:110, costo:60, stock:2, descripcion:'Arreglo festivo' },
-      ];
+      // Cargar productos, arreglos e inventario en paralelo
+      const [productosResponse, arreglosResponse, inventarioResponse] = await Promise.all([
+        API.get('/productos').catch(err => { console.error('Error cargando productos:', err); return { data: [] }; }),
+        API.get('/arreglos').catch(err => { console.error('Error cargando arreglos:', err); return { data: [] }; }),
+        API.get('/inventario').catch(err => { console.error('Error cargando inventario:', err); return { data: [] }; })
+      ]);
+      
+      // El backend de productos retorna: { success: true, data: { data: [...], total, page, ... } }
+      // El backend de arreglos retorna: { success: true, data: [...] }
+      let productos = [];
+      if (productosResponse.data) {
+        productos = productosResponse.data.data || productosResponse.data;
+      }
+      
+      const arreglos = arreglosResponse.data || [];
+      const inventario = inventarioResponse.data?.data || inventarioResponse.data || [];
+      
+      // Asegurar que sean arrays
+      const productosArray = Array.isArray(productos) ? productos : [];
+      const arreglosArray = Array.isArray(arreglos) ? arreglos : [];
+      const inventarioArray = Array.isArray(inventario) ? inventario : [];
+      
+      console.log('Productos cargados:', productosArray.length);
+      console.log('Arreglos cargados:', arreglosArray.length);
+      console.log('Inventario cargado:', inventarioArray.length);
+      
+      // Convertir arreglos a formato de producto calculando stock disponible
+      const arreglosComoProductos = arreglosArray.map(arr => {
+        // Calcular cuántos arreglos se pueden hacer basándose en el inventario
+        let stockDisponible = Infinity;
+        
+        if (arr.items && arr.items.length > 0) {
+          for (const item of arr.items) {
+            const invItem = inventarioArray.find(inv => inv.id === item.inventario_id);
+            if (invItem) {
+              const posibles = Math.floor(invItem.stock / item.cantidad);
+              stockDisponible = Math.min(stockDisponible, posibles);
+            } else {
+              stockDisponible = 0; // Si falta un ingrediente, no se puede hacer
+            }
+          }
+        } else {
+          stockDisponible = 0;
+        }
+        
+        // Si es infinito, significa que no tiene items, poner 0
+        if (stockDisponible === Infinity) stockDisponible = 0;
+        
+        return {
+          id: `arr_${arr.id}`,
+          nombre: arr.nombre,
+          categoria: 'Arreglos',
+          precio: arr.precio_venta || 0,
+          costo: arr.costo_total || 0,
+          stock: stockDisponible, // Stock calculado basado en inventario
+          descripcion: `Arreglo personalizado (${arr.items?.length || 0} componentes)`,
+          activo: true,
+          esArreglo: true,
+          arregloId: arr.id,
+          items: arr.items // Guardar items para referencia
+        };
+      });
+      
+      // Combinar productos y arreglos
+      todosProductos = [...productosArray, ...arreglosComoProductos];
+      console.log('Total items en tabla:', todosProductos.length);
+    } catch (error) {
+      console.error('Error al cargar productos:', error);
+      Toast.error('No se pudo cargar los productos desde el servidor');
+      todosProductos = [];
     }
     renderTabla();
   }
 
   function renderTabla() {
     const q = (document.getElementById('buscar').value || '').toLowerCase();
+    const ordenar = document.getElementById('ordenar-productos').value;
+    
     let lista = todosProductos;
     if (categoriaActual) lista = lista.filter(p => p.categoria === categoriaActual);
     if (soloBajos) lista = lista.filter(p => p.stock <= 3);
     if (q) lista = lista.filter(p => p.nombre.toLowerCase().includes(q));
 
+    // Ordenamiento
+    lista = [...lista]; // Clonar para no mutar el original
+    switch(ordenar) {
+      case 'nombre':
+        lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        break;
+      case 'nombre_desc':
+        lista.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        break;
+      case 'categoria':
+        lista.sort((a, b) => a.categoria.localeCompare(b.categoria) || a.nombre.localeCompare(b.nombre));
+        break;
+      case 'precio_asc':
+        lista.sort((a, b) => a.precio - b.precio);
+        break;
+      case 'precio_desc':
+        lista.sort((a, b) => b.precio - a.precio);
+        break;
+      case 'stock_asc':
+        lista.sort((a, b) => a.stock - b.stock);
+        break;
+      case 'stock_desc':
+        lista.sort((a, b) => b.stock - a.stock);
+        break;
+      case 'fecha_desc':
+        lista.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+        break;
+      case 'fecha_asc':
+        lista.sort((a, b) => new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at));
+        break;
+    }
+
     document.getElementById('total-count').textContent = lista.length;
     const tbody = document.getElementById('tbody-productos');
     if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">No se encontraron productos</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">No se encontraron productos</td></tr>';
       return;
     }
 
     tbody.innerHTML = lista.map(p => {
       const margen = p.precio > 0 ? ((p.precio - p.costo) / p.precio * 100).toFixed(1) : 0;
-      const stockBadge = p.stock === 0
-        ? '<span class="badge badge-danger">Agotado</span>'
-        : p.stock <= 3
-          ? `<span class="badge badge-warning">Bajo (${p.stock})</span>`
-          : `<span class="badge badge-success">${p.stock} uds</span>`;
+      const fechaMod = p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+      
+      // Para arreglos, mostrar stock calculado con tooltip explicativo
+      let stockBadge;
+      if (p.esArreglo) {
+        if (p.stock === 0) {
+          stockBadge = '<span class="badge badge-danger" title="Falta inventario para hacer este arreglo">Agotado</span>';
+        } else if (p.stock <= 3) {
+          stockBadge = `<span class="badge badge-warning" title="Stock limitado por inventario disponible">Bajo (${p.stock})</span>`;
+        } else {
+          stockBadge = `<span class="badge badge-success" title="Arreglos disponibles según inventario">${p.stock} disponibles</span>`;
+        }
+      } else {
+        // Productos normales
+        stockBadge = p.stock === 0
+          ? '<span class="badge badge-danger">Agotado</span>'
+          : p.stock <= 3
+            ? `<span class="badge badge-warning">Bajo (${p.stock})</span>`
+            : `<span class="badge badge-success">${p.stock} uds</span>`;
+      }
+      
       const margenColor = margen >= 30 ? 'var(--success)' : margen >= 15 ? 'var(--warning)' : 'var(--danger)';
       const emoji = CATS_EMOJI[p.categoria] || '🌸';
+      
+      // Badge especial para arreglos del laboratorio
+      const origenBadge = p.esArreglo 
+        ? '<span class="badge badge-info" style="font-size:10px;margin-left:6px">🧪 Laboratorio</span>'
+        : '';
+      
       return `<tr>
         <td>
           <div style="display:flex;align-items:center;gap:10px">
             <span style="font-size:22px">${emoji}</span>
             <div>
-              <div style="font-weight:500;font-size:13px">${p.nombre}</div>
+              <div style="font-weight:500;font-size:13px">${p.nombre}${origenBadge}</div>
               ${p.descripcion ? `<div style="font-size:11px;color:var(--gris-400)">${p.descripcion}</div>` : ''}
             </div>
           </div>
@@ -206,11 +333,12 @@
         <td style="color:var(--gris-500)">${Fmt.moneda(p.costo)}</td>
         <td><span style="font-weight:600;color:${margenColor}">${margen}%</span></td>
         <td>${stockBadge}</td>
+        <td style="font-size:12px;color:var(--gris-500)">${fechaMod}</td>
         <td><span class="badge ${p.activo !== false ? 'badge-success' : 'badge-gray'}">${p.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
         <td>
           <div class="tbl-actions-cell">
-            <button class="btn-tbl btn-tbl-edit" onclick="editarProducto(${p.id})">Editar</button>
-            <button class="btn-tbl btn-tbl-delete" onclick="eliminarProducto(${p.id},'${p.nombre.replace(/'/g,"\\'")}')">Eliminar</button>
+            <button class="btn-tbl btn-tbl-edit" onclick="editarProducto('${p.id}')">${p.esArreglo ? 'Ver' : 'Editar'}</button>
+            <button class="btn-tbl btn-tbl-delete" onclick="eliminarProducto('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">Eliminar</button>
           </div>
         </td>
       </tr>`;
@@ -246,6 +374,13 @@
   function editarProducto(id) {
     const p = todosProductos.find(x => x.id === id);
     if (!p) return;
+    
+    // Si es un arreglo, no permitir edición (los arreglos se gestionan desde laboratorio)
+    if (p.esArreglo) {
+      Toast.info('Los arreglos se editan desde el Laboratorio de flores');
+      return;
+    }
+    
     document.getElementById('modal-producto-titulo').textContent = 'Editar producto';
     document.getElementById('prod-id').value = p.id;
     document.getElementById('prod-nombre').value = p.nombre;
@@ -282,46 +417,53 @@
     e.preventDefault();
     const id = document.getElementById('prod-id').value;
     const payload = {
-      nombre:      document.getElementById('prod-nombre').value,
+      nombre:      document.getElementById('prod-nombre').value.trim(),
       precio:      parseFloat(document.getElementById('prod-precio').value),
       costo:       parseFloat(document.getElementById('prod-costo').value),
       stock:       parseInt(document.getElementById('prod-stock').value),
       categoria:   document.getElementById('prod-categoria').value,
-      descripcion: document.getElementById('prod-descripcion').value,
+      descripcion: document.getElementById('prod-descripcion').value.trim(),
     };
+    
+    if (!payload.nombre) {
+      Toast.warning('El nombre es obligatorio');
+      return;
+    }
+    
     try {
-      const res = id
+      const response = id
         ? await API.put('/productos/' + id, payload)
         : await API.post('/productos', payload);
-      if (res.error) { Toast.error(res.error); return; }
-      Toast.success(id ? 'Producto actualizado' : 'Producto creado');
+      
+      console.log('Producto guardado:', response);
+      Toast.success(id ? 'Producto actualizado' : 'Producto creado correctamente');
       Modal.close('modal-producto');
-      cargarProductos();
-    } catch {
-      Toast.error('No se pudo conectar con el servidor');
-      // Actualizar localmente para demo
-      if (id) {
-        const i = todosProductos.findIndex(x => x.id == id);
-        if (i >= 0) todosProductos[i] = { ...todosProductos[i], ...payload };
-      } else {
-        todosProductos.push({ id: Date.now(), ...payload });
-      }
-      Modal.close('modal-producto');
-      renderTabla();
-      Toast.success(id ? 'Actualizado (demo)' : 'Creado (demo)');
+      await cargarProductos(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al guardar producto:', error);
+      Toast.error('Error al guardar el producto');
     }
   }
 
   function eliminarProducto(id, nombre) {
+    const p = todosProductos.find(x => x.id === id);
+    
     Modal.confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`, async () => {
       try {
-        await API.delete('/productos/' + id);
-        Toast.success('Producto eliminado');
-      } catch {
-        Toast.info('Eliminado (demo)');
+        // Si es un arreglo, eliminar desde /api/arreglos
+        if (p && p.esArreglo) {
+          await API.delete('/arreglos/' + p.arregloId);
+          Toast.success('Arreglo eliminado');
+        } else {
+          // Si es un producto normal, eliminar desde /api/productos
+          await API.delete('/productos/' + id);
+          Toast.success('Producto eliminado');
+        }
+        await cargarProductos(); // Recargar desde el backend
+      } catch (error) {
+        console.error('Error al eliminar:', error);
+        Toast.error('Error al eliminar el producto');
       }
-      todosProductos = todosProductos.filter(p => p.id !== id);
-      renderTabla();
     });
   }
 

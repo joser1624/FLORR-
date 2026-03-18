@@ -65,6 +65,13 @@ class GastosService {
       errors.push('La fecha no puede estar vacía');
     }
 
+    // Validar datos de inventario si se proporcionan
+    if (data.inventario_id && data.cantidad) {
+      if (data.cantidad <= 0) {
+        errors.push('La cantidad debe ser mayor a cero');
+      }
+    }
+
     if (errors.length > 0) {
       const error = new Error('Errores de validación');
       error.statusCode = 400;
@@ -72,12 +79,37 @@ class GastosService {
       throw error;
     }
 
+    // Si se proporciona inventario_id y cantidad, actualizar el stock
+    if (data.inventario_id && data.cantidad) {
+      // Verificar que el ítem existe
+      const itemResult = await query(
+        'SELECT id, nombre, stock FROM inventario WHERE id = $1',
+        [data.inventario_id]
+      );
+
+      if (itemResult.rows.length === 0) {
+        const error = new Error('El ítem de inventario no existe');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Actualizar el stock del inventario
+      await query(
+        'UPDATE inventario SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [data.cantidad, data.inventario_id]
+      );
+
+      console.log(`✅ Stock actualizado: ${itemResult.rows[0].nombre} +${data.cantidad} unidades`);
+    }
+
+    // Crear el gasto
     const result = await query(
       `INSERT INTO gastos (descripcion, categoria, monto, fecha) 
        VALUES ($1, $2, $3, $4) 
        RETURNING *`,
       [data.descripcion.trim(), data.categoria, data.monto, data.fecha]
     );
+    
     return result.rows[0];
   }
 

@@ -56,7 +56,7 @@
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label">Categoría</label>
-            <select class="form-control" id="gasto-cat">
+            <select class="form-control" id="gasto-cat" onchange="toggleInventarioFields()">
               <option value="flores">Compra de flores</option><option value="transporte">Transporte</option>
               <option value="materiales">Materiales</option><option value="mantenimiento">Mantenimiento</option>
               <option value="otros">Otros</option>
@@ -64,6 +64,56 @@
           </div>
           <div class="form-group"><label class="form-label">Monto (S/) <span class="req">*</span></label><input class="form-control" type="number" id="gasto-monto" step="0.01" min="0" required /></div>
         </div>
+        
+        <!-- Campos de inventario (solo para flores y materiales) -->
+        <div id="inventario-fields" style="display:block">
+          <div class="alert alert-info" style="font-size:12px;padding:10px;margin-bottom:12px">
+            💡 Al registrar este gasto, el stock del ítem seleccionado se actualizará automáticamente
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ítem de inventario</label>
+            <select class="form-control" id="gasto-inventario-id" onchange="toggleNuevoItem()">
+              <option value="">-- No actualizar inventario --</option>
+              <option value="nuevo">➕ Crear nuevo ítem</option>
+            </select>
+          </div>
+          
+          <!-- Campos para crear nuevo ítem -->
+          <div id="nuevo-item-fields" style="display:none">
+            <div class="alert alert-success" style="font-size:12px;padding:10px;margin-bottom:12px">
+              ✨ Se creará un nuevo ítem en el inventario con los datos ingresados
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre del nuevo ítem <span class="req">*</span></label>
+              <input class="form-control" id="nuevo-item-nombre" placeholder="Ej: Rosas rojas importadas" />
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Unidad</label>
+                <select class="form-control" id="nuevo-item-unidad">
+                  <option>unidad</option>
+                  <option>docena</option>
+                  <option>metro</option>
+                  <option>rollo</option>
+                  <option>caja</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Costo unitario (S/)</label>
+                <input class="form-control" type="number" id="nuevo-item-costo" step="0.01" min="0" placeholder="Ej: 2.50" />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Campo de cantidad (siempre visible cuando hay inventario) -->
+          <div id="cantidad-field" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Cantidad a agregar <span class="req">*</span></label>
+              <input class="form-control" type="number" id="gasto-cantidad" min="1" placeholder="Ej: 50" />
+            </div>
+          </div>
+        </div>
+        
         <div class="form-group"><label class="form-label">Fecha</label><input class="form-control" type="date" id="gasto-fecha" /></div>
       </div>
     </div>
@@ -87,16 +137,100 @@
   const CAT_LABELS = { flores:'Compra flores', transporte:'Transporte', materiales:'Materiales', mantenimiento:'Mantenimiento', otros:'Otros' };
   const CAT_BADGE = { flores:'badge-rosa', transporte:'badge-info', materiales:'badge-dorado', mantenimiento:'badge-warning', otros:'badge-gray' };
 
+  let inventarioItems = [];
+
+  // Cargar ítems del inventario al iniciar
+  async function cargarInventario() {
+    try {
+      const response = await API.get('/inventario');
+      const result = response.data || response;
+      inventarioItems = result.data || result || [];
+      console.log('Inventario cargado:', inventarioItems.length, 'ítems');
+      renderInventarioSelect();
+    } catch (error) {
+      console.error('Error al cargar inventario:', error);
+      inventarioItems = [];
+    }
+  }
+
+  function renderInventarioSelect() {
+    const select = document.getElementById('gasto-inventario-id');
+    const categoria = document.getElementById('gasto-cat').value;
+    
+    // Filtrar ítems según la categoría
+    let itemsFiltrados = inventarioItems;
+    if (categoria === 'flores') {
+      itemsFiltrados = inventarioItems.filter(i => i.tipo === 'flores');
+    } else if (categoria === 'materiales') {
+      itemsFiltrados = inventarioItems.filter(i => i.tipo === 'materiales' || i.tipo === 'accesorios');
+    }
+    
+    select.innerHTML = '<option value="">-- No actualizar inventario --</option>' +
+      '<option value="nuevo">➕ Crear nuevo ítem</option>' +
+      itemsFiltrados.map(item => 
+        `<option value="${item.id}">${item.nombre} (Stock actual: ${item.stock} ${item.unidad})</option>`
+      ).join('');
+  }
+
+  function toggleNuevoItem() {
+    const inventarioId = document.getElementById('gasto-inventario-id').value;
+    const nuevoItemFields = document.getElementById('nuevo-item-fields');
+    const cantidadField = document.getElementById('cantidad-field');
+    
+    if (inventarioId === 'nuevo') {
+      // Mostrar campos para crear nuevo ítem
+      nuevoItemFields.style.display = 'block';
+      cantidadField.style.display = 'block';
+      
+      // Pre-llenar el tipo según la categoría
+      const categoria = document.getElementById('gasto-cat').value;
+      // El tipo se asignará automáticamente según la categoría
+    } else if (inventarioId) {
+      // Ítem existente seleccionado
+      nuevoItemFields.style.display = 'none';
+      cantidadField.style.display = 'block';
+    } else {
+      // No actualizar inventario
+      nuevoItemFields.style.display = 'none';
+      cantidadField.style.display = 'none';
+      
+      // Limpiar campos
+      document.getElementById('nuevo-item-nombre').value = '';
+      document.getElementById('nuevo-item-costo').value = '';
+      document.getElementById('gasto-cantidad').value = '';
+    }
+  }
+
+  function toggleInventarioFields() {
+    const categoria = document.getElementById('gasto-cat').value;
+    const inventarioFields = document.getElementById('inventario-fields');
+    
+    // Mostrar campos solo para flores y materiales
+    if (categoria === 'flores' || categoria === 'materiales') {
+      inventarioFields.style.display = 'block';
+      renderInventarioSelect();
+      toggleNuevoItem(); // Actualizar visibilidad de campos internos
+    } else {
+      inventarioFields.style.display = 'none';
+      document.getElementById('gasto-inventario-id').value = '';
+      document.getElementById('gasto-cantidad').value = '';
+      document.getElementById('nuevo-item-nombre').value = '';
+      document.getElementById('nuevo-item-costo').value = '';
+    }
+  }
+
   async function cargarGastos() {
     const mes = document.getElementById('mes-gasto').value;
-    try { const d = await API.get(`/gastos?mes=${mes}`); gastos = d.gastos || d || []; }
-    catch {
-      gastos = [
-        { id:1, descripcion:'Compra 200 rosas rojas', categoria:'flores', monto:280, fecha:'2026-03-02' },
-        { id:2, descripcion:'Transporte proveedor', categoria:'transporte', monto:35, fecha:'2026-03-05' },
-        { id:3, descripcion:'Papel decorativo x10', categoria:'materiales', monto:85, fecha:'2026-03-08' },
-        { id:4, descripcion:'Mantenimiento refrigerador', categoria:'mantenimiento', monto:150, fecha:'2026-03-10' },
-      ];
+    try {
+      const response = await API.get(`/gastos?mes=${mes}`);
+      // Backend retorna: { success: true, data: { data: [...], total, page, limit, pages } }
+      const result = response.data || response;
+      gastos = result.data || result.gastos || result || [];
+      console.log('Gastos cargados:', gastos.length, 'gastos del mes', mes);
+    } catch (error) {
+      console.error('Error al cargar gastos:', error);
+      Toast.error('No se pudieron cargar los gastos desde el servidor');
+      gastos = [];
     }
     renderResumen();
     renderGastos();
@@ -130,27 +264,125 @@
   }
 
   async function guardarGasto() {
-    const payload = { descripcion: document.getElementById('gasto-desc').value, categoria: document.getElementById('gasto-cat').value, monto: parseFloat(document.getElementById('gasto-monto').value)||0, fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0] };
-    if (!payload.descripcion || !payload.monto) { Toast.warning('Completa los campos obligatorios'); return; }
-    try { await API.post('/gastos', payload); } catch { gastos.unshift({ id:Date.now(), ...payload }); }
-    Toast.success('Gasto registrado');
-    Modal.close('modal-gasto');
-    renderResumen();
-    renderGastos();
+    const payload = {
+      descripcion: document.getElementById('gasto-desc').value.trim(),
+      categoria: document.getElementById('gasto-cat').value,
+      monto: parseFloat(document.getElementById('gasto-monto').value) || 0,
+      fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0]
+    };
+    
+    // Validaciones básicas
+    if (!payload.descripcion) {
+      Toast.warning('La descripción es obligatoria');
+      return;
+    }
+    if (!payload.monto || payload.monto <= 0) {
+      Toast.warning('El monto debe ser mayor a 0');
+      return;
+    }
+    
+    // Manejar inventario
+    const inventarioId = document.getElementById('gasto-inventario-id').value;
+    const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
+    
+    if (inventarioId === 'nuevo') {
+      // Crear nuevo ítem de inventario
+      const nuevoItemNombre = document.getElementById('nuevo-item-nombre').value.trim();
+      const nuevoItemUnidad = document.getElementById('nuevo-item-unidad').value;
+      const nuevoItemCosto = parseFloat(document.getElementById('nuevo-item-costo').value) || 0;
+      
+      if (!nuevoItemNombre) {
+        Toast.warning('Ingresa el nombre del nuevo ítem');
+        return;
+      }
+      if (!cantidad || cantidad <= 0) {
+        Toast.warning('Ingresa la cantidad a agregar');
+        return;
+      }
+      
+      try {
+        // Determinar el tipo según la categoría
+        const tipo = payload.categoria === 'flores' ? 'flores' : 'materiales';
+        
+        // Crear el nuevo ítem en el inventario
+        const nuevoItem = await API.post('/inventario', {
+          nombre: nuevoItemNombre,
+          tipo: tipo,
+          stock: cantidad,
+          stock_min: 5,
+          unidad: nuevoItemUnidad,
+          costo: nuevoItemCosto
+        });
+        
+        console.log('✅ Nuevo ítem creado:', nuevoItem);
+        Toast.success(`Ítem "${nuevoItemNombre}" creado con ${cantidad} ${nuevoItemUnidad}`);
+        
+        // Recargar inventario
+        await cargarInventario();
+        
+      } catch (error) {
+        console.error('Error al crear ítem:', error);
+        Toast.error('Error al crear el ítem de inventario: ' + error.message);
+        return;
+      }
+      
+    } else if (inventarioId && cantidad > 0) {
+      // Actualizar ítem existente
+      payload.inventario_id = parseInt(inventarioId);
+      payload.cantidad = cantidad;
+    }
+    
+    // Validar que si se seleccionó un ítem existente, también se ingresó la cantidad
+    if (inventarioId && inventarioId !== 'nuevo' && !cantidad) {
+      Toast.warning('Ingresa la cantidad a agregar al inventario');
+      return;
+    }
+    
+    try {
+      const response = await API.post('/gastos', payload);
+      
+      if (payload.inventario_id && payload.cantidad) {
+        const item = inventarioItems.find(i => i.id === payload.inventario_id);
+        Toast.success(`Gasto registrado y stock actualizado: ${item?.nombre} +${payload.cantidad} ${item?.unidad}`);
+      } else {
+        Toast.success('Gasto registrado correctamente');
+      }
+      
+      Modal.close('modal-gasto');
+      // Limpiar formulario
+      document.getElementById('gasto-desc').value = '';
+      document.getElementById('gasto-monto').value = '';
+      document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
+      document.getElementById('gasto-inventario-id').value = '';
+      document.getElementById('gasto-cantidad').value = '';
+      document.getElementById('nuevo-item-nombre').value = '';
+      document.getElementById('nuevo-item-costo').value = '';
+      toggleNuevoItem(); // Ocultar campos de nuevo ítem
+      await cargarGastos(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al guardar gasto:', error);
+      Toast.error(error.message || 'Error al guardar el gasto');
+    }
   }
 
-  function eliminarGasto(id) {
-    Modal.confirm('¿Eliminar este gasto?', () => {
-      gastos = gastos.filter(g=>g.id!==id);
-      API.delete('/gastos/'+id).catch(()=>{});
-      renderResumen();
-      renderGastos();
-      Toast.success('Gasto eliminado');
+  async function eliminarGasto(id) {
+    const gasto = gastos.find(g => g.id === id);
+    Modal.confirm(`¿Eliminar gasto "${gasto?.descripcion}"?`, async () => {
+      try {
+        await API.delete('/gastos/' + id);
+        Toast.success('Gasto eliminado correctamente');
+        await cargarGastos(); // Recargar desde el backend
+      } catch (error) {
+        console.error('Error al eliminar gasto:', error);
+        Toast.error(error.message || 'Error al eliminar el gasto');
+      }
     });
   }
 
   document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
   cargarGastos();
+  cargarInventario();
+  toggleInventarioFields();
 </script>
 </body>
 </html>

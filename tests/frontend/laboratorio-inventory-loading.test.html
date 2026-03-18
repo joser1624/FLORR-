@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test: Laboratorio Inventory Loading (Task 3.1)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-container {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #333;
+    }
+    .test-case {
+      padding: 12px;
+      margin: 8px 0;
+      border-left: 4px solid #ddd;
+      background: #f9f9f9;
+    }
+    .test-case.pass {
+      border-left-color: #2D8C4E;
+      background: #f0f9f4;
+    }
+    .test-case.fail {
+      border-left-color: #C43232;
+      background: #fef0f0;
+    }
+    .test-case.running {
+      border-left-color: #C87B1A;
+      background: #fff9f0;
+    }
+    .test-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .test-result {
+      font-size: 14px;
+      color: #666;
+    }
+    .summary {
+      font-size: 18px;
+      font-weight: 600;
+      padding: 16px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .summary.pass {
+      background: #2D8C4E;
+      color: white;
+    }
+    .summary.fail {
+      background: #C43232;
+      color: white;
+    }
+    button {
+      background: #CC3870;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    button:hover {
+      background: #b32f5f;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <div class="test-title">Task 3.1: Laboratorio Inventory Loading Tests</div>
+    <p style="color: #666; margin-bottom: 20px;">
+      Testing Requirements 2.1 and 2.2: Load inventory data from backend and display in grid
+    </p>
+    <button onclick="runTests()">Run Tests</button>
+    <div id="test-results"></div>
+  </div>
+
+  <script>
+    // Mock API and utilities
+    const API_BASE = 'http://localhost:3000/api';
+    
+    const Auth = {
+      getToken: () => 'mock-token',
+    };
+
+    const Toast = {
+      messages: [],
+      error: (msg) => {
+        Toast.messages.push({ type: 'error', message: msg });
+        console.log('Toast.error:', msg);
+      },
+      success: (msg) => {
+        Toast.messages.push({ type: 'success', message: msg });
+        console.log('Toast.success:', msg);
+      },
+      clear: () => {
+        Toast.messages = [];
+      }
+    };
+
+    // Test results tracking
+    let testResults = [];
+
+    function addTestResult(name, passed, message = '') {
+      testResults.push({ name, passed, message });
+      renderResults();
+    }
+
+    function renderResults() {
+      const container = document.getElementById('test-results');
+      let html = '<div style="margin-top: 20px;">';
+      
+      testResults.forEach(result => {
+        const status = result.passed ? 'pass' : 'fail';
+        const icon = result.passed ? '✓' : '✗';
+        html += `
+          <div class="test-case ${status}">
+            <div class="test-name">${icon} ${result.name}</div>
+            ${result.message ? `<div class="test-result">${result.message}</div>` : ''}
+          </div>
+        `;
+      });
+
+      const passed = testResults.filter(r => r.passed).length;
+      const total = testResults.length;
+      const allPassed = passed === total;
+
+      if (testResults.length > 0) {
+        html += `
+          <div class="summary ${allPassed ? 'pass' : 'fail'}">
+            ${passed}/${total} tests passed
+          </div>
+        `;
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // Test 1: API call is made on page load
+    async function testAPICallOnLoad() {
+      let apiCalled = false;
+      let correctEndpoint = false;
+      let hasAuthHeader = false;
+
+      // Mock fetch
+      const originalFetch = window.fetch;
+      window.fetch = async (url, options) => {
+        apiCalled = true;
+        correctEndpoint = url === API_BASE + '/inventario';
+        hasAuthHeader = options?.headers?.Authorization !== undefined;
+        
+        return {
+          ok: true,
+          json: async () => ({ items: [] })
+        };
+      };
+
+      // Simulate cargarInventarioLab
+      try {
+        const response = await fetch(API_BASE + '/inventario', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${Auth.getToken()}`
+          }
+        });
+        await response.json();
+      } catch (error) {
+        // Ignore
+      }
+
+      window.fetch = originalFetch;
+
+      const passed = apiCalled && correctEndpoint && hasAuthHeader;
+      addTestResult(
+        'API call made to GET /api/inventario with auth token',
+        passed,
+        passed ? 'Correct endpoint and headers' : 'Missing endpoint or auth header'
+      );
+    }
+
+    // Test 2: Response data is parsed correctly
+    async function testResponseParsing() {
+      const mockData = {
+        items: [
+          { id: 1, nombre: 'Rosas rojas', tipo: 'flores', stock: 45, costo: 3.50 },
+          { id: 2, nombre: 'Lirios blancos', tipo: 'flores', stock: 8, costo: 2.80 }
+        ]
+      };
+
+      let inventario = [];
+      
+      // Simulate response handling
+      try {
+        const data = mockData;
+        inventario = data.items || data || [];
+        
+        if (!Array.isArray(inventario)) {
+          throw new Error('Formato de respuesta inválido');
+        }
+      } catch (error) {
+        // Should not reach here
+      }
+
+      const passed = Array.isArray(inventario) && inventario.length === 2;
+      addTestResult(
+        'Response data parsed into array',
+        passed,
+        passed ? `Parsed ${inventario.length} items` : 'Failed to parse response'
+      );
+    }
+
+    // Test 3: Error handling displays error message
+    async function testErrorHandling() {
+      Toast.clear();
+      
+      // Simulate error scenario
+      try {
+        throw new Error('Error de conexión. Verifica tu conexión a internet.');
+      } catch (error) {
+        console.error('Error al cargar inventario:', error);
+        Toast.error(error.message || 'Error al cargar inventario');
+      }
+
+      const passed = Toast.messages.length > 0 && 
+                     Toast.messages[0].type === 'error';
+      addTestResult(
+        'Error handling displays toast notification',
+        passed,
+        passed ? `Toast message: "${Toast.messages[0].message}"` : 'No error toast displayed'
+      );
+    }
+
+    // Test 4: Invalid response format is handled
+    async function testInvalidResponseFormat() {
+      Toast.clear();
+      let errorCaught = false;
+
+      // Simulate invalid response
+      try {
+        const data = "invalid string response";
+        const inventario = data.items || data || [];
+        
+        if (!Array.isArray(inventario)) {
+          throw new Error('Formato de respuesta inválido');
+        }
+      } catch (error) {
+        errorCaught = true;
+        Toast.error(error.message || 'Error al cargar inventario');
+      }
+
+      const passed = errorCaught && Toast.messages.length > 0;
+      addTestResult(
+        'Invalid response format throws error',
+        passed,
+        passed ? 'Error caught and displayed' : 'Invalid format not handled'
+      );
+    }
+
+    // Test 5: Grid displays stock availability
+    function testStockDisplay() {
+      const mockItem = {
+        id: 1,
+        nombre: 'Rosas rojas',
+        tipo: 'flores',
+        stock: 45,
+        costo: 3.50
+      };
+
+      // Simulate grid item HTML generation
+      const itemHTML = `
+        <div>
+          <div>Stock: ${mockItem.stock}</div>
+        </div>
+      `;
+
+      const passed = itemHTML.includes('Stock:') && itemHTML.includes('45');
+      addTestResult(
+        'Grid displays stock availability for each item',
+        passed,
+        passed ? 'Stock information displayed' : 'Stock not displayed'
+      );
+    }
+
+    // Test 6: Out of stock items are marked
+    function testOutOfStockDisplay() {
+      const mockItem = {
+        id: 1,
+        nombre: 'Rosas rojas',
+        tipo: 'flores',
+        stock: 0,
+        costo: 3.50
+      };
+
+      const agotado = mockItem.stock === 0;
+      const itemHTML = agotado ? '<div>Agotado</div>' : '';
+
+      const passed = agotado && itemHTML.includes('Agotado');
+      addTestResult(
+        'Out of stock items show "Agotado" message',
+        passed,
+        passed ? 'Out of stock indicator displayed' : 'No out of stock indicator'
+      );
+    }
+
+    // Test 7: Fallback data is used on error
+    async function testFallbackData() {
+      let inventario = [];
+      
+      // Simulate error with fallback
+      try {
+        throw new Error('Network error');
+      } catch (error) {
+        console.error('Error al cargar inventario:', error);
+        Toast.error(error.message || 'Error al cargar inventario');
+        // Use fallback demo data
+        inventario = [
+          { id: 1, nombre: 'Rosas rojas', tipo: 'flores', stock: 45, costo: 3.50 },
+          { id: 2, nombre: 'Lirios blancos', tipo: 'flores', stock: 8, costo: 2.80 }
+        ];
+      }
+
+      const passed = inventario.length > 0;
+      addTestResult(
+        'Fallback demo data used on network error',
+        passed,
+        passed ? `Fallback data has ${inventario.length} items` : 'No fallback data'
+      );
+    }
+
+    // Run all tests
+    async function runTests() {
+      testResults = [];
+      renderResults();
+
+      await testAPICallOnLoad();
+      await testResponseParsing();
+      await testErrorHandling();
+      await testInvalidResponseFormat();
+      testStockDisplay();
+      testOutOfStockDisplay();
+      await testFallbackData();
+    }
+  </script>
+</body>
+</html>

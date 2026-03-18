@@ -4,6 +4,8 @@
 -- =============================================
 
 -- Drop existing tables (in reverse order of dependencies)
+DROP TABLE IF EXISTS movimientos_capital CASCADE;
+DROP TABLE IF EXISTS configuracion CASCADE;
 DROP TABLE IF EXISTS arreglos_inventario CASCADE;
 DROP TABLE IF EXISTS arreglos CASCADE;
 DROP TABLE IF EXISTS ventas_productos CASCADE;
@@ -270,6 +272,42 @@ CREATE INDEX idx_eventos_activo ON eventos(activo);
 CREATE INDEX idx_eventos_fecha ON eventos(fecha);
 
 -- =============================================
+-- CONFIGURACION (System Configuration)
+-- =============================================
+CREATE TABLE configuracion (
+    id SERIAL PRIMARY KEY,
+    clave VARCHAR(100) UNIQUE NOT NULL,
+    valor TEXT NOT NULL,
+    descripcion TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert capital inicial
+INSERT INTO configuracion (clave, valor, descripcion)
+VALUES ('capital_inicial', '10000.00', 'Capital inicial del negocio');
+
+CREATE INDEX idx_configuracion_clave ON configuracion(clave);
+
+-- =============================================
+-- MOVIMIENTOS_CAPITAL (Capital Movements)
+-- =============================================
+CREATE TABLE movimientos_capital (
+    id SERIAL PRIMARY KEY,
+    tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('aporte', 'retiro')),
+    monto DECIMAL(10, 2) NOT NULL CHECK (monto > 0),
+    descripcion TEXT NOT NULL,
+    fecha DATE NOT NULL,
+    trabajador_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_movimientos_capital_tipo ON movimientos_capital(tipo);
+CREATE INDEX idx_movimientos_capital_fecha ON movimientos_capital(fecha);
+CREATE INDEX idx_movimientos_capital_trabajador ON movimientos_capital(trabajador_id);
+
+-- =============================================
 -- TRIGGERS FOR UPDATED_AT
 -- =============================================
 
@@ -312,6 +350,12 @@ CREATE TRIGGER update_promociones_updated_at BEFORE UPDATE ON promociones
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_eventos_updated_at BEFORE UPDATE ON eventos
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_configuracion_updated_at BEFORE UPDATE ON configuracion
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_movimientos_capital_updated_at BEFORE UPDATE ON movimientos_capital
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================

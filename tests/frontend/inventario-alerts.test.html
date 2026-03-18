@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario Alerts Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 3px;
+    }
+    .pass {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .fail {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .alert {
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .alert-warning {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      margin: 0 4px;
+    }
+    .badge-warning {
+      background-color: #ffc107;
+      color: #000;
+    }
+    h2 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Inventario Stock Alerts - Unit Tests</h1>
+  <p>Testing stock alert display functionality for Task 2.2</p>
+  
+  <div id="test-results"></div>
+  <div id="alertas-inv"></div>
+
+  <script>
+    // Test utilities
+    const testResults = [];
+    
+    function assert(condition, testName, message) {
+      const result = {
+        name: testName,
+        passed: condition,
+        message: message || (condition ? 'Test passed' : 'Test failed')
+      };
+      testResults.push(result);
+      return condition;
+    }
+
+    function displayResults() {
+      const container = document.getElementById('test-results');
+      const passed = testResults.filter(r => r.passed).length;
+      const total = testResults.length;
+      
+      let html = `<div class="test-section">
+        <h2>Test Summary: ${passed}/${total} tests passed</h2>`;
+      
+      testResults.forEach(result => {
+        html += `<div class="test-result ${result.passed ? 'pass' : 'fail'}">
+          <strong>${result.name}</strong>: ${result.message}
+        </div>`;
+      });
+      
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // Copy the renderAlertas function from inventario.html
+    let items = [];
+    
+    function renderAlertas() {
+      const bajos = items.filter(i => i.stock <= (i.stock_min || 5));
+      const el = document.getElementById('alertas-inv');
+      if (!bajos.length) { el.innerHTML = ''; return; }
+      el.innerHTML = `<div class="alert alert-warning" style="margin-bottom:1rem">⚠ <strong>${bajos.length} ítem(s) con stock bajo:</strong> ${bajos.map(i=>`<span class="badge badge-warning" style="margin-left:4px">${i.nombre} (${i.stock})</span>`).join('')}</div>`;
+    }
+
+    // Test 1: Filter items where stock <= stock_min
+    function testFilterLowStock() {
+      items = [
+        { id: 1, nombre: 'Rosas rojas', stock: 5, stock_min: 10 },
+        { id: 2, nombre: 'Lirios blancos', stock: 15, stock_min: 10 },
+        { id: 3, nombre: 'Girasoles', stock: 8, stock_min: 8 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const hasContent = alertDiv.innerHTML.length > 0;
+      
+      assert(hasContent, 'Test 1: Filter low stock items', 
+        'Alert should be displayed when items have stock <= stock_min');
+      
+      // Check that correct items are shown
+      const hasRosas = alertDiv.innerHTML.includes('Rosas rojas');
+      const hasGirasoles = alertDiv.innerHTML.includes('Girasoles');
+      const hasLirios = alertDiv.innerHTML.includes('Lirios blancos');
+      
+      assert(hasRosas, 'Test 1a: Rosas rojas included', 
+        'Rosas rojas (stock 5 <= stock_min 10) should be in alert');
+      assert(hasGirasoles, 'Test 1b: Girasoles included', 
+        'Girasoles (stock 8 <= stock_min 8) should be in alert');
+      assert(!hasLirios, 'Test 1c: Lirios blancos excluded', 
+        'Lirios blancos (stock 15 > stock_min 10) should NOT be in alert');
+    }
+
+    // Test 2: Display count of low stock items
+    function testDisplayCount() {
+      items = [
+        { id: 1, nombre: 'Item 1', stock: 2, stock_min: 5 },
+        { id: 2, nombre: 'Item 2', stock: 3, stock_min: 5 },
+        { id: 3, nombre: 'Item 3', stock: 10, stock_min: 5 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const hasCount = alertDiv.innerHTML.includes('2 ítem(s) con stock bajo');
+      
+      assert(hasCount, 'Test 2: Display count', 
+        'Alert should show "2 ítem(s) con stock bajo"');
+    }
+
+    // Test 3: Display alert badges with item names
+    function testDisplayBadges() {
+      items = [
+        { id: 1, nombre: 'Papel decorativo', stock: 3, stock_min: 5 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const hasBadge = alertDiv.innerHTML.includes('badge badge-warning');
+      const hasName = alertDiv.innerHTML.includes('Papel decorativo');
+      const hasStock = alertDiv.innerHTML.includes('(3)');
+      
+      assert(hasBadge, 'Test 3a: Badge class present', 
+        'Alert should contain badge with class "badge badge-warning"');
+      assert(hasName, 'Test 3b: Item name displayed', 
+        'Badge should display item name "Papel decorativo"');
+      assert(hasStock, 'Test 3c: Stock value displayed', 
+        'Badge should display current stock value "(3)"');
+    }
+
+    // Test 4: No alert when all items have sufficient stock
+    function testNoAlertWhenStockSufficient() {
+      items = [
+        { id: 1, nombre: 'Item 1', stock: 20, stock_min: 10 },
+        { id: 2, nombre: 'Item 2', stock: 15, stock_min: 10 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const isEmpty = alertDiv.innerHTML === '';
+      
+      assert(isEmpty, 'Test 4: No alert when stock sufficient', 
+        'Alert should be empty when all items have stock > stock_min');
+    }
+
+    // Test 5: Handle items with no stock_min (default to 5)
+    function testDefaultStockMin() {
+      items = [
+        { id: 1, nombre: 'Item without min', stock: 3 }, // No stock_min, should use 5
+        { id: 2, nombre: 'Item with min', stock: 3, stock_min: 10 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const hasFirstItem = alertDiv.innerHTML.includes('Item without min');
+      const hasSecondItem = alertDiv.innerHTML.includes('Item with min');
+      
+      assert(hasFirstItem, 'Test 5a: Default stock_min applied', 
+        'Item without stock_min should use default value of 5 (3 <= 5)');
+      assert(hasSecondItem, 'Test 5b: Explicit stock_min used', 
+        'Item with stock_min should use that value (3 <= 10)');
+    }
+
+    // Test 6: Multiple low stock items displayed
+    function testMultipleLowStockItems() {
+      items = [
+        { id: 1, nombre: 'Item A', stock: 2, stock_min: 5 },
+        { id: 2, nombre: 'Item B', stock: 1, stock_min: 5 },
+        { id: 3, nombre: 'Item C', stock: 4, stock_min: 5 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const hasItemA = alertDiv.innerHTML.includes('Item A');
+      const hasItemB = alertDiv.innerHTML.includes('Item B');
+      const hasItemC = alertDiv.innerHTML.includes('Item C');
+      const hasCorrectCount = alertDiv.innerHTML.includes('3 ítem(s) con stock bajo');
+      
+      assert(hasItemA && hasItemB && hasItemC, 'Test 6a: All low stock items shown', 
+        'All three items with low stock should be displayed');
+      assert(hasCorrectCount, 'Test 6b: Correct count for multiple items', 
+        'Count should show "3 ítem(s) con stock bajo"');
+    }
+
+    // Test 7: Edge case - stock equals stock_min (should trigger alert)
+    function testStockEqualsStockMin() {
+      items = [
+        { id: 1, nombre: 'Edge case item', stock: 10, stock_min: 10 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const hasAlert = alertDiv.innerHTML.includes('Edge case item');
+      
+      assert(hasAlert, 'Test 7: Stock equals stock_min triggers alert', 
+        'Alert should be shown when stock equals stock_min (10 <= 10)');
+    }
+
+    // Test 8: Edge case - stock is 0
+    function testZeroStock() {
+      items = [
+        { id: 1, nombre: 'Out of stock', stock: 0, stock_min: 5 }
+      ];
+      
+      renderAlertas();
+      const alertDiv = document.getElementById('alertas-inv');
+      const hasAlert = alertDiv.innerHTML.includes('Out of stock');
+      const hasZero = alertDiv.innerHTML.includes('(0)');
+      
+      assert(hasAlert, 'Test 8a: Zero stock triggers alert', 
+        'Alert should be shown when stock is 0');
+      assert(hasZero, 'Test 8b: Zero stock value displayed', 
+        'Badge should display "(0)" for out of stock items');
+    }
+
+    // Run all tests
+    console.log('Running Inventario Stock Alerts Tests...');
+    testFilterLowStock();
+    testDisplayCount();
+    testDisplayBadges();
+    testNoAlertWhenStockSufficient();
+    testDefaultStockMin();
+    testMultipleLowStockItems();
+    testStockEqualsStockMin();
+    testZeroStock();
+    
+    // Display results
+    displayResults();
+    
+    console.log('Tests completed. Results:', testResults);
+    console.log(`Passed: ${testResults.filter(r => r.passed).length}/${testResults.length}`);
+  </script>
+</body>
+</html>

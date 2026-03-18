@@ -96,19 +96,14 @@
 
   async function cargarInventarioLab() {
     try {
-      const data = await API.get('/inventario');
-      inventario = data.items || data || [];
-    } catch {
-      inventario = [
-        { id:1, nombre:'Rosas rojas', tipo:'flores', stock:45, costo:3.50 },
-        { id:2, nombre:'Lirios blancos', tipo:'flores', stock:8, costo:2.80 },
-        { id:3, nombre:'Girasoles', tipo:'flores', stock:25, costo:2.00 },
-        { id:4, nombre:'Rosas rosadas', tipo:'flores', stock:30, costo:3.00 },
-        { id:5, nombre:'Papel decorativo dorado', tipo:'materiales', stock:3, costo:8.50 },
-        { id:6, nombre:'Cintas satinadas', tipo:'materiales', stock:12, costo:4.00 },
-        { id:7, nombre:'Cajas decorativas', tipo:'accesorios', stock:7, costo:12.00 },
-        { id:8, nombre:'Peluche mediano', tipo:'accesorios', stock:2, costo:18.00 },
-      ];
+      const response = await API.get('/inventario');
+      // Backend puede retornar: { data: { data: [...] } } o { data: [...] } o directamente [...]
+      inventario = response.data?.data || response.data || response.items || response || [];
+      console.log('Inventario cargado en laboratorio:', inventario.length, 'items');
+    } catch (error) {
+      console.error('Error al cargar inventario:', error);
+      Toast.error('No se pudo cargar el inventario desde el servidor');
+      inventario = [];
     }
     renderGrid();
   }
@@ -195,24 +190,50 @@
   }
 
   async function guardarArreglo() {
-    const nombre = document.getElementById('lab-nombre').value;
-    if (!nombre) { Toast.warning('Ingresa un nombre para el arreglo'); return; }
+    const nombre = document.getElementById('lab-nombre').value.trim();
+    if (!nombre) { 
+      Toast.warning('Ingresa un nombre para el arreglo'); 
+      return; 
+    }
+    
     const ids = Object.keys(seleccion);
-    if (!ids.length) { Toast.warning('Agrega al menos un elemento'); return; }
+    if (!ids.length) { 
+      Toast.warning('Agrega al menos un elemento'); 
+      return; 
+    }
+    
     const margen = parseInt(document.getElementById('lab-margen').value);
     const costoTotal = ids.reduce((s,id) => s + inventario.find(i=>i.id==id).costo * seleccion[id], 0);
     const precioVenta = costoTotal / (1 - margen/100);
-    const payload = {
-      nombre, margen,
-      costo: costoTotal,
-      precio: parseFloat(precioVenta.toFixed(2)),
-      receta: ids.map(id => ({ inventario_id: parseInt(id), cantidad: seleccion[id] })),
+    
+    // Backend espera 'items' en lugar de 'receta'
+    const arregloPayload = {
+      nombre,
+      margen,
+      items: ids.map(id => ({ 
+        inventario_id: parseInt(id), 
+        cantidad: seleccion[id] 
+      }))
     };
-    try { await API.post('/arreglos', payload); }
-    catch { /* demo */ }
-    Toast.success(`"${nombre}" guardado como producto (S/ ${precioVenta.toFixed(2)})`);
-    limpiarArreglo();
-    document.getElementById('lab-nombre').value = '';
+    
+    try {
+      console.log('=== GUARDANDO ARREGLO ===');
+      console.log('Payload arreglo:', arregloPayload);
+      
+      // Solo crear el arreglo - productos.html lo mostrará desde /api/arreglos
+      const arregloResponse = await API.post('/arreglos', arregloPayload);
+      console.log('✓ Arreglo creado exitosamente:', arregloResponse);
+      
+      Toast.success(`"${nombre}" guardado como arreglo (S/ ${precioVenta.toFixed(2)})`);
+      
+      // Limpiar formulario
+      limpiarArreglo();
+      document.getElementById('lab-nombre').value = '';
+    } catch (error) {
+      console.error('❌ ERROR al guardar:', error);
+      console.error('Detalles del error:', error.message);
+      Toast.error(error.message || 'Error al guardar el arreglo');
+    }
   }
 
   function enviarWAArreglo() {

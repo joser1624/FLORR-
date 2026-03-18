@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Utility Tests</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-result {
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .test-pass {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .test-fail {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .test-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    h1 { color: #333; }
+    h2 { color: #666; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>🧪 API Utility Tests</h1>
+  <p>Manual tests for the API utility module (Task 1)</p>
+
+  <div class="test-section">
+    <h2>Test 1: API Configuration</h2>
+    <button onclick="testAPIConfiguration()">Run Test</button>
+    <div id="test1-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Authentication Headers</h2>
+    <button onclick="testAuthHeaders()">Run Test</button>
+    <div id="test2-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Content-Type Headers</h2>
+    <button onclick="testContentTypeHeaders()">Run Test</button>
+    <div id="test3-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: Error Response Parsing</h2>
+    <button onclick="testErrorParsing()">Run Test</button>
+    <div id="test4-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 5: 401 Unauthorized Handling</h2>
+    <button onclick="test401Handling()">Run Test (will redirect!)</button>
+    <div id="test5-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 6: Network Error Handling</h2>
+    <button onclick="testNetworkError()">Run Test</button>
+    <div id="test6-results"></div>
+  </div>
+
+  <script src="../../js/main.js"></script>
+  <script>
+    // Helper functions
+    function showResult(containerId, message, type) {
+      const container = document.getElementById(containerId);
+      const div = document.createElement('div');
+      div.className = `test-result test-${type}`;
+      div.textContent = message;
+      container.appendChild(div);
+    }
+
+    function clearResults(containerId) {
+      document.getElementById(containerId).innerHTML = '';
+    }
+
+    // Test 1: API Configuration
+    function testAPIConfiguration() {
+      clearResults('test1-results');
+      
+      // Check base URL
+      if (typeof API_BASE !== 'undefined' && API_BASE === 'http://localhost:3000/api') {
+        showResult('test1-results', '✓ Base URL is correctly configured: ' + API_BASE, 'pass');
+      } else {
+        showResult('test1-results', '✗ Base URL is not configured correctly', 'fail');
+      }
+
+      // Check API object exists
+      if (typeof API !== 'undefined' && typeof API.get === 'function') {
+        showResult('test1-results', '✓ API object exists with required methods', 'pass');
+      } else {
+        showResult('test1-results', '✗ API object is not properly defined', 'fail');
+      }
+
+      // Check all HTTP methods exist
+      const methods = ['get', 'post', 'put', 'delete'];
+      const allMethodsExist = methods.every(m => typeof API[m] === 'function');
+      if (allMethodsExist) {
+        showResult('test1-results', '✓ All HTTP methods (GET, POST, PUT, DELETE) are defined', 'pass');
+      } else {
+        showResult('test1-results', '✗ Some HTTP methods are missing', 'fail');
+      }
+    }
+
+    // Test 2: Authentication Headers
+    function testAuthHeaders() {
+      clearResults('test2-results');
+      
+      // Test without token
+      Auth.clear();
+      const headersNoAuth = API.headers();
+      if (!headersNoAuth.Authorization) {
+        showResult('test2-results', '✓ No Authorization header when not logged in', 'pass');
+      } else {
+        showResult('test2-results', '✗ Authorization header present when it should not be', 'fail');
+      }
+
+      // Test with token
+      Auth.setSession('test-token-123', { id: 1, nombre: 'Test User', rol: 'admin' });
+      const headersWithAuth = API.headers();
+      if (headersWithAuth.Authorization === 'Bearer test-token-123') {
+        showResult('test2-results', '✓ Authorization header correctly set: ' + headersWithAuth.Authorization, 'pass');
+      } else {
+        showResult('test2-results', '✗ Authorization header not correctly set', 'fail');
+      }
+
+      // Clean up
+      Auth.clear();
+    }
+
+    // Test 3: Content-Type Headers
+    function testContentTypeHeaders() {
+      clearResults('test3-results');
+      
+      const headers = API.headers();
+      if (headers['Content-Type'] === 'application/json') {
+        showResult('test3-results', '✓ Content-Type header is set to application/json', 'pass');
+      } else {
+        showResult('test3-results', '✗ Content-Type header is not correctly set', 'fail');
+      }
+    }
+
+    // Test 4: Error Response Parsing
+    async function testErrorParsing() {
+      clearResults('test4-results');
+      showResult('test4-results', 'Testing error response parsing...', 'info');
+      
+      try {
+        // This will likely fail with a network error or 404
+        await API.get('/nonexistent-endpoint-test-12345');
+        showResult('test4-results', '✗ Expected an error but request succeeded', 'fail');
+      } catch (error) {
+        if (error.message) {
+          showResult('test4-results', '✓ Error was caught and has a message: ' + error.message, 'pass');
+        } else {
+          showResult('test4-results', '✗ Error was caught but has no message', 'fail');
+        }
+      }
+    }
+
+    // Test 5: 401 Unauthorized Handling
+    async function test401Handling() {
+      clearResults('test5-results');
+      showResult('test5-results', '⚠️ This test will redirect to login page if backend returns 401', 'info');
+      showResult('test5-results', 'Attempting to call API with invalid token...', 'info');
+      
+      // Set an invalid token
+      Auth.setSession('invalid-token-xyz', { id: 1, nombre: 'Test', rol: 'admin' });
+      
+      try {
+        await API.get('/inventario');
+        showResult('test5-results', '✗ Expected 401 error but request succeeded', 'fail');
+      } catch (error) {
+        if (error.message === 'Unauthorized') {
+          showResult('test5-results', '✓ 401 error was handled correctly', 'pass');
+          showResult('test5-results', 'Note: Redirect to login should happen in 1.5 seconds', 'info');
+        } else {
+          showResult('test5-results', '✗ Error caught but not a 401: ' + error.message, 'fail');
+        }
+      }
+    }
+
+    // Test 6: Network Error Handling
+    async function testNetworkError() {
+      clearResults('test6-results');
+      showResult('test6-results', 'Testing network error handling...', 'info');
+      
+      // Temporarily change API_BASE to an invalid URL
+      const originalBase = API_BASE;
+      window.API_BASE = 'http://invalid-domain-that-does-not-exist-12345.com/api';
+      
+      try {
+        await API.get('/test');
+        showResult('test6-results', '✗ Expected network error but request succeeded', 'fail');
+      } catch (error) {
+        if (error.message.includes('conexión') || error.message.includes('network')) {
+          showResult('test6-results', '✓ Network error was handled with user-friendly message: ' + error.message, 'pass');
+        } else {
+          showResult('test6-results', '✗ Error caught but not a network error: ' + error.message, 'fail');
+        }
+      } finally {
+        // Restore original base URL
+        window.API_BASE = originalBase;
+      }
+    }
+
+    // Auto-run basic tests on load
+    window.addEventListener('load', () => {
+      console.log('API Utility Test Page Loaded');
+      console.log('Click buttons to run individual tests');
+    });
+  </script>
+</body>
+</html>

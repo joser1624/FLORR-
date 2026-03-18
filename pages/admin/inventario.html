@@ -29,12 +29,23 @@
           <span class="chip" onclick="filtrarTipo(this,'accesorios')">Accesorios</span>
           <span class="chip" style="color:var(--warning)" onclick="filtrarBajos(this)">⚠ Stock bajo</span>
         </div>
-        <input class="form-control" placeholder="Buscar..." id="buscar-inv" oninput="renderInv()" style="max-width:200px;margin-left:auto" />
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <select class="form-control" id="ordenar-inv" onchange="renderInv()" style="max-width:180px">
+            <option value="nombre">Ordenar: Nombre A-Z</option>
+            <option value="nombre_desc">Ordenar: Nombre Z-A</option>
+            <option value="tipo">Ordenar: Tipo</option>
+            <option value="stock_asc">Ordenar: Stock (menor)</option>
+            <option value="stock_desc">Ordenar: Stock (mayor)</option>
+            <option value="fecha_desc">Ordenar: Más reciente</option>
+            <option value="fecha_asc">Ordenar: Más antiguo</option>
+          </select>
+          <input class="form-control" placeholder="Buscar..." id="buscar-inv" oninput="renderInv()" style="max-width:200px" />
+        </div>
       </div>
 
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Ítem</th><th>Tipo</th><th>Stock actual</th><th>Stock mínimo</th><th>Unidad</th><th>Costo unit. (S/)</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Ítem</th><th>Tipo</th><th>Stock actual</th><th>Stock mínimo</th><th>Unidad</th><th>Costo unit. (S/)</th><th>Última modificación</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody id="tbody-inv"></tbody>
         </table>
       </div>
@@ -42,7 +53,7 @@
   </main>
 </div>
 
-<!-- Modal ítem -->
+<!-- Modal ítem (Crear/Editar) -->
 <div class="modal-overlay" id="modal-item">
   <div class="modal">
     <div class="modal-header">
@@ -51,6 +62,7 @@
     </div>
     <div class="modal-body">
       <div class="form-stack">
+        <input type="hidden" id="item-id" />
         <div class="form-group"><label class="form-label">Nombre <span class="req">*</span></label><input class="form-control" id="item-nombre" required /></div>
         <div class="form-grid-2">
           <div class="form-group">
@@ -73,6 +85,25 @@
   </div>
 </div>
 
+<!-- Modal detalles del ítem -->
+<div class="modal-overlay" id="modal-detalles">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Detalles del ítem</h3>
+      <button class="btn-close" onclick="Modal.close('modal-detalles')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detalles-content" style="padding:1rem">
+        <!-- Contenido dinámico -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-detalles')">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="editarDesdeDetalles()">Editar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -81,23 +112,20 @@
   let items = [];
   let tipoFiltro = '';
   let soloBajoInv = false;
+  let itemEditando = null; // Variable para rastrear si estamos editando
 
   const TIPO_EMOJI = { flores:'🌸', materiales:'🎀', accesorios:'🎁' };
 
   async function cargarInventario() {
     try {
-      const data = await API.get('/inventario');
-      items = data.items || data || [];
-    } catch {
-      items = [
-        { id:1, nombre:'Rosas rojas', tipo:'flores', stock:45, stock_min:10, unidad:'unidad', costo:3.50 },
-        { id:2, nombre:'Lirios blancos', tipo:'flores', stock:8, stock_min:10, unidad:'unidad', costo:2.80 },
-        { id:3, nombre:'Girasoles', tipo:'flores', stock:25, stock_min:8, unidad:'unidad', costo:2.00 },
-        { id:4, nombre:'Papel decorativo dorado', tipo:'materiales', stock:3, stock_min:5, unidad:'rollo', costo:8.50 },
-        { id:5, nombre:'Cintas satinadas', tipo:'materiales', stock:12, stock_min:5, unidad:'rollo', costo:4.00 },
-        { id:6, nombre:'Cajas decorativas', tipo:'accesorios', stock:7, stock_min:5, unidad:'unidad', costo:12.00 },
-        { id:7, nombre:'Peluches medianos', tipo:'accesorios', stock:2, stock_min:5, unidad:'unidad', costo:18.00 },
-      ];
+      const response = await API.get('/inventario');
+      // Backend puede retornar: { data: { data: [...] } } o { data: [...] } o directamente [...]
+      items = response.data?.data || response.data || response.items || response || [];
+      console.log('Inventario cargado:', items.length, 'items');
+    } catch (error) {
+      console.error('Error al cargar inventario:', error);
+      Toast.error('No se pudo cargar el inventario desde el servidor');
+      items = [];
     }
     renderAlertas();
     renderInv();
@@ -110,17 +138,154 @@
     el.innerHTML = `<div class="alert alert-warning" style="margin-bottom:1rem">⚠ <strong>${bajos.length} ítem(s) con stock bajo:</strong> ${bajos.map(i=>`<span class="badge badge-warning" style="margin-left:4px">${i.nombre} (${i.stock})</span>`).join('')}</div>`;
   }
 
+  // Nueva función: Ver detalles completos usando GET /inventario/:id
+  async function verDetalles(id) {
+    try {
+      const response = await API.get('/inventario/' + id);
+      const item = response.data?.data || response.data || response;
+      
+      if (!item) {
+        Toast.error('No se pudo cargar el ítem');
+        return;
+      }
+
+      const bajo = item.stock <= (item.stock_min || 5);
+      const badge = item.stock === 0 ? 
+        '<span class="badge badge-danger">Agotado</span>' : 
+        bajo ? '<span class="badge badge-warning">Bajo</span>' : 
+        '<span class="badge badge-success">OK</span>';
+
+      const detallesHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--gris-200)">
+          <span style="font-size:48px">${TIPO_EMOJI[item.tipo]||'📦'}</span>
+          <div>
+            <h3 style="margin:0;font-size:1.5rem">${item.nombre}</h3>
+            <p style="margin:0.25rem 0 0 0;color:var(--gris-500)">ID: ${item.id}</p>
+          </div>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Tipo</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:500"><span class="badge badge-gray">${item.tipo}</span></p>
+          </div>
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Unidad</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:500">${item.unidad}</p>
+          </div>
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Stock actual</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:700;font-size:1.25rem;color:${bajo?'var(--warning)':'var(--success)'}">${item.stock}</p>
+          </div>
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Stock mínimo</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:500">${item.stock_min || 'No definido'}</p>
+          </div>
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Costo unitario</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:500;font-size:1.125rem">${item.costo ? Fmt.moneda(item.costo) : 'No definido'}</p>
+          </div>
+          <div>
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Estado</p>
+            <p style="margin:0.25rem 0 0 0">${badge}</p>
+          </div>
+        </div>
+        
+        ${item.costo && item.stock ? `
+          <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--gris-200)">
+            <p style="margin:0;color:var(--gris-500);font-size:0.875rem">Valor total en inventario</p>
+            <p style="margin:0.25rem 0 0 0;font-weight:700;font-size:1.5rem;color:var(--primary)">${Fmt.moneda(item.costo * item.stock)}</p>
+          </div>
+        ` : ''}
+      `;
+
+      document.getElementById('detalles-content').innerHTML = detallesHTML;
+      itemEditando = item.id; // Guardar para el botón "Editar"
+      Modal.open('modal-detalles');
+    } catch (error) {
+      console.error('Error al cargar detalles:', error);
+      Toast.error('No se pudo cargar los detalles del ítem');
+    }
+  }
+
+  // Nueva función: Editar ítem completo
+  async function editarItem(id) {
+    try {
+      const response = await API.get('/inventario/' + id);
+      const item = response.data?.data || response.data || response;
+      
+      if (!item) {
+        Toast.error('No se pudo cargar el ítem');
+        return;
+      }
+
+      // Llenar el formulario con los datos del ítem
+      document.getElementById('item-id').value = item.id;
+      document.getElementById('item-nombre').value = item.nombre;
+      document.getElementById('item-tipo').value = item.tipo;
+      document.getElementById('item-unidad').value = item.unidad;
+      document.getElementById('item-stock').value = item.stock;
+      document.getElementById('item-stock-min').value = item.stock_min || '';
+      document.getElementById('item-costo').value = item.costo || '';
+      document.getElementById('titulo-modal-item').textContent = 'Editar ítem de inventario';
+      
+      itemEditando = item.id;
+      Modal.open('modal-item');
+    } catch (error) {
+      console.error('Error al cargar ítem para editar:', error);
+      Toast.error('No se pudo cargar el ítem para editar');
+    }
+  }
+
+  // Función auxiliar: Editar desde el modal de detalles
+  function editarDesdeDetalles() {
+    Modal.close('modal-detalles');
+    if (itemEditando) {
+      editarItem(itemEditando);
+    }
+  }
+
   function renderInv() {
     const q = (document.getElementById('buscar-inv').value||'').toLowerCase();
+    const ordenar = document.getElementById('ordenar-inv').value;
+    
     let lista = items;
     if (tipoFiltro) lista = lista.filter(i => i.tipo === tipoFiltro);
     if (soloBajoInv) lista = lista.filter(i => i.stock <= (i.stock_min||5));
     if (q) lista = lista.filter(i => i.nombre.toLowerCase().includes(q));
+    
+    // Ordenamiento
+    lista = [...lista]; // Clonar para no mutar el original
+    switch(ordenar) {
+      case 'nombre':
+        lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        break;
+      case 'nombre_desc':
+        lista.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        break;
+      case 'tipo':
+        lista.sort((a, b) => a.tipo.localeCompare(b.tipo) || a.nombre.localeCompare(b.nombre));
+        break;
+      case 'stock_asc':
+        lista.sort((a, b) => a.stock - b.stock);
+        break;
+      case 'stock_desc':
+        lista.sort((a, b) => b.stock - a.stock);
+        break;
+      case 'fecha_desc':
+        lista.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+        break;
+      case 'fecha_asc':
+        lista.sort((a, b) => new Date(a.updated_at || a.created_at) - new Date(b.updated_at || b.created_at));
+        break;
+    }
+    
     const tbody = document.getElementById('tbody-inv');
-    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
+    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
     tbody.innerHTML = lista.map(i => {
       const bajo = i.stock <= (i.stock_min||5);
       const badge = i.stock === 0 ? '<span class="badge badge-danger">Agotado</span>' : bajo ? '<span class="badge badge-warning">Bajo</span>' : '<span class="badge badge-success">OK</span>';
+      const fechaMod = i.updated_at ? new Date(i.updated_at).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
       return `<tr>
         <td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">${TIPO_EMOJI[i.tipo]||'📦'}</span><span style="font-weight:500">${i.nombre}</span></div></td>
         <td><span class="badge badge-gray">${i.tipo}</span></td>
@@ -128,10 +293,12 @@
         <td style="color:var(--gris-400)">${i.stock_min||'—'}</td>
         <td style="color:var(--gris-500)">${i.unidad}</td>
         <td>${i.costo ? Fmt.moneda(i.costo) : '—'}</td>
+        <td style="font-size:12px;color:var(--gris-500)">${fechaMod}</td>
         <td>${badge}</td>
         <td><div class="tbl-actions-cell">
-          <button class="btn-tbl btn-tbl-edit" onclick="ajustarStock(${i.id})">Ajustar</button>
-          <button class="btn-tbl btn-tbl-delete" onclick="eliminarItem(${i.id})">Eliminar</button>
+          <button class="btn-tbl btn-tbl-view" onclick="verDetalles(${i.id})" title="Ver detalles">ℹ️</button>
+          <button class="btn-tbl btn-tbl-edit" onclick="editarItem(${i.id})" title="Editar">✏️</button>
+          <button class="btn-tbl btn-tbl-delete" onclick="eliminarItem(${i.id})" title="Eliminar">🗑️</button>
         </div></td>
       </tr>`;
     }).join('');
@@ -140,46 +307,85 @@
   function filtrarTipo(el, tipo) { document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); tipoFiltro=tipo; soloBajoInv=false; renderInv(); }
   function filtrarBajos(el) { document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); tipoFiltro=''; soloBajoInv=true; renderInv(); }
 
-  function ajustarStock(id) {
+  async function ajustarStock(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
     const nuevo = prompt(`Ajustar stock de "${item.nombre}".\nStock actual: ${item.stock}\n\nNuevo stock:`, item.stock);
     if (nuevo === null) return;
     const val = parseInt(nuevo);
     if (isNaN(val) || val < 0) { Toast.error('Valor inválido'); return; }
-    item.stock = val;
-    API.put('/inventario/' + id, { stock: val }).catch(()=>{});
-    Toast.success('Stock actualizado');
-    renderAlertas();
-    renderInv();
+    
+    try {
+      await API.put('/inventario/' + id, { stock: val });
+      Toast.success('Stock actualizado');
+      await cargarInventario(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al actualizar stock:', error);
+      Toast.error('Error al actualizar el stock');
+    }
   }
 
-  function eliminarItem(id) {
+  async function eliminarItem(id) {
     const item = items.find(i => i.id === id);
-    Modal.confirm(`¿Eliminar "${item?.nombre}"?`, () => {
-      items = items.filter(i => i.id !== id);
-      API.delete('/inventario/' + id).catch(()=>{});
-      renderInv();
-      Toast.success('Ítem eliminado');
+    Modal.confirm(`¿Eliminar "${item?.nombre}"?`, async () => {
+      try {
+        await API.delete('/inventario/' + id);
+        Toast.success('Ítem eliminado');
+        await cargarInventario(); // Recargar desde el backend
+      } catch (error) {
+        console.error('Error al eliminar ítem:', error);
+        // El mensaje de error ya viene del backend a través de main.js
+        Toast.error(error.message || 'Error al eliminar el ítem');
+      }
     });
   }
 
   async function guardarItem() {
+    const id = document.getElementById('item-id').value;
     const payload = {
-      nombre:    document.getElementById('item-nombre').value,
+      nombre:    document.getElementById('item-nombre').value.trim(),
       tipo:      document.getElementById('item-tipo').value,
       unidad:    document.getElementById('item-unidad').value,
       stock:     parseInt(document.getElementById('item-stock').value)||0,
       stock_min: parseInt(document.getElementById('item-stock-min').value)||0,
       costo:     parseFloat(document.getElementById('item-costo').value)||0,
     };
-    if (!payload.nombre) { Toast.warning('El nombre es obligatorio'); return; }
-    try { await API.post('/inventario', payload); }
-    catch { items.push({ id: Date.now(), ...payload }); }
-    Toast.success('Ítem agregado');
-    Modal.close('modal-item');
-    renderAlertas();
-    renderInv();
+    
+    if (!payload.nombre) { 
+      Toast.warning('El nombre es obligatorio'); 
+      return; 
+    }
+    
+    try {
+      if (id) {
+        // Modo edición - usar PUT con todos los campos
+        await API.put('/inventario/' + id, payload);
+        Toast.success('Ítem actualizado correctamente');
+      } else {
+        // Modo creación - usar POST
+        await API.post('/inventario', payload);
+        Toast.success('Ítem agregado correctamente');
+      }
+      
+      Modal.close('modal-item');
+      limpiarFormulario();
+      await cargarInventario(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al guardar ítem:', error);
+      Toast.error(id ? 'Error al actualizar el ítem' : 'Error al guardar el ítem');
+    }
+  }
+
+  function limpiarFormulario() {
+    document.getElementById('item-id').value = '';
+    document.getElementById('item-nombre').value = '';
+    document.getElementById('item-tipo').value = 'flores';
+    document.getElementById('item-unidad').value = 'unidad';
+    document.getElementById('item-stock').value = '';
+    document.getElementById('item-stock-min').value = '';
+    document.getElementById('item-costo').value = '';
+    document.getElementById('titulo-modal-item').textContent = 'Nuevo ítem de inventario';
+    itemEditando = null;
   }
 
   cargarInventario();

@@ -46,6 +46,41 @@
         </div>
       </div>
 
+      <!-- Capital del Negocio -->
+      <div class="card" style="padding:1.5rem;margin-bottom:1.25rem;background:linear-gradient(135deg, #2D8C4E 0%, #1E6FA8 100%);color:white">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <div>
+            <div style="font-size:13px;opacity:0.9;margin-bottom:4px">💰 Capital del Negocio</div>
+            <div style="font-size:32px;font-weight:700;letter-spacing:-0.5px" id="capital-actual">S/ —</div>
+          </div>
+          <div id="capital-botones" style="display:flex;gap:8px"></div>
+        </div>
+        
+        <!-- Desglose del capital -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2)">
+          <div style="text-align:center">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Capital Inicial</div>
+            <div style="font-size:16px;font-weight:600" id="capital-inicial">S/ —</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">+ Ingresos</div>
+            <div style="font-size:16px;font-weight:600;color:#90EE90" id="capital-ingresos">S/ —</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">- Gastos</div>
+            <div style="font-size:16px;font-weight:600;color:#FFB6C1" id="capital-gastos">S/ —</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">+ Aportes</div>
+            <div style="font-size:16px;font-weight:600;color:#90EE90" id="capital-aportes">S/ —</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">- Retiros</div>
+            <div style="font-size:16px;font-weight:600;color:#FFB6C1" id="capital-retiros">S/ —</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Alertas de stock -->
       <div id="alertas-stock"></div>
 
@@ -103,6 +138,101 @@
   </main>
 </div>
 
+<!-- Modal Registrar Aporte -->
+<div class="modal-overlay" id="modal-aporte">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>💰 Registrar Aporte</h3>
+      <button class="btn-close" onclick="Modal.close('modal-aporte')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group">
+          <label class="form-label">Monto (S/)</label>
+          <input class="form-control" type="number" id="aporte-monto" step="0.50" min="0.01" placeholder="Ej: 500.00" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <textarea class="form-control" id="aporte-descripcion" rows="3" placeholder="Ej: Aporte de capital para compra de inventario" required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-control" type="date" id="aporte-fecha" required />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-aporte')">Cancelar</button>
+      <button class="btn btn-success btn-sm" onclick="registrarAporte()">Registrar Aporte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Registrar Retiro -->
+<div class="modal-overlay" id="modal-retiro">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>💸 Registrar Retiro</h3>
+      <button class="btn-close" onclick="Modal.close('modal-retiro')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group">
+          <label class="form-label">Monto (S/)</label>
+          <input class="form-control" type="number" id="retiro-monto" step="0.50" min="0.01" placeholder="Ej: 300.00" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <textarea class="form-control" id="retiro-descripcion" rows="3" placeholder="Ej: Retiro personal" required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-control" type="date" id="retiro-fecha" required />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-retiro')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="registrarRetiro()">Registrar Retiro</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Historial de Movimientos -->
+<div class="modal-overlay" id="modal-historial-capital">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-header">
+      <h3>📋 Historial de Movimientos de Capital</h3>
+      <button class="btn-close" onclick="Modal.close('modal-historial-capital')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:1rem">
+        <button class="btn btn-sm" id="filtro-todos" onclick="filtrarMovimientos(null)">Todos</button>
+        <button class="btn btn-outline btn-sm" id="filtro-aportes" onclick="filtrarMovimientos('aporte')">Aportes</button>
+        <button class="btn btn-outline btn-sm" id="filtro-retiros" onclick="filtrarMovimientos('retiro')">Retiros</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Descripción</th>
+              <th>Monto</th>
+              <th>Registrado por</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-historial-capital"></tbody>
+        </table>
+      </div>
+      <div id="historial-capital-paginacion" style="display:flex;justify-content:center;gap:8px;margin-top:1rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-historial-capital')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -127,7 +257,263 @@
       renderPedidosRecietesMock();
       renderVentasTrabajadoresMock();
     }
+    
+    // Cargar capital
+    await loadCapital();
   }
+
+  // ============================================
+  // CAPITAL DEL NEGOCIO
+  // ============================================
+
+  async function loadCapital() {
+    try {
+      const response = await API.get('/capital');
+      const data = response.data || response;
+      renderCapital(data);
+    } catch (error) {
+      console.error('Error al cargar capital:', error);
+      renderCapitalMock();
+    }
+  }
+
+  function renderCapital(data) {
+    const { capital_actual, desglose } = data;
+    
+    document.getElementById('capital-actual').textContent = Fmt.moneda(capital_actual);
+    document.getElementById('capital-inicial').textContent = Fmt.moneda(desglose.capital_inicial);
+    document.getElementById('capital-ingresos').textContent = Fmt.moneda(desglose.ingresos);
+    document.getElementById('capital-gastos').textContent = Fmt.moneda(desglose.gastos);
+    document.getElementById('capital-aportes').textContent = Fmt.moneda(desglose.aportes);
+    document.getElementById('capital-retiros').textContent = Fmt.moneda(desglose.retiros);
+
+    // Mostrar botones solo para administradores
+    const user = Auth.getUser(); // Usar Auth.getUser() en lugar de localStorage
+    const botonesContainer = document.getElementById('capital-botones');
+    
+    if (user && user.rol === 'admin') {
+      botonesContainer.innerHTML = `
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Modal.open('modal-aporte')">+ Aporte</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Modal.open('modal-retiro')">- Retiro</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="abrirHistorialCapital()">📋 Historial</button>
+      `;
+    } else {
+      botonesContainer.innerHTML = `
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="abrirHistorialCapital()">📋 Ver Historial</button>
+      `;
+    }
+  }
+
+  function renderCapitalMock() {
+    document.getElementById('capital-actual').textContent = 'S/ 45,230.50';
+    document.getElementById('capital-inicial').textContent = 'S/ 10,000.00';
+    document.getElementById('capital-ingresos').textContent = 'S/ 85,450.00';
+    document.getElementById('capital-gastos').textContent = 'S/ 48,219.50';
+    document.getElementById('capital-aportes').textContent = 'S/ 5,000.00';
+    document.getElementById('capital-retiros').textContent = 'S/ 7,000.00';
+    
+    const botonesContainer = document.getElementById('capital-botones');
+    botonesContainer.innerHTML = `
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Toast.info('Conecta el backend para usar esta función')">+ Aporte</button>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Toast.info('Conecta el backend para usar esta función')">- Retiro</button>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Toast.info('Conecta el backend para usar esta función')">📋 Historial</button>
+    `;
+  }
+
+  async function registrarAporte() {
+    const monto = parseFloat(document.getElementById('aporte-monto').value);
+    const descripcion = document.getElementById('aporte-descripcion').value.trim();
+    const fecha = document.getElementById('aporte-fecha').value;
+
+    if (!monto || monto <= 0) {
+      Toast.warning('Ingresa un monto válido');
+      return;
+    }
+
+    if (!descripcion) {
+      Toast.warning('Ingresa una descripción');
+      return;
+    }
+
+    if (!fecha) {
+      Toast.warning('Selecciona una fecha');
+      return;
+    }
+
+    try {
+      await API.post('/capital/aportes', { monto, descripcion, fecha });
+      Toast.success(`Aporte de ${Fmt.moneda(monto)} registrado correctamente`);
+      Modal.close('modal-aporte');
+      
+      // Limpiar formulario
+      document.getElementById('aporte-monto').value = '';
+      document.getElementById('aporte-descripcion').value = '';
+      document.getElementById('aporte-fecha').value = '';
+      
+      // Recargar capital
+      await loadCapital();
+    } catch (error) {
+      console.error('Error al registrar aporte:', error);
+      Toast.error(error.message || 'Error al registrar el aporte');
+    }
+  }
+
+  async function registrarRetiro() {
+    const monto = parseFloat(document.getElementById('retiro-monto').value);
+    const descripcion = document.getElementById('retiro-descripcion').value.trim();
+    const fecha = document.getElementById('retiro-fecha').value;
+
+    if (!monto || monto <= 0) {
+      Toast.warning('Ingresa un monto válido');
+      return;
+    }
+
+    if (!descripcion) {
+      Toast.warning('Ingresa una descripción');
+      return;
+    }
+
+    if (!fecha) {
+      Toast.warning('Selecciona una fecha');
+      return;
+    }
+
+    try {
+      await API.post('/capital/retiros', { monto, descripcion, fecha });
+      Toast.success(`Retiro de ${Fmt.moneda(monto)} registrado correctamente`);
+      Modal.close('modal-retiro');
+      
+      // Limpiar formulario
+      document.getElementById('retiro-monto').value = '';
+      document.getElementById('retiro-descripcion').value = '';
+      document.getElementById('retiro-fecha').value = '';
+      
+      // Recargar capital
+      await loadCapital();
+    } catch (error) {
+      console.error('Error al registrar retiro:', error);
+      Toast.error(error.message || 'Error al registrar el retiro');
+    }
+  }
+
+  // Historial de movimientos
+  let historialCapitalPaginaActual = 1;
+  let historialCapitalFiltroActual = null;
+  const historialCapitalLimitePorPagina = 20;
+
+  async function abrirHistorialCapital() {
+    Modal.open('modal-historial-capital');
+    await cargarHistorialCapital(1, null);
+  }
+
+  async function filtrarMovimientos(tipo) {
+    historialCapitalFiltroActual = tipo;
+    
+    // Actualizar botones
+    document.getElementById('filtro-todos').className = tipo === null ? 'btn btn-sm' : 'btn btn-outline btn-sm';
+    document.getElementById('filtro-aportes').className = tipo === 'aporte' ? 'btn btn-sm' : 'btn btn-outline btn-sm';
+    document.getElementById('filtro-retiros').className = tipo === 'retiro' ? 'btn btn-sm' : 'btn btn-outline btn-sm';
+    
+    await cargarHistorialCapital(1, tipo);
+  }
+
+  async function cargarHistorialCapital(pagina = 1, tipo = null) {
+    try {
+      const params = new URLSearchParams({
+        page: pagina,
+        limit: historialCapitalLimitePorPagina
+      });
+      
+      if (tipo) {
+        params.append('tipo', tipo);
+      }
+      
+      const response = await API.get(`/capital/movimientos?${params}`);
+      const result = response.data || response;
+      const movimientos = result.data || [];
+      const paginacion = result.pagination || { total: 0, page: 1, limit: 20, totalPages: 1 };
+      
+      historialCapitalPaginaActual = pagina;
+      renderHistorialCapital(movimientos);
+      renderPaginacionHistorialCapital(paginacion);
+    } catch (error) {
+      console.error('Error al cargar historial de capital:', error);
+      Toast.error('No se pudo cargar el historial');
+      document.getElementById('tbody-historial-capital').innerHTML = 
+        '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Error al cargar historial</td></tr>';
+    }
+  }
+
+  function renderHistorialCapital(movimientos) {
+    const tbody = document.getElementById('tbody-historial-capital');
+    
+    if (!movimientos || movimientos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin movimientos registrados</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = movimientos.map(mov => {
+      const fecha = new Date(mov.fecha).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+      const tipo = mov.tipo === 'aporte' 
+        ? '<span class="badge badge-success">Aporte</span>' 
+        : '<span class="badge badge-danger">Retiro</span>';
+      const monto = mov.tipo === 'aporte'
+        ? `<span style="color:var(--success);font-weight:600">+${Fmt.moneda(mov.monto)}</span>`
+        : `<span style="color:var(--danger);font-weight:600">-${Fmt.moneda(mov.monto)}</span>`;
+      const trabajador = mov.trabajador_nombre || 'N/A';
+
+      return `<tr>
+        <td style="font-weight:500">${fecha}</td>
+        <td>${tipo}</td>
+        <td style="max-width:300px">${mov.descripcion}</td>
+        <td>${monto}</td>
+        <td style="font-size:12px">${trabajador}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPaginacionHistorialCapital(paginacion) {
+    const container = document.getElementById('historial-capital-paginacion');
+    const { page, totalPages } = paginacion;
+
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let botones = '';
+    
+    if (page > 1) {
+      botones += `<button class="btn btn-outline btn-sm" onclick="cargarHistorialCapital(${page - 1}, historialCapitalFiltroActual)">← Anterior</button>`;
+    }
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === page) {
+        botones += `<button class="btn btn-primary btn-sm">${i}</button>`;
+      } else if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
+        botones += `<button class="btn btn-outline btn-sm" onclick="cargarHistorialCapital(${i}, historialCapitalFiltroActual)">${i}</button>`;
+      } else if (i === page - 2 || i === page + 2) {
+        botones += `<span style="padding:0 8px">...</span>`;
+      }
+    }
+
+    if (page < totalPages) {
+      botones += `<button class="btn btn-outline btn-sm" onclick="cargarHistorialCapital(${page + 1}, historialCapitalFiltroActual)">Siguiente →</button>`;
+    }
+
+    container.innerHTML = botones;
+  }
+
+  // Inicializar fechas de hoy en los modales
+  document.addEventListener('DOMContentLoaded', () => {
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('aporte-fecha').value = hoy;
+    document.getElementById('retiro-fecha').value = hoy;
+  });
 
   function renderStats(data) {
     document.getElementById('stat-dia').textContent = Fmt.moneda(data.ventas_dia || 0);
