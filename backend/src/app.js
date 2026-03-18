@@ -23,6 +23,7 @@ const arreglosRoutes = require('./routes/arreglos.routes');
 const promocionesRoutes = require('./routes/promociones.routes');
 const eventosRoutes = require('./routes/eventos.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const capitalRoutes = require('./routes/capital.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -120,6 +121,7 @@ app.use('/api/caja', cajaRoutes);
 app.use('/api/arreglos', arreglosRoutes);
 app.use('/api/promociones', promocionesRoutes);
 app.use('/api/eventos', eventosRoutes);
+app.use('/api/capital', capitalRoutes);
 
 // 404 handler
 app.use(notFound);

@@ -31,8 +31,8 @@ async function seedDemoData() {
     // 1. USUARIOS (TRABAJADORES)
     // ============================================
     console.log('👥 Creando usuarios...');
-    // Usar hash pre-calculado para 'demo123'
-    const hashedPassword = '$2b$10$rZ5FqVq5YvH.kqF5qF5qFOqF5qF5qF5qF5qF5qF5qF5qF5qF5qF5q';
+    // Usar hash pre-calculado para 'password123'
+    const hashedPassword = '$2a$10$/x/ejOH4LvY3tIHQQLvfN.vEMB0jxK/rmZtSFz0IVEJAXvTWGvv.S';
     
     const usuarios = await client.query(
       `INSERT INTO usuarios (nombre, email, password, cargo, rol, telefono, activo) VALUES
@@ -288,7 +288,7 @@ async function seedDemoData() {
     console.log('✅ ¡Datos sintéticos creados exitosamente!');
     console.log('');
     console.log('📊 Resumen:');
-    console.log(`   • ${usuarioIds.length} usuarios (user: maria/carlos/ana, pass: demo123)`);
+    console.log(`   • ${usuarioIds.length} usuarios (user: maria/carlos/ana, pass: password123)`);
     console.log(`   • ${clienteIds.length} clientes`);
     console.log(`   • 20 items de inventario`);
     console.log(`   • ${productoIds.length} productos`);

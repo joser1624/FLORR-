@@ -135,6 +135,32 @@ class CajaService {
     }
 
     const caja = result.rows[0];
+    
+    // Obtener ventas del día con sus productos
+    const ventasResult = await query(
+      `SELECT v.id, v.fecha, v.total, v.metodo_pago, v.trabajador_id,
+              json_agg(
+                json_build_object(
+                  'nombre', p.nombre,
+                  'cantidad', vp.cantidad,
+                  'precio', vp.precio_unitario
+                )
+              ) FILTER (WHERE p.id IS NOT NULL) as productos
+       FROM ventas v
+       LEFT JOIN ventas_productos vp ON v.id = vp.venta_id
+       LEFT JOIN productos p ON vp.producto_id = p.id
+       WHERE DATE(v.fecha) = CURRENT_DATE
+       GROUP BY v.id, v.fecha, v.total, v.metodo_pago, v.trabajador_id
+       ORDER BY v.fecha DESC`,
+      []
+    );
+    
+    // Obtener total de gastos del día
+    const gastosResult = await query(
+      'SELECT COALESCE(SUM(monto), 0) as total FROM gastos WHERE fecha = CURRENT_DATE',
+      []
+    );
+
     return {
       ...caja,
       monto_apertura: parseFloat(caja.monto_apertura),
@@ -143,7 +169,16 @@ class CajaService {
       total_digital: caja.total_digital !== null ? parseFloat(caja.total_digital) : null,
       total_tarjeta: caja.total_tarjeta !== null ? parseFloat(caja.total_tarjeta) : null,
       total_ventas: caja.total_ventas !== null ? parseFloat(caja.total_ventas) : null,
-      total_gastos: caja.total_gastos !== null ? parseFloat(caja.total_gastos) : null
+      total_gastos: caja.total_gastos !== null ? parseFloat(caja.total_gastos) : null,
+      ventas: ventasResult.rows.map(v => ({
+        id: v.id,
+        fecha: v.fecha,
+        total: parseFloat(v.total),
+        metodo: v.metodo_pago,
+        trabajador_id: v.trabajador_id,
+        productos: v.productos || []
+      })),
+      gastos_total: parseFloat(gastosResult.rows[0].total)
     };
   }
 
