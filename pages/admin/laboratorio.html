@@ -220,25 +220,11 @@
       console.log('=== GUARDANDO ARREGLO ===');
       console.log('Payload arreglo:', arregloPayload);
       
-      // Paso 1: Crear el arreglo en la tabla arreglos
+      // Solo crear el arreglo - productos.html lo mostrará desde /api/arreglos
       const arregloResponse = await API.post('/arreglos', arregloPayload);
       console.log('✓ Arreglo creado exitosamente:', arregloResponse);
       
-      // Paso 2: Crear el producto en la tabla productos
-      const productoPayload = {
-        nombre: nombre,
-        categoria: 'Arreglos',
-        precio: parseFloat(precioVenta.toFixed(2)),
-        costo: parseFloat(costoTotal.toFixed(2)),
-        stock: 0, // Los arreglos se crean bajo demanda
-        descripcion: `Arreglo personalizado creado en laboratorio`
-      };
-      
-      console.log('Payload producto:', productoPayload);
-      const productoResponse = await API.post('/productos', productoPayload);
-      console.log('✓ Producto creado exitosamente:', productoResponse);
-      
-      Toast.success(`"${nombre}" guardado como producto (S/ ${precioVenta.toFixed(2)})`);
+      Toast.success(`"${nombre}" guardado como arreglo (S/ ${precioVenta.toFixed(2)})`);
       
       // Limpiar formulario
       limpiarArreglo();

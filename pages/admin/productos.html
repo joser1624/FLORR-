@@ -153,35 +153,68 @@
 
   async function cargarProductos() {
     try {
-      // Cargar productos y arreglos en paralelo
-      const [productosResponse, arreglosResponse] = await Promise.all([
+      // Cargar productos, arreglos e inventario en paralelo
+      const [productosResponse, arreglosResponse, inventarioResponse] = await Promise.all([
         API.get('/productos').catch(err => { console.error('Error cargando productos:', err); return { data: [] }; }),
-        API.get('/arreglos').catch(err => { console.error('Error cargando arreglos:', err); return { data: [] }; })
+        API.get('/arreglos').catch(err => { console.error('Error cargando arreglos:', err); return { data: [] }; }),
+        API.get('/inventario').catch(err => { console.error('Error cargando inventario:', err); return { data: [] }; })
       ]);
       
-      const productos = productosResponse.data || productosResponse.productos || [];
-      const arreglos = arreglosResponse.data || arreglosResponse.arreglos || [];
+      // El backend de productos retorna: { success: true, data: { data: [...], total, page, ... } }
+      // El backend de arreglos retorna: { success: true, data: [...] }
+      let productos = [];
+      if (productosResponse.data) {
+        productos = productosResponse.data.data || productosResponse.data;
+      }
+      
+      const arreglos = arreglosResponse.data || [];
+      const inventario = inventarioResponse.data?.data || inventarioResponse.data || [];
       
       // Asegurar que sean arrays
       const productosArray = Array.isArray(productos) ? productos : [];
       const arreglosArray = Array.isArray(arreglos) ? arreglos : [];
+      const inventarioArray = Array.isArray(inventario) ? inventario : [];
       
       console.log('Productos cargados:', productosArray.length);
       console.log('Arreglos cargados:', arreglosArray.length);
+      console.log('Inventario cargado:', inventarioArray.length);
       
-      // Convertir arreglos a formato de producto para mostrarlos en la tabla
-      const arreglosComoProductos = arreglosArray.map(arr => ({
-        id: `arr_${arr.id}`, // Prefijo para distinguir de productos normales
-        nombre: arr.nombre,
-        categoria: 'Arreglos',
-        precio: arr.precio_venta || 0,
-        costo: arr.costo_total || 0,
-        stock: 0, // Los arreglos se hacen bajo demanda
-        descripcion: `Arreglo personalizado (${arr.items?.length || 0} componentes)`,
-        activo: true,
-        esArreglo: true, // Flag para identificar que viene de arreglos
-        arregloId: arr.id // ID original del arreglo
-      }));
+      // Convertir arreglos a formato de producto calculando stock disponible
+      const arreglosComoProductos = arreglosArray.map(arr => {
+        // Calcular cuántos arreglos se pueden hacer basándose en el inventario
+        let stockDisponible = Infinity;
+        
+        if (arr.items && arr.items.length > 0) {
+          for (const item of arr.items) {
+            const invItem = inventarioArray.find(inv => inv.id === item.inventario_id);
+            if (invItem) {
+              const posibles = Math.floor(invItem.stock / item.cantidad);
+              stockDisponible = Math.min(stockDisponible, posibles);
+            } else {
+              stockDisponible = 0; // Si falta un ingrediente, no se puede hacer
+            }
+          }
+        } else {
+          stockDisponible = 0;
+        }
+        
+        // Si es infinito, significa que no tiene items, poner 0
+        if (stockDisponible === Infinity) stockDisponible = 0;
+        
+        return {
+          id: `arr_${arr.id}`,
+          nombre: arr.nombre,
+          categoria: 'Arreglos',
+          precio: arr.precio_venta || 0,
+          costo: arr.costo_total || 0,
+          stock: stockDisponible, // Stock calculado basado en inventario
+          descripcion: `Arreglo personalizado (${arr.items?.length || 0} componentes)`,
+          activo: true,
+          esArreglo: true,
+          arregloId: arr.id,
+          items: arr.items // Guardar items para referencia
+        };
+      });
       
       // Combinar productos y arreglos
       todosProductos = [...productosArray, ...arreglosComoProductos];
@@ -210,11 +243,26 @@
 
     tbody.innerHTML = lista.map(p => {
       const margen = p.precio > 0 ? ((p.precio - p.costo) / p.precio * 100).toFixed(1) : 0;
-      const stockBadge = p.stock === 0
-        ? '<span class="badge badge-danger">Agotado</span>'
-        : p.stock <= 3
-          ? `<span class="badge badge-warning">Bajo (${p.stock})</span>`
-          : `<span class="badge badge-success">${p.stock} uds</span>`;
+      
+      // Para arreglos, mostrar stock calculado con tooltip explicativo
+      let stockBadge;
+      if (p.esArreglo) {
+        if (p.stock === 0) {
+          stockBadge = '<span class="badge badge-danger" title="Falta inventario para hacer este arreglo">Agotado</span>';
+        } else if (p.stock <= 3) {
+          stockBadge = `<span class="badge badge-warning" title="Stock limitado por inventario disponible">Bajo (${p.stock})</span>`;
+        } else {
+          stockBadge = `<span class="badge badge-success" title="Arreglos disponibles según inventario">${p.stock} disponibles</span>`;
+        }
+      } else {
+        // Productos normales
+        stockBadge = p.stock === 0
+          ? '<span class="badge badge-danger">Agotado</span>'
+          : p.stock <= 3
+            ? `<span class="badge badge-warning">Bajo (${p.stock})</span>`
+            : `<span class="badge badge-success">${p.stock} uds</span>`;
+      }
+      
       const margenColor = margen >= 30 ? 'var(--success)' : margen >= 15 ? 'var(--warning)' : 'var(--danger)';
       const emoji = CATS_EMOJI[p.categoria] || '🌸';
       

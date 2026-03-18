@@ -89,14 +89,16 @@
 
   async function cargarGastos() {
     const mes = document.getElementById('mes-gasto').value;
-    try { const d = await API.get(`/gastos?mes=${mes}`); gastos = d.gastos || d || []; }
-    catch {
-      gastos = [
-        { id:1, descripcion:'Compra 200 rosas rojas', categoria:'flores', monto:280, fecha:'2026-03-02' },
-        { id:2, descripcion:'Transporte proveedor', categoria:'transporte', monto:35, fecha:'2026-03-05' },
-        { id:3, descripcion:'Papel decorativo x10', categoria:'materiales', monto:85, fecha:'2026-03-08' },
-        { id:4, descripcion:'Mantenimiento refrigerador', categoria:'mantenimiento', monto:150, fecha:'2026-03-10' },
-      ];
+    try {
+      const response = await API.get(`/gastos?mes=${mes}`);
+      // Backend retorna: { success: true, data: { data: [...], total, page, limit, pages } }
+      const result = response.data || response;
+      gastos = result.data || result.gastos || result || [];
+      console.log('Gastos cargados:', gastos.length, 'gastos del mes', mes);
+    } catch (error) {
+      console.error('Error al cargar gastos:', error);
+      Toast.error('No se pudieron cargar los gastos desde el servidor');
+      gastos = [];
     }
     renderResumen();
     renderGastos();
@@ -130,22 +132,48 @@
   }
 
   async function guardarGasto() {
-    const payload = { descripcion: document.getElementById('gasto-desc').value, categoria: document.getElementById('gasto-cat').value, monto: parseFloat(document.getElementById('gasto-monto').value)||0, fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0] };
-    if (!payload.descripcion || !payload.monto) { Toast.warning('Completa los campos obligatorios'); return; }
-    try { await API.post('/gastos', payload); } catch { gastos.unshift({ id:Date.now(), ...payload }); }
-    Toast.success('Gasto registrado');
-    Modal.close('modal-gasto');
-    renderResumen();
-    renderGastos();
+    const payload = {
+      descripcion: document.getElementById('gasto-desc').value.trim(),
+      categoria: document.getElementById('gasto-cat').value,
+      monto: parseFloat(document.getElementById('gasto-monto').value) || 0,
+      fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0]
+    };
+    
+    if (!payload.descripcion) {
+      Toast.warning('La descripción es obligatoria');
+      return;
+    }
+    if (!payload.monto || payload.monto <= 0) {
+      Toast.warning('El monto debe ser mayor a 0');
+      return;
+    }
+    
+    try {
+      const response = await API.post('/gastos', payload);
+      Toast.success('Gasto registrado correctamente');
+      Modal.close('modal-gasto');
+      // Limpiar formulario
+      document.getElementById('gasto-desc').value = '';
+      document.getElementById('gasto-monto').value = '';
+      document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
+      await cargarGastos(); // Recargar desde el backend
+    } catch (error) {
+      console.error('Error al guardar gasto:', error);
+      Toast.error(error.message || 'Error al guardar el gasto');
+    }
   }
 
-  function eliminarGasto(id) {
-    Modal.confirm('¿Eliminar este gasto?', () => {
-      gastos = gastos.filter(g=>g.id!==id);
-      API.delete('/gastos/'+id).catch(()=>{});
-      renderResumen();
-      renderGastos();
-      Toast.success('Gasto eliminado');
+  async function eliminarGasto(id) {
+    const gasto = gastos.find(g => g.id === id);
+    Modal.confirm(`¿Eliminar gasto "${gasto?.descripcion}"?`, async () => {
+      try {
+        await API.delete('/gastos/' + id);
+        Toast.success('Gasto eliminado correctamente');
+        await cargarGastos(); // Recargar desde el backend
+      } catch (error) {
+        console.error('Error al eliminar gasto:', error);
+        Toast.error(error.message || 'Error al eliminar el gasto');
+      }
     });
   }
 

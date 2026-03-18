@@ -124,7 +124,33 @@ class InventarioService {
   }
 
   async delete(id) {
-    await query('DELETE FROM inventario WHERE id = $1', [id]);
+    try {
+      // Verificar si el ítem está siendo usado en arreglos
+      const checkUsage = await query(
+        'SELECT COUNT(*) as count FROM arreglos_inventario WHERE inventario_id = $1',
+        [id]
+      );
+      
+      const usageCount = parseInt(checkUsage.rows[0].count);
+      
+      if (usageCount > 0) {
+        throw new Error(`No se puede eliminar este ítem porque está siendo usado en ${usageCount} arreglo(s) floral(es). Primero debes eliminar o modificar esos arreglos.`);
+      }
+      
+      const result = await query('DELETE FROM inventario WHERE id = $1 RETURNING *', [id]);
+      
+      if (result.rows.length === 0) {
+        throw new Error('Item no encontrado');
+      }
+      
+      return result.rows[0];
+    } catch (error) {
+      // Si es un error de restricción de clave foránea, dar un mensaje más claro
+      if (error.code === '23503') {
+        throw new Error('No se puede eliminar este ítem porque está siendo usado en otros registros del sistema.');
+      }
+      throw error;
+    }
   }
 }
 
