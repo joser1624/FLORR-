@@ -121,7 +121,8 @@ class DashboardService {
 
       // Pedidos recientes: últimos 10 pedidos ordenados por fecha
       query(
-        `SELECT id, cliente, telefono, fecha_entrega, total, estado, fecha_pedido
+        `SELECT id, cliente_nombre AS cliente, cliente_telefono AS telefono,
+                fecha_entrega, total, estado, fecha_pedido
          FROM pedidos
          ORDER BY fecha_pedido DESC
          LIMIT 10`
