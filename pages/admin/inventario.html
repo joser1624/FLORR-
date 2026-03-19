@@ -5,6 +5,35 @@
   <title>Inventario — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    /* Fix overflow horizontal en móvil */
+    body, .admin-layout, .admin-main, .admin-content { overflow-x: hidden; max-width: 100%; }
+
+    /* Filter bar apilado en móvil */
+    .inv-filter-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+    .inv-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .inv-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .inv-controls .form-control { flex: 1; min-width: 120px; max-width: 100%; }
+
+    @media (min-width: 641px) {
+      .inv-filter-bar { flex-direction: row; align-items: center; }
+      .inv-controls { margin-left: auto; flex-wrap: nowrap; }
+      .inv-controls .form-control { flex: unset; }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -21,25 +50,25 @@
       <!-- Alertas stock bajo -->
       <div id="alertas-inv"></div>
 
-      <div class="filter-bar">
-        <div class="filter-chips">
+      <div class="inv-filter-bar">
+        <div class="inv-chips">
           <span class="chip active" onclick="filtrarTipo(this,'')">Todos</span>
           <span class="chip" onclick="filtrarTipo(this,'flores')">Flores</span>
           <span class="chip" onclick="filtrarTipo(this,'materiales')">Materiales</span>
           <span class="chip" onclick="filtrarTipo(this,'accesorios')">Accesorios</span>
           <span class="chip" style="color:var(--warning)" onclick="filtrarBajos(this)">⚠ Stock bajo</span>
         </div>
-        <div style="display:flex;gap:8px;margin-left:auto">
-          <select class="form-control" id="ordenar-inv" onchange="renderInv()" style="max-width:180px">
-            <option value="nombre">Ordenar: Nombre A-Z</option>
-            <option value="nombre_desc">Ordenar: Nombre Z-A</option>
-            <option value="tipo">Ordenar: Tipo</option>
-            <option value="stock_asc">Ordenar: Stock (menor)</option>
-            <option value="stock_desc">Ordenar: Stock (mayor)</option>
-            <option value="fecha_desc">Ordenar: Más reciente</option>
-            <option value="fecha_asc">Ordenar: Más antiguo</option>
+        <div class="inv-controls">
+          <select class="form-control" id="ordenar-inv" onchange="renderInv()">
+            <option value="nombre">Nombre A-Z</option>
+            <option value="nombre_desc">Nombre Z-A</option>
+            <option value="tipo">Tipo</option>
+            <option value="stock_asc">Stock (menor)</option>
+            <option value="stock_desc">Stock (mayor)</option>
+            <option value="fecha_desc">Más reciente</option>
+            <option value="fecha_asc">Más antiguo</option>
           </select>
-          <input class="form-control" placeholder="Buscar..." id="buscar-inv" oninput="renderInv()" style="max-width:200px" />
+          <input class="form-control" placeholder="Buscar..." id="buscar-inv" oninput="renderInv()" />
         </div>
       </div>
 
