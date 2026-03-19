@@ -19,6 +19,7 @@ class DashboardService {
       topProductosResult,
       ventasTrabajadoresResult,
       bottomProductosResult,
+      pedidosRecientesResult,
     ] = await Promise.all([
       // Req 3.1: Total sales for current day
       query(
@@ -113,6 +114,14 @@ class DashboardService {
          ORDER BY cantidad ASC
          LIMIT 5`
       ),
+
+      // Pedidos recientes: últimos 10 pedidos ordenados por fecha
+      query(
+        `SELECT id, cliente, telefono, fecha_entrega, total, estado, fecha_pedido
+         FROM pedidos
+         ORDER BY fecha_pedido DESC
+         LIMIT 10`
+      ),
     ]);
 
     // Req 3.3: ganancia_mes = ventas_mes - gastos_mes
@@ -155,6 +164,15 @@ class DashboardService {
       ventas_trabajadores: ventasTrabajadoresResult.rows.map(t => ({
         nombre: t.nombre,
         total: parseFloat(t.total),
+      })),
+      pedidos_recientes: pedidosRecientesResult.rows.map(p => ({
+        id: p.id,
+        cliente: p.cliente,
+        telefono: p.telefono,
+        fecha_entrega: p.fecha_entrega,
+        total: parseFloat(p.total),
+        estado: p.estado,
+        fecha_pedido: p.fecha_pedido,
       })),
     };
   }
