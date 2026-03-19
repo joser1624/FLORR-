@@ -12,10 +12,14 @@
     ════════════════════════════════════════ */
 
     /* Evitar scroll horizontal */
-    body, .admin-main { overflow-x: hidden; }
+    body, .admin-layout, .admin-main, .admin-content { overflow-x: hidden; max-width: 100%; }
 
-    /* Buscar y ordenar: full width en móvil */
-    @media (max-width: 768px) {
+    /* Filter bar apilado en móvil */
+    .filter-bar { flex-wrap: wrap; gap: 8px; }
+    .filter-bar .filter-chips { flex-wrap: wrap; }
+
+    @media (max-width: 640px) {
+      .filter-bar { flex-direction: column; align-items: stretch; }
       #buscar            { max-width: 100% !important; width: 100%; }
       #ordenar-productos { max-width: 100% !important; width: 100%; margin-left: 0 !important; }
     }
