@@ -6,6 +6,16 @@
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    body, .admin-layout, .admin-main, .admin-content { overflow-x: hidden; max-width: 100%; }
+    .rep-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .rep-header-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    @media (max-width: 640px) {
+      .rep-grid { grid-template-columns: 1fr; }
+      .rep-header-controls { width: 100%; }
+      .rep-header-controls .form-control { flex: 1; }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -16,7 +26,7 @@
     <div class="admin-content">
       <div class="page-header">
         <div><h2>Reportes</h2><p>Análisis del negocio en el tiempo</p></div>
-        <div style="display:flex;gap:8px">
+        <div class="rep-header-controls">
           <input class="form-control" type="month" id="reporte-mes" style="max-width:160px" />
           <button class="btn btn-outline" onclick="cargarReportes()">Generar</button>
         </div>
@@ -29,7 +39,7 @@
         <div class="stat-card warning"><span class="stat-icon">🛒</span><div class="stat-label">Total pedidos</div><div class="stat-value" id="rep-pedidos">—</div></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+      <div class="rep-grid">
         <div class="card" style="padding:1.25rem">
           <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Ventas por día</div>
           <canvas id="chart-rep-ventas" height="220"></canvas>
@@ -40,7 +50,7 @@
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+      <div class="rep-grid">
         <div class="card" style="padding:1.25rem">
           <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Top 5 productos vendidos</div>
           <canvas id="chart-rep-productos" height="220"></canvas>
@@ -66,27 +76,37 @@
   async function cargarReportes() {
     const mes = document.getElementById('reporte-mes').value;
     try {
-      const d = await API.get(`/reportes?mes=${mes}`);
-      renderReportes(d);
-    } catch { renderReportesMock(); }
+      const response = await API.get(`/reportes?mes=${mes}`);
+      // Backend: { success: true, data: { reporte: { ventas_total, gastos_total, ganancia, ... } } }
+      const reporte = response.data?.reporte || response.reporte || response.data || response;
+      renderReportes(reporte);
+    } catch(e) {
+      console.error('Error cargando reportes:', e);
+      Toast.error('No se pudieron cargar los reportes');
+    }
   }
 
   function renderReportes(d) {
-    document.getElementById('rep-ventas').textContent = Fmt.moneda(d.ventas_total||0);
-    document.getElementById('rep-gastos').textContent = Fmt.moneda(d.gastos_total||0);
-    document.getElementById('rep-ganancia').textContent = Fmt.moneda((d.ventas_total||0)-(d.gastos_total||0));
-    document.getElementById('rep-pedidos').textContent = Fmt.nro(d.total_pedidos||0);
-    renderChartVentas(d.ventas_dias||[]);
-    renderChartMetodos(d.metodos_pago||[]);
-    renderChartProductos(d.top_productos||[]);
-    renderTrabajadores(d.ventas_trabajadores||[]);
+    document.getElementById('rep-ventas').textContent   = Fmt.moneda(d.ventas_total || 0);
+    document.getElementById('rep-gastos').textContent   = Fmt.moneda(d.gastos_total || 0);
+    document.getElementById('rep-ganancia').textContent = Fmt.moneda(d.ganancia || 0);
+    document.getElementById('rep-pedidos').textContent  = Fmt.nro(d.total_pedidos || 0);
+    renderChartVentas(d.ventas_dias || []);
+    renderChartMetodos(d.metodos_pago || []);
+    renderChartProductos(d.top_productos || []);
+    renderTrabajadores(d.ventas_trabajadores || []);
   }
 
   function renderChartVentas(datos) {
     if (charts.ventas) charts.ventas.destroy();
+    // Backend devuelve { fecha, total } — formateamos la fecha para mostrar solo el día
+    const labels = datos.map(d => {
+      const f = new Date(d.fecha || d.dia);
+      return f.getDate();
+    });
     charts.ventas = new Chart(document.getElementById('chart-rep-ventas').getContext('2d'), {
       type:'line',
-      data:{ labels: datos.map(d=>d.dia||d.fecha), datasets:[{ label:'S/', data: datos.map(d=>d.total), borderColor:'#CC3870', backgroundColor:'rgba(204,56,112,.08)', borderWidth:2, pointRadius:3, tension:.4, fill:true }] },
+      data:{ labels, datasets:[{ label:'S/', data: datos.map(d=>d.total), borderColor:'#CC3870', backgroundColor:'rgba(204,56,112,.08)', borderWidth:2, pointRadius:3, tension:.4, fill:true }] },
       options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{callback:v=>'S/'+v}, grid:{color:'rgba(0,0,0,.04)'} }, x:{grid:{display:false}} } }
     });
   }
