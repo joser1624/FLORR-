@@ -43,12 +43,16 @@
         </div>
       </div>
 
-      <div class="table-wrap">
+      <!-- Tabla desktop -->
+      <div class="table-wrap" id="tabla-inv-wrap">
         <table class="data-table">
           <thead><tr><th>Ítem</th><th>Tipo</th><th>Stock actual</th><th>Stock mínimo</th><th>Unidad</th><th>Costo unit. (S/)</th><th>Última modificación</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody id="tbody-inv"></tbody>
         </table>
       </div>
+
+      <!-- Cards móvil -->
+      <div id="inv-cards" class="prod-cards-grid"></div>
     </div>
   </main>
 </div>
@@ -281,7 +285,14 @@
     }
     
     const tbody = document.getElementById('tbody-inv');
-    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</td></tr>'; return; }
+    const cardsEl = document.getElementById('inv-cards');
+
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</td></tr>';
+      cardsEl.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--gris-400)">Sin resultados</p>';
+      return;
+    }
+
     tbody.innerHTML = lista.map(i => {
       const bajo = i.stock <= (i.stock_min||5);
       const badge = i.stock === 0 ? '<span class="badge badge-danger">Agotado</span>' : bajo ? '<span class="badge badge-warning">Bajo</span>' : '<span class="badge badge-success">OK</span>';
@@ -301,6 +312,34 @@
           <button class="btn-tbl btn-tbl-delete" onclick="eliminarItem(${i.id})" title="Eliminar">🗑️</button>
         </div></td>
       </tr>`;
+    }).join('');
+
+    cardsEl.innerHTML = lista.map(i => {
+      const bajo = i.stock <= (i.stock_min||5);
+      const badgeClass = i.stock === 0 ? 'badge-danger' : bajo ? 'badge-warning' : 'badge-success';
+      const badgeText = i.stock === 0 ? 'Agotado' : bajo ? 'Bajo' : 'OK';
+      const stockColor = i.stock === 0 ? 'var(--danger)' : bajo ? 'var(--warning)' : 'var(--success)';
+      return `<div class="prod-card">
+        <div class="prod-card-header">
+          <span class="prod-card-emoji">${TIPO_EMOJI[i.tipo]||'📦'}</span>
+          <div class="prod-card-title">
+            <span class="prod-card-nombre">${i.nombre}</span>
+            <span class="badge badge-gray" style="font-size:11px">${i.tipo}</span>
+          </div>
+          <span class="badge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="prod-card-data">
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Stock</span><span class="prod-card-dato-val" style="color:${stockColor};font-weight:700">${i.stock} ${i.unidad}</span></div>
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Mínimo</span><span class="prod-card-dato-val">${i.stock_min||'—'}</span></div>
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Costo unit.</span><span class="prod-card-dato-val">${i.costo ? Fmt.moneda(i.costo) : '—'}</span></div>
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Valor total</span><span class="prod-card-dato-val">${i.costo && i.stock ? Fmt.moneda(i.costo * i.stock) : '—'}</span></div>
+        </div>
+        <div class="prod-card-actions">
+          <button class="btn btn-outline btn-sm" onclick="verDetalles(${i.id})">ℹ️ Ver</button>
+          <button class="btn btn-outline btn-sm" onclick="editarItem(${i.id})">✏️ Editar</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="eliminarItem(${i.id})">🗑️</button>
+        </div>
+      </div>`;
     }).join('');
   }
 

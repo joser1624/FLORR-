@@ -682,3 +682,75 @@ body.dark-mode .btn-hamburger:hover { background: rgba(255,255,255,.08); }
 @media (max-width: 768px) {
   .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Product / Inventory Cards (mobile) ── */
+.prod-cards-grid {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 4px 0;
+}
+.prod-card {
+  background: var(--blanco);
+  border: 1px solid var(--rosa-100);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.prod-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.prod-card-emoji { font-size: 26px; flex-shrink: 0; }
+.prod-card-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.prod-card-nombre {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.prod-card-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+.prod-card-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.prod-card-dato-label {
+  font-size: 10px;
+  color: var(--gris-400);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.prod-card-dato-val {
+  font-size: 13px;
+  font-weight: 500;
+}
+.prod-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.prod-card-actions .btn { flex: 1; justify-content: center; font-size: 12px; padding: 6px 8px; }
+
+@media (max-width: 640px) {
+  .prod-cards-grid { display: grid; }
+  #tabla-inv-wrap,
+  #tabla-prod-wrap { display: none; }
+}
+@media (max-width: 400px) {
+  .prod-cards-grid { grid-template-columns: 1fr; }
+}
