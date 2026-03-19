@@ -48,7 +48,7 @@
 
       <!-- Capital del Negocio -->
       <div class="card" style="padding:1.5rem;margin-bottom:1.25rem;background:linear-gradient(135deg, #2D8C4E 0%, #1E6FA8 100%);color:white">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
           <div>
             <div style="font-size:13px;opacity:0.9;margin-bottom:4px">💰 Capital del Negocio</div>
             <div style="font-size:32px;font-weight:700;letter-spacing:-0.5px" id="capital-actual">S/ —</div>
@@ -57,7 +57,7 @@
         </div>
         
         <!-- Desglose del capital -->
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2)">
+        <div class="capital-desglose" style="display:grid;gap:12px;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2)">
           <div style="text-align:center">
             <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Capital Inicial</div>
             <div style="font-size:16px;font-weight:600" id="capital-inicial">S/ —</div>
@@ -85,7 +85,7 @@
       <div id="alertas-stock"></div>
 
       <!-- Gráficos + Pedidos recientes -->
-      <div style="display:grid;grid-template-columns:1fr 380px;gap:1.25rem;margin-bottom:1.25rem">
+      <div class="dash-grid-main" style="display:grid;gap:1.25rem;margin-bottom:1.25rem">
 
         <!-- Gráfico ventas semana -->
         <div class="card" style="padding:1.25rem">
@@ -115,23 +115,50 @@
       </div>
 
       <!-- Productos más vendidos + Ventas por trabajador -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+      <div class="dash-grid-half" style="display:grid;gap:1.25rem">
 
         <div class="card" style="padding:1.25rem">
-          <div style="font-weight:600;font-size:14px;margin-bottom:1rem">Productos más vendidos</div>
-          <canvas id="chart-productos" height="220"></canvas>
-        </div>
-
-        <div class="card" style="padding:1.25rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-            <div style="font-weight:600;font-size:14px">Ventas por trabajador</div>
-            <span style="font-size:12px;color:var(--gris-500)">Este mes</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <div>
+              <div style="font-weight:600;font-size:14px">🏆 Productos más vendidos</div>
+              <div style="font-size:11px;color:var(--gris-400);margin-top:2px">Este mes · por unidades</div>
+            </div>
           </div>
-          <div id="ventas-trabajadores" style="display:flex;flex-direction:column;gap:10px">
+          <div id="lista-productos" style="display:flex;flex-direction:column;gap:14px">
             <div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:13px">Cargando...</div>
           </div>
         </div>
 
+        <div class="card" style="padding:1.25rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div>
+              <div style="font-weight:600;font-size:14px">🌸 Ventas por trabajador</div>
+              <div style="font-size:11px;color:var(--gris-400);margin-top:2px">Este mes · en soles</div>
+            </div>
+          </div>
+          <div style="position:relative;display:flex;align-items:center;justify-content:center">
+            <canvas id="chart-trabajadores" height="220"></canvas>
+            <div id="chart-trabajadores-centro" style="position:absolute;text-align:center;pointer-events:none">
+              <div style="font-size:11px;color:var(--gris-400);font-weight:500">Total</div>
+              <div id="chart-trabajadores-total" style="font-size:18px;font-weight:700;color:var(--gris-900)">—</div>
+            </div>
+          </div>
+          <div id="leyenda-trabajadores" style="display:flex;flex-direction:column;gap:8px;margin-top:1rem"></div>
+        </div>
+
+      </div>
+
+      <!-- Productos menos vendidos -->
+      <div class="card" style="padding:1.25rem;margin-top:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <div>
+            <div style="font-weight:600;font-size:14px">🐌 Productos menos vendidos</div>
+            <div style="font-size:11px;color:var(--gris-400);margin-top:2px">Este mes · los que necesitan más atención</div>
+          </div>
+        </div>
+        <div id="lista-bottom-productos" style="display:flex;flex-direction:column;gap:14px">
+          <div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:13px">Cargando...</div>
+        </div>
       </div>
 
     </div>
@@ -240,25 +267,27 @@
 
   let chartVentas = null;
   let chartProductos = null;
+  let chartTrabajadores = null;
 
   async function loadDashboard() {
     try {
-      const data = await API.get('/dashboard');
+      const response = await API.get('/dashboard');
+      const data = response.data || response;
       renderStats(data);
       renderAlertasStock(data.stock_bajo || []);
-      renderChartVentas(data.ventas_semana || []);
+      renderChartVentas(data.ventas_semana || [], 7);
       renderChartProductos(data.top_productos || []);
+      renderBottomProductos(data.bottom_productos || []);
       renderPedidosRecientes(data.pedidos_recientes || []);
       renderVentasTrabajadores(data.ventas_trabajadores || []);
-    } catch {
+    } catch (e) {
+      console.error('Error cargando dashboard:', e);
       renderStatsMock();
       renderChartVentasMock();
       renderChartProductosMock();
       renderPedidosRecietesMock();
       renderVentasTrabajadoresMock();
     }
-    
-    // Cargar capital
     await loadCapital();
   }
 
@@ -288,19 +317,27 @@
     document.getElementById('capital-retiros').textContent = Fmt.moneda(desglose.retiros);
 
     // Mostrar botones solo para administradores
-    const user = Auth.getUser(); // Usar Auth.getUser() en lugar de localStorage
+    const user = Auth.getUser();
     const botonesContainer = document.getElementById('capital-botones');
     
     if (user && user.rol === 'admin') {
       botonesContainer.innerHTML = `
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Modal.open('modal-aporte')">+ Aporte</button>
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Modal.open('modal-retiro')">- Retiro</button>
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="abrirHistorialCapital()">📋 Historial</button>
+        <button class="btn btn-sm btn-capital-aporte" style="background:rgba(255,255,255,0.2);color:white;border:none">+ Aporte</button>
+        <button class="btn btn-sm btn-capital-retiro" style="background:rgba(255,255,255,0.2);color:white;border:none">- Retiro</button>
+        <button class="btn btn-sm btn-capital-historial" style="background:rgba(255,255,255,0.2);color:white;border:none">📋 Historial</button>
       `;
+      
+      // Agregar event listeners
+      document.querySelector('.btn-capital-aporte')?.addEventListener('click', () => Modal.open('modal-aporte'));
+      document.querySelector('.btn-capital-retiro')?.addEventListener('click', () => Modal.open('modal-retiro'));
+      document.querySelector('.btn-capital-historial')?.addEventListener('click', abrirHistorialCapital);
     } else {
       botonesContainer.innerHTML = `
-        <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="abrirHistorialCapital()">📋 Ver Historial</button>
+        <button class="btn btn-sm btn-capital-historial" style="background:rgba(255,255,255,0.2);color:white;border:none">📋 Ver Historial</button>
       `;
+      
+      // Agregar event listener
+      document.querySelector('.btn-capital-historial')?.addEventListener('click', abrirHistorialCapital);
     }
   }
 
@@ -540,56 +577,187 @@
       </div>`;
   }
 
-  function renderChartVentas(ventas) {
+  // Rellena los días faltantes en el rango para que siempre aparezcan todos
+  function completarDias(ventas, dias) {
+    const map = {};
+    ventas.forEach(v => { map[v.fecha instanceof Date ? v.fecha.toISOString().split('T')[0] : String(v.fecha).split('T')[0]] = v.total; });
+    const result = [];
+    for (let i = dias - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      result.push({ fecha: key, total: map[key] || 0 });
+    }
+    return result;
+  }
+
+  function fmtEjeX(fechaStr) {
+    if (!fechaStr || String(fechaStr).length <= 4) return fechaStr; // mock labels
+    const d = new Date(fechaStr + 'T00:00:00');
+    const diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const dia = diasSemana[d.getDay()];
+    const num = d.getDate();
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return [dia, `${num} ${meses[d.getMonth()]}`]; // array = dos líneas en Chart.js
+  }
+
+  function renderChartVentas(ventas, dias = 7) {
     const ctx = document.getElementById('chart-ventas').getContext('2d');
     if (chartVentas) chartVentas.destroy();
+
+    // Si los datos vienen del backend (tienen fecha ISO), rellenar días vacíos
+    const esMock = ventas.length > 0 && String(ventas[0].fecha).length <= 4;
+    const datos = esMock ? ventas : completarDias(ventas, dias);
+
+    // Gradiente rosa → morado
+    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+    gradient.addColorStop(0, 'rgba(204,56,112,.55)');
+    gradient.addColorStop(1, 'rgba(168,85,247,.12)');
+
     chartVentas = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ventas.map(v => v.fecha),
+        labels: datos.map(v => esMock ? v.fecha : fmtEjeX(v.fecha)),
         datasets: [{
-          label: 'Ventas (S/)',
-          data: ventas.map(v => v.total),
-          backgroundColor: 'rgba(204,56,112,.18)',
+          label: 'Ventas',
+          data: datos.map(v => v.total),
+          backgroundColor: gradient,
           borderColor: '#CC3870',
           borderWidth: 2,
-          borderRadius: 6,
+          borderRadius: 8,
           borderSkipped: false,
+          hoverBackgroundColor: 'rgba(204,56,112,.75)',
         }]
       },
       options: {
         responsive: true,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#2D1B2E',
+            titleColor: '#FF6BA8',
+            bodyColor: '#fff',
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              title: (items) => {
+                const lbl = items[0].label;
+                return Array.isArray(lbl) ? lbl.join(' ') : lbl;
+              },
+              label: (item) => ` S/ ${parseFloat(item.raw).toFixed(2)}`
+            }
+          }
+        },
         scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { callback: v => 'S/'+v } },
-          x: { grid: { display: false } }
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,.05)', drawBorder: false },
+            ticks: {
+              font: { size: 11 },
+              color: '#9CA3AF',
+              callback: v => v === 0 ? '0' : 'S/'+v
+            },
+            border: { display: false }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 11, weight: '500' },
+              color: '#6B7280',
+              maxRotation: 0,
+            },
+            border: { display: false }
+          }
         }
       }
     });
   }
 
+  const PRODUCTO_EMOJIS = ['🥇','🥈','🥉','🏅','🎖️'];
+  const PRODUCTO_COLORES = [
+    { bar: '#CC3870', bg: 'rgba(204,56,112,.1)', text: '#CC3870' },
+    { bar: '#A855F7', bg: 'rgba(168,85,247,.1)', text: '#A855F7' },
+    { bar: '#D4A017', bg: 'rgba(212,160,23,.1)',  text: '#B8860B' },
+    { bar: '#2D8C4E', bg: 'rgba(45,140,78,.1)',   text: '#2D8C4E' },
+    { bar: '#1E6FA8', bg: 'rgba(30,111,168,.1)',  text: '#1E6FA8' },
+  ];
+
   function renderChartProductos(productos) {
-    const ctx = document.getElementById('chart-productos').getContext('2d');
-    if (chartProductos) chartProductos.destroy();
-    chartProductos = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: productos.map(p => p.nombre),
-        datasets: [{
-          data: productos.map(p => p.cantidad),
-          backgroundColor: ['#CC3870','#D4A017','#2D8C4E','#1E6FA8','#A82058','#8A6009'],
-          borderWidth: 2,
-          borderColor: '#fff',
-        }]
-      },
-      options: {
-        responsive: true,
-        cutout: '62%',
-        plugins: {
-          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } }
-        }
-      }
-    });
+    // destruir chart anterior si existía
+    if (chartProductos) { chartProductos.destroy(); chartProductos = null; }
+
+    const el = document.getElementById('lista-productos');
+    if (!productos || !productos.length) {
+      el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:13px">Sin datos este mes 🌸</div>';
+      return;
+    }
+
+    const total = productos.reduce((s, p) => s + p.cantidad, 0);
+    const max   = productos[0].cantidad;
+
+    el.innerHTML = productos.map((p, i) => {
+      const pct     = max > 0 ? Math.round(p.cantidad / max * 100) : 0;
+      const porTotal = total > 0 ? Math.round(p.cantidad / total * 100) : 0;
+      const col     = PRODUCTO_COLORES[i] || PRODUCTO_COLORES[4];
+      const emoji   = PRODUCTO_EMOJIS[i] || '🎖️';
+
+      return `
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:18px;line-height:1">${emoji}</span>
+              <span style="font-size:13px;font-weight:600;color:var(--gris-800)">${p.nombre}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:12px;font-weight:700;color:${col.text}">${p.cantidad} uds.</span>
+              <span style="font-size:11px;background:${col.bg};color:${col.text};padding:2px 7px;border-radius:99px;font-weight:600">${porTotal}%</span>
+            </div>
+          </div>
+          <div style="height:7px;background:var(--gris-100);border-radius:99px;overflow:hidden">
+            <div style="height:7px;width:${pct}%;background:${col.bar};border-radius:99px;transition:width .6s ease"></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  const BOTTOM_COLORES = [
+    { bar: '#F97316', bg: 'rgba(249,115,22,.1)', text: '#EA6C0A' },
+    { bar: '#EF4444', bg: 'rgba(239,68,68,.1)',  text: '#DC2626' },
+    { bar: '#8B5CF6', bg: 'rgba(139,92,246,.1)', text: '#7C3AED' },
+    { bar: '#06B6D4', bg: 'rgba(6,182,212,.1)',  text: '#0891B2' },
+    { bar: '#84CC16', bg: 'rgba(132,204,22,.1)', text: '#65A30D' },
+  ];
+  const BOTTOM_EMOJIS = ['⚠️','📉','😴','🔔','💤'];
+
+  function renderBottomProductos(productos) {
+    const el = document.getElementById('lista-bottom-productos');
+    if (!productos || !productos.length) {
+      el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400);font-size:13px">Sin datos este mes 🌸</div>';
+      return;
+    }
+    const max = Math.max(...productos.map(p => p.cantidad));
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+        ${productos.map((p, i) => {
+          const pct  = max > 0 ? Math.round(p.cantidad / max * 100) : 0;
+          const col  = BOTTOM_COLORES[i] || BOTTOM_COLORES[4];
+          const emoji = BOTTOM_EMOJIS[i] || '📉';
+          return `
+            <div style="background:${col.bg};border:1.5px solid ${col.bar}22;border-radius:12px;padding:14px 16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:20px">${emoji}</span>
+                  <span style="font-size:13px;font-weight:600;color:var(--gris-800)">${p.nombre}</span>
+                </div>
+                <span style="font-size:12px;font-weight:700;color:${col.text};background:#fff;padding:2px 9px;border-radius:99px;border:1px solid ${col.bar}44">${p.cantidad} uds.</span>
+              </div>
+              <div style="height:6px;background:rgba(0,0,0,.07);border-radius:99px;overflow:hidden">
+                <div style="height:6px;width:${pct}%;background:${col.bar};border-radius:99px;transition:width .6s ease"></div>
+              </div>
+              <div style="font-size:10px;color:${col.text};margin-top:6px;font-weight:500">Pocas ventas · considera promocionarlo</div>
+            </div>`;
+        }).join('')}
+      </div>`;
   }
 
   function renderPedidosRecientes(pedidos) {
@@ -606,24 +774,75 @@
       </div>`).join('');
   }
 
+  const TRABAJADOR_COLORES = ['#CC3870','#A855F7','#D4A017','#2D8C4E','#1E6FA8','#E11D48'];
+
   function renderVentasTrabajadores(trabajadores) {
-    const el = document.getElementById('ventas-trabajadores');
-    if (!trabajadores.length) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--gris-400);font-size:13px">Sin datos</div>'; return; }
-    const max = Math.max(...trabajadores.map(t => t.total));
-    el.innerHTML = trabajadores.map(t => {
-      const pct = max > 0 ? (t.total / max * 100).toFixed(0) : 0;
-      const initials = t.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    if (chartTrabajadores) { chartTrabajadores.destroy(); chartTrabajadores = null; }
+
+    const canvas = document.getElementById('chart-trabajadores');
+    const leyenda = document.getElementById('leyenda-trabajadores');
+
+    if (!trabajadores || !trabajadores.length) {
+      canvas.style.display = 'none';
+      document.getElementById('chart-trabajadores-centro').style.display = 'none';
+      leyenda.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--gris-400);font-size:13px">Sin datos este mes 🌸</div>';
+      return;
+    }
+
+    const total = trabajadores.reduce((s, t) => s + t.total, 0);
+    document.getElementById('chart-trabajadores-total').textContent = Fmt.moneda(total);
+
+    const colores = trabajadores.map((_, i) => TRABAJADOR_COLORES[i % TRABAJADOR_COLORES.length]);
+
+    chartTrabajadores = new Chart(canvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: trabajadores.map(t => t.nombre),
+        datasets: [{
+          data: trabajadores.map(t => t.total),
+          backgroundColor: colores,
+          borderWidth: 3,
+          borderColor: '#fff',
+          hoverBorderWidth: 4,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#2D1B2E',
+            titleColor: '#FF6BA8',
+            bodyColor: '#fff',
+            padding: 12,
+            cornerRadius: 10,
+            callbacks: {
+              label: (item) => {
+                const pct = total > 0 ? ((item.raw / total) * 100).toFixed(1) : 0;
+                return `  ${Fmt.moneda(item.raw)}  (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Leyenda personalizada
+    leyenda.innerHTML = trabajadores.map((t, i) => {
+      const pct = total > 0 ? ((t.total / total) * 100).toFixed(1) : 0;
+      const initials = t.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
       return `
         <div style="display:flex;align-items:center;gap:10px">
-          <div class="avatar" style="flex-shrink:0">${initials}</div>
+          <div style="width:10px;height:10px;border-radius:50%;background:${colores[i]};flex-shrink:0"></div>
+          <div style="width:30px;height:30px;border-radius:50%;background:${colores[i]}22;color:${colores[i]};font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${initials}</div>
           <div style="flex:1">
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
-              <span style="font-weight:500">${t.nombre}</span>
-              <span style="color:var(--rosa-600)">${Fmt.moneda(t.total)}</span>
-            </div>
-            <div style="height:4px;background:var(--rosa-100);border-radius:4px">
-              <div style="height:4px;width:${pct}%;background:var(--rosa-400);border-radius:4px"></div>
-            </div>
+            <div style="font-size:12px;font-weight:600;color:var(--gris-800)">${t.nombre}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;font-weight:700;color:${colores[i]}">${Fmt.moneda(t.total)}</div>
+            <div style="font-size:10px;color:var(--gris-400)">${pct}%</div>
           </div>
         </div>`;
     }).join('');
@@ -671,9 +890,15 @@
     ]);
   }
 
-  function cambiarPeriodo(dias) {
-    // Al conectar el backend se recarga con el período
-    loadDashboard();
+  async function cambiarPeriodo(dias) {
+    dias = parseInt(dias);
+    try {
+      const response = await API.get(`/dashboard/ventas-periodo?dias=${dias}`);
+      const ventas = response.data || [];
+      renderChartVentas(ventas, dias);
+    } catch (e) {
+      console.error('Error cargando período:', e);
+    }
   }
 
   loadDashboard();

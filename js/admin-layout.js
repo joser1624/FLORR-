@@ -134,6 +134,7 @@ function renderTopbar(title, breadcrumb = '') {
     </div>
     <div class="topbar-right">
       <span style="font-size:12px;color:var(--gris-500)">${new Date().toLocaleDateString('es-PE', {weekday:'long', day:'2-digit', month:'long'})}</span>
+      <button class="btn-dark-toggle" onclick="toggleDark()" title="Modo oscuro" aria-label="Cambiar tema">🌙</button>
     </div>`;
 }
 

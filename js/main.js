@@ -115,8 +115,20 @@ const Toast = {
 
 /* ── Modal ── */
 const Modal = {
-  open(id) { document.getElementById(id)?.classList.add('active'); },
-  close(id) { document.getElementById(id)?.classList.remove('active'); },
+  open(id) { 
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.classList.add('active');
+    } else {
+      console.error('Modal no encontrado:', id);
+    }
+  },
+  close(id) { 
+    const modal = document.getElementById(id);
+    if (modal) {
+      modal.classList.remove('active');
+    }
+  },
   confirm(msg, onConfirm) {
     const id = 'modal-confirm-' + Date.now();
     const m = document.createElement('div');
@@ -169,6 +181,32 @@ const Fmt = {
   porcentaje: (n) => `${parseFloat(n || 0).toFixed(1)}%`,
   nro: (n) => parseInt(n || 0).toLocaleString('es-PE'),
 };
+
+/* ── Dark Mode ── */
+const DarkMode = {
+  init() {
+    if (localStorage.getItem('ee_dark') === '1') {
+      document.body.classList.add('dark-mode');
+    }
+    this.updateBtn();
+  },
+  toggle() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('ee_dark', isDark ? '1' : '0');
+    this.updateBtn();
+  },
+  updateBtn() {
+    const isDark = document.body.classList.contains('dark-mode');
+    document.querySelectorAll('.btn-dark-toggle, #btn-dark').forEach(btn => {
+      btn.textContent = isDark ? '☀️' : '🌙';
+      btn.title = isDark ? 'Modo claro' : 'Modo oscuro';
+    });
+  }
+};
+
+function toggleDark() { DarkMode.toggle(); }
+
+document.addEventListener('DOMContentLoaded', () => DarkMode.init());
 
 /* ── Debounce ── */
 function debounce(fn, delay = 350) {

@@ -18,6 +18,8 @@ class DashboardService {
       ventasSemanaResult,
       topProductosResult,
       ventasTrabajadoresResult,
+      bottomProductosResult,
+      pedidosRecientesResult,
     ] = await Promise.all([
       // Req 3.1: Total sales for current day
       query(
@@ -100,6 +102,31 @@ class DashboardService {
          GROUP BY u.id, u.nombre
          ORDER BY total DESC`
       ),
+
+      // Bottom 5 products: los menos vendidos del mes actual
+      // Incluye productos activos aunque no tengan ventas este mes (cantidad = 0)
+      query(
+        `SELECT p.id, p.nombre,
+                COALESCE(SUM(CASE
+                  WHEN DATE_TRUNC('month', v.fecha) = DATE_TRUNC('month', CURRENT_DATE)
+                  THEN vp.cantidad ELSE 0 END), 0) AS cantidad
+         FROM productos p
+         LEFT JOIN ventas_productos vp ON vp.producto_id = p.id
+         LEFT JOIN ventas v ON vp.venta_id = v.id
+         WHERE p.activo = true
+         GROUP BY p.id, p.nombre
+         ORDER BY cantidad ASC, p.nombre ASC
+         LIMIT 5`
+      ),
+
+      // Pedidos recientes: últimos 10 pedidos ordenados por fecha
+      query(
+        `SELECT id, cliente_nombre AS cliente, cliente_telefono AS telefono,
+                fecha_entrega, total, estado, fecha_pedido
+         FROM pedidos
+         ORDER BY fecha_pedido DESC
+         LIMIT 10`
+      ),
     ]);
 
     // Req 3.3: ganancia_mes = ventas_mes - gastos_mes
@@ -135,11 +162,40 @@ class DashboardService {
         nombre: p.nombre,
         cantidad: parseInt(p.cantidad, 10),
       })),
+      bottom_productos: bottomProductosResult.rows.map(p => ({
+        nombre: p.nombre,
+        cantidad: parseInt(p.cantidad, 10),
+      })),
       ventas_trabajadores: ventasTrabajadoresResult.rows.map(t => ({
         nombre: t.nombre,
         total: parseFloat(t.total),
       })),
+      pedidos_recientes: pedidosRecientesResult.rows.map(p => ({
+        id: p.id,
+        cliente: p.cliente,
+        telefono: p.telefono,
+        fecha_entrega: p.fecha_entrega,
+        total: parseFloat(p.total),
+        estado: p.estado,
+        fecha_pedido: p.fecha_pedido,
+      })),
     };
+  }
+  /**
+   * Get sales totals grouped by date for the last N days
+   */
+  async getVentasPeriodo(dias = 7) {
+    const result = await query(
+      `SELECT DATE(fecha) AS fecha, COALESCE(SUM(total), 0) AS total
+       FROM ventas
+       WHERE DATE(fecha) >= CURRENT_DATE - INTERVAL '${parseInt(dias) - 1} days'
+       GROUP BY DATE(fecha)
+       ORDER BY DATE(fecha) ASC`
+    );
+    return result.rows.map(v => ({
+      fecha: v.fecha,
+      total: parseFloat(v.total),
+    }));
   }
 }
 

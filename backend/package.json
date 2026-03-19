@@ -11,7 +11,10 @@
     "test:coverage": "jest --coverage",
     "db:schema": "psql -U postgres -d floreria_system_core -f ../database/schema.sql",
     "db:seed": "psql -U postgres -d floreria_system_core -f ../database/seed.sql",
-    "db:reset": "npm run db:schema && npm run db:seed"
+    "db:reset": "npm run db:schema && npm run db:seed",
+    "seed:historicos": "node src/scripts/seed-datos-historicos.js",
+    "seed:ventas": "node src/scripts/seed-ventas-historicas.js",
+    "seed:gastos": "node src/scripts/seed-gastos-historicos.js"
   },
   "keywords": [
     "floreria",

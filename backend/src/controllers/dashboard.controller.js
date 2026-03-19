@@ -16,6 +16,18 @@ class DashboardController {
       next(error);
     }
   }
+  /**
+   * GET /api/dashboard/ventas-periodo?dias=N
+   */
+  async getVentasPeriodo(req, res, next) {
+    try {
+      const dias = parseInt(req.query.dias) || 7;
+      const ventas = await dashboardService.getVentasPeriodo(dias);
+      res.json({ success: true, data: ventas });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new DashboardController();

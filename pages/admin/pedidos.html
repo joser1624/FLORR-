@@ -19,7 +19,7 @@
       </div>
 
       <!-- Kanban de estados -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.5rem">
+      <div class="pedidos-kanban" style="display:grid;gap:12px;margin-bottom:1.5rem">
         <div style="text-align:center;background:var(--warning-bg);border-radius:var(--radius-md);padding:12px">
           <div style="font-size:11px;font-weight:700;color:var(--warning);text-transform:uppercase;letter-spacing:.08em">Pendientes</div>
           <div style="font-size:24px;font-weight:700;color:var(--warning)" id="cnt-pendiente">—</div>
@@ -155,15 +155,28 @@
 
   async function cargarPedidos() {
     try {
-      const data = await API.get('/pedidos');
-      todosPedidos = data.pedidos || data || [];
-    } catch {
-      todosPedidos = [
-        { id:1, cliente:'Ana García', telefono:'987654321', direccion:'Av. Los Rosales 123', fecha_entrega:'2026-03-15', descripcion:'Ramo de rosas rojas x12', total:120, estado:'pendiente', metodo:'Yape' },
-        { id:2, cliente:'Luis Pérez', telefono:'912345678', direccion:'Jr. Flores 456', fecha_entrega:'2026-03-14', descripcion:'Arreglo primaveral en caja', total:85, estado:'en preparación', metodo:'Efectivo' },
-        { id:3, cliente:'María Torres', telefono:'998877665', direccion:'Calle Jardín 789', fecha_entrega:'2026-03-16', descripcion:'Caja sorpresa personalizada', total:200, estado:'listo para entrega', metodo:'Tarjeta' },
-        { id:4, cliente:'Carlos Ramos', telefono:'976543210', direccion:'', fecha_entrega:'2026-03-12', descripcion:'Ramo de girasoles', total:65, estado:'entregado', metodo:'Yape' },
-      ];
+      const response = await API.get('/pedidos');
+      const result = response.data || response;
+      
+      // Manejar diferentes estructuras de respuesta
+      if (Array.isArray(result.pedidos)) {
+        todosPedidos = result.pedidos;
+      } else if (result.pedidos && Array.isArray(result.pedidos.data)) {
+        todosPedidos = result.pedidos.data;
+      } else if (Array.isArray(result.data)) {
+        todosPedidos = result.data;
+      } else if (Array.isArray(result)) {
+        todosPedidos = result;
+      } else {
+        console.warn('Estructura de respuesta inesperada:', result);
+        todosPedidos = [];
+      }
+      
+      console.log('Pedidos cargados:', todosPedidos.length);
+    } catch (error) {
+      console.error('Error al cargar pedidos:', error);
+      Toast.error('No se pudieron cargar los pedidos');
+      todosPedidos = [];
     }
     renderContadores();
     renderPedidos();

@@ -35,17 +35,17 @@ const updateProductValidation = [
 
 /**
  * GET /api/productos
- * Requirement 2.5: All authenticated roles can access
+ * Public: accessible without authentication (catálogo público)
  * Returns list of products with optional filters
  */
-router.get('/', verifyToken, productosController.getAll.bind(productosController));
+router.get('/', productosController.getAll.bind(productosController));
 
 /**
  * GET /api/productos/:id
- * Requirement 2.5: All authenticated roles can access
+ * Public: accessible without authentication
  * Returns single product by ID
  */
-router.get('/:id', verifyToken, productosController.getById.bind(productosController));
+router.get('/:id', productosController.getById.bind(productosController));
 
 /**
  * POST /api/productos

@@ -5,6 +5,33 @@
   <title>Laboratorio — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    body, .admin-layout, .admin-main, .admin-content { overflow-x: hidden; max-width: 100%; }
+
+    .lab-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .lab-panel-resumen {
+      background: var(--blanco);
+      border: 1px solid var(--rosa-100);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      position: sticky;
+      top: 76px;
+    }
+    .lab-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    @media (max-width: 768px) {
+      .lab-layout { grid-template-columns: 1fr; }
+      .lab-panel-resumen { position: static; }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -17,7 +44,7 @@
         <div><h2>Laboratorio de flores</h2><p>Crea arreglos personalizados y calcula su costo y precio de venta</p></div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start">
+      <div class="lab-layout">
 
         <!-- Panel izquierdo: selección -->
         <div>
@@ -27,9 +54,9 @@
           </div>
 
           <div class="card" style="margin-bottom:1rem">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
               <div style="font-weight:600;font-size:14px">Flores disponibles</div>
-              <div class="filter-chips">
+              <div class="lab-chips">
                 <span class="chip active" onclick="filtrarLab(this,'')">Todas</span>
                 <span class="chip" onclick="filtrarLab(this,'flores')">Flores</span>
                 <span class="chip" onclick="filtrarLab(this,'materiales')">Materiales</span>
@@ -41,7 +68,7 @@
         </div>
 
         <!-- Panel derecho: resumen -->
-        <div style="background:var(--blanco);border:1px solid var(--rosa-100);border-radius:var(--radius-xl);padding:1.5rem;position:sticky;top:76px">
+        <div class="lab-panel-resumen">
           <div style="font-family:var(--font-display);font-size:20px;font-style:italic;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--rosa-100)">
             Resumen del arreglo
           </div>

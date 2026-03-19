@@ -98,21 +98,28 @@
   let promos = [], eventos = [];
 
   async function cargarPromos() {
-    try { const d = await API.get('/promociones'); promos = d.promociones || d || []; }
-    catch { promos = [
-      { id:1, titulo:'20% en ramos de rosas', descripcion:'Válido para ramos de 12 rosas en adelante', descuento:20, tipo:'porcentaje', desde:'2026-03-01', hasta:'2026-03-31', activa:true },
-      { id:2, titulo:'Día de la Madre — precio especial', descripcion:'Arreglos florales con cinta dorada gratis', descuento:0, tipo:'regalo', desde:'2026-05-01', hasta:'2026-05-11', activa:true },
-    ]; }
+    try {
+      const response = await API.get('/promociones');
+      // Backend: { success: true, data: [...] }
+      promos = response.data || response.promociones || response || [];
+    } catch(e) {
+      console.error('Error cargando promociones:', e);
+      Toast.error('No se pudieron cargar las promociones');
+      promos = [];
+    }
     renderPromos();
   }
 
   async function cargarEventos() {
-    try { const d = await API.get('/eventos'); eventos = d.eventos || d || []; }
-    catch { eventos = [
-      { id:1, nombre:'San Valentín', descripcion:'Arreglos especiales y dedicatorias', emoji:'💕', fecha:'2026-02-14', color:'rosa', activo:false },
-      { id:2, nombre:'Día de la Madre', descripcion:'Honra a mamá con el arreglo perfecto', emoji:'🌹', fecha:'2026-05-10', color:'dorado', activo:true },
-      { id:3, nombre:'Día del Amor y la Amistad', descripcion:'Celebra con flores para tus seres queridos', emoji:'💐', fecha:'2026-07-23', color:'morado', activo:true },
-    ]; }
+    try {
+      const response = await API.get('/eventos');
+      // Backend: { success: true, data: [...] }
+      eventos = response.data || response.eventos || response || [];
+    } catch(e) {
+      console.error('Error cargando eventos:', e);
+      Toast.error('No se pudieron cargar los eventos');
+      eventos = [];
+    }
     renderEventos();
   }
 
@@ -131,7 +138,7 @@
         <div style="font-family:var(--font-display);font-size:17px;margin-bottom:4px">${p.titulo}</div>
         <div style="font-size:12px;color:var(--gris-500);margin-bottom:8px">${p.descripcion||''}</div>
         ${p.descuento ? `<div style="font-size:24px;font-weight:700;color:var(--rosa-600);font-family:var(--font-display)">${p.descuento}% OFF</div>` : ''}
-        <div style="font-size:11px;color:var(--gris-400);margin-top:4px">Vigente: ${p.desde ? Fmt.fecha(p.desde) : '—'} al ${p.hasta ? Fmt.fecha(p.hasta) : '—'}</div>
+        <div style="font-size:11px;color:var(--gris-400);margin-top:4px">Vigente: ${p.fecha_desde ? Fmt.fecha(p.fecha_desde) : '—'} al ${p.fecha_hasta ? Fmt.fecha(p.fecha_hasta) : '—'}</div>
       </div>`).join('');
   }
 
@@ -152,21 +159,82 @@
   }
 
   async function guardarPromo() {
-    const p = { titulo:document.getElementById('promo-titulo').value, descripcion:document.getElementById('promo-desc').value, descuento:parseInt(document.getElementById('promo-descuento').value)||0, tipo:document.getElementById('promo-tipo').value, desde:document.getElementById('promo-desde').value, hasta:document.getElementById('promo-hasta').value, activa:document.getElementById('promo-activa').checked };
-    if (!p.titulo) { Toast.warning('El título es obligatorio'); return; }
-    try { await API.post('/promociones', p); } catch { promos.unshift({id:Date.now(),...p}); }
-    Toast.success('Promoción creada'); Modal.close('modal-promo'); renderPromos();
+    const payload = {
+      titulo:       document.getElementById('promo-titulo').value.trim(),
+      descripcion:  document.getElementById('promo-desc').value.trim(),
+      descuento:    parseInt(document.getElementById('promo-descuento').value) || 0,
+      tipo:         document.getElementById('promo-tipo').value,
+      fecha_desde:  document.getElementById('promo-desde').value || null,
+      fecha_hasta:  document.getElementById('promo-hasta').value || null,
+      activa:       document.getElementById('promo-activa').checked
+    };
+    if (!payload.titulo) { Toast.warning('El título es obligatorio'); return; }
+    try {
+      await API.post('/promociones', payload);
+      Toast.success('Promoción creada');
+      Modal.close('modal-promo');
+      // Limpiar formulario
+      document.getElementById('promo-titulo').value = '';
+      document.getElementById('promo-desc').value = '';
+      document.getElementById('promo-descuento').value = '';
+      document.getElementById('promo-desde').value = '';
+      document.getElementById('promo-hasta').value = '';
+      document.getElementById('promo-activa').checked = true;
+      await cargarPromos();
+    } catch(e) {
+      Toast.error(e.message || 'Error al crear la promoción');
+    }
   }
 
   async function guardarEvento() {
-    const e = { nombre:document.getElementById('ev-nombre').value, descripcion:document.getElementById('ev-desc').value, emoji:document.getElementById('ev-emoji').value||'🌸', fecha:document.getElementById('ev-fecha').value, color:document.getElementById('ev-color').value, activo:document.getElementById('ev-activo').checked };
-    if (!e.nombre) { Toast.warning('El nombre es obligatorio'); return; }
-    try { await API.post('/eventos', e); } catch { eventos.unshift({id:Date.now(),...e}); }
-    Toast.success('Evento creado'); Modal.close('modal-evento'); renderEventos();
+    const payload = {
+      nombre:      document.getElementById('ev-nombre').value.trim(),
+      descripcion: document.getElementById('ev-desc').value.trim(),
+      emoji:       document.getElementById('ev-emoji').value || '🌸',
+      fecha:       document.getElementById('ev-fecha').value || null,
+      color:       document.getElementById('ev-color').value,
+      activo:      document.getElementById('ev-activo').checked
+    };
+    if (!payload.nombre) { Toast.warning('El nombre es obligatorio'); return; }
+    try {
+      await API.post('/eventos', payload);
+      Toast.success('Evento creado');
+      Modal.close('modal-evento');
+      // Limpiar formulario
+      document.getElementById('ev-nombre').value = '';
+      document.getElementById('ev-desc').value = '';
+      document.getElementById('ev-emoji').value = '';
+      document.getElementById('ev-fecha').value = '';
+      document.getElementById('ev-activo').checked = true;
+      await cargarEventos();
+    } catch(e) {
+      Toast.error(e.message || 'Error al crear el evento');
+    }
   }
 
-  function eliminarPromo(id) { Modal.confirm('¿Eliminar esta promoción?', () => { promos=promos.filter(p=>p.id!==id); API.delete('/promociones/'+id).catch(()=>{}); renderPromos(); Toast.success('Eliminada'); }); }
-  function eliminarEvento(id) { Modal.confirm('¿Eliminar este evento?', () => { eventos=eventos.filter(e=>e.id!==id); API.delete('/eventos/'+id).catch(()=>{}); renderEventos(); Toast.success('Eliminado'); }); }
+  function eliminarPromo(id) {
+    Modal.confirm('¿Eliminar esta promoción?', async () => {
+      try {
+        await API.delete('/promociones/' + id);
+        Toast.success('Promoción eliminada');
+        await cargarPromos();
+      } catch(e) {
+        Toast.error(e.message || 'Error al eliminar');
+      }
+    });
+  }
+
+  function eliminarEvento(id) {
+    Modal.confirm('¿Eliminar este evento?', async () => {
+      try {
+        await API.delete('/eventos/' + id);
+        Toast.success('Evento eliminado');
+        await cargarEventos();
+      } catch(e) {
+        Toast.error(e.message || 'Error al eliminar');
+      }
+    });
+  }
 
   cargarPromos();
   cargarEventos();

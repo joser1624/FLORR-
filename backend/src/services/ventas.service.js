@@ -10,22 +10,24 @@ class VentasService {
     const limit = parseInt(filters.limit) || 50;
     const offset = (page - 1) * limit;
 
-    let baseQuery = 'FROM ventas WHERE 1=1';
+    let baseQuery = `FROM ventas v
+      LEFT JOIN usuarios u ON v.trabajador_id = u.id
+      WHERE 1=1`;
     const params = [];
     let paramCount = 1;
 
     if (filters.fecha) {
-      baseQuery += ' AND DATE(fecha) = $' + paramCount;
+      baseQuery += ' AND DATE(v.fecha) = $' + paramCount;
       params.push(filters.fecha);
       paramCount++;
     }
     if (filters.metodo_pago) {
-      baseQuery += ' AND metodo_pago = $' + paramCount;
+      baseQuery += ' AND v.metodo_pago = $' + paramCount;
       params.push(filters.metodo_pago);
       paramCount++;
     }
     if (filters.trabajador_id) {
-      baseQuery += ' AND trabajador_id = $' + paramCount;
+      baseQuery += ' AND v.trabajador_id = $' + paramCount;
       params.push(filters.trabajador_id);
       paramCount++;
     }
@@ -33,7 +35,8 @@ class VentasService {
     const countResult = await query('SELECT COUNT(*) as total ' + baseQuery, params);
     const total = parseInt(countResult.rows[0].total);
 
-    const queryText = 'SELECT * ' + baseQuery + ' ORDER BY created_at DESC LIMIT $' + paramCount + ' OFFSET $' + (paramCount + 1);
+    const queryText = `SELECT v.*, u.nombre AS trabajador_nombre ` + baseQuery +
+      ' ORDER BY v.created_at DESC LIMIT $' + paramCount + ' OFFSET $' + (paramCount + 1);
     params.push(limit, offset);
 
     const result = await query(queryText, params);
