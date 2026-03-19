@@ -33,7 +33,7 @@
       </div>
 
       <!-- Resumen -->
-      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.25rem">
+      <div class="stats-grid stats-grid-3" style="margin-bottom:1.25rem">
         <div class="stat-card rosa"><span class="stat-icon">💸</span><div class="stat-label">Gastos del mes</div><div class="stat-value" id="gastos-mes">S/ 0.00</div></div>
         <div class="stat-card success"><span class="stat-icon">💰</span><div class="stat-label">Ventas del mes</div><div class="stat-value" id="ventas-mes-g">S/ 0.00</div></div>
         <div class="stat-card dorado"><span class="stat-icon">📈</span><div class="stat-label">Ganancia real</div><div class="stat-value" id="ganancia-real">S/ 0.00</div></div>
@@ -256,8 +256,23 @@
   function renderResumen() {
     const total = gastos.reduce((s,g)=>s+parseFloat(g.monto||0),0);
     document.getElementById('gastos-mes').textContent = Fmt.moneda(total);
-    document.getElementById('ventas-mes-g').textContent = '— (del backend)';
-    document.getElementById('ganancia-real').textContent = '— (del backend)';
+    // Cargar ventas del mes actual desde dashboard para calcular ganancia
+    const mesSeleccionado = document.getElementById('mes-gasto').value;
+    const mesActual = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    if (mesSeleccionado === mesActual) {
+      API.get('/dashboard').then(res => {
+        const d = res.data || res;
+        const ventas = parseFloat(d.ventas_mes || 0);
+        document.getElementById('ventas-mes-g').textContent = Fmt.moneda(ventas);
+        document.getElementById('ganancia-real').textContent = Fmt.moneda(ventas - total);
+      }).catch(() => {
+        document.getElementById('ventas-mes-g').textContent = '—';
+        document.getElementById('ganancia-real').textContent = '—';
+      });
+    } else {
+      document.getElementById('ventas-mes-g').textContent = '—';
+      document.getElementById('ganancia-real').textContent = '—';
+    }
   }
 
   function renderGastos() {

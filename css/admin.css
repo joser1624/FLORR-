@@ -678,9 +678,15 @@ body.dark-mode .btn-hamburger:hover { background: rgba(255,255,255,.08); }
 
 /* ── Stats grid variantes ── */
 .stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.stats-grid-3 { grid-template-columns: repeat(3, 1fr); }
 
 @media (max-width: 768px) {
   .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .stats-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 480px) {
+  .stats-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .stats-grid-3 { grid-template-columns: repeat(1, 1fr); }
 }
 
 /* ── Product / Inventory Cards (mobile) ── */
