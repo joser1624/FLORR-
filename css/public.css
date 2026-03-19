@@ -243,6 +243,38 @@ body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color
 .btn-pedir { padding:9px 18px; font-size:12px; font-weight:600; font-family:var(--sans); background:var(--g-brand); color:#fff; border:none; border-radius:var(--r-pill); cursor:pointer; transition:all var(--ease); box-shadow:0 4px 14px rgba(236,72,153,.28); }
 .btn-pedir:hover { transform:scale(1.07) translateY(-1px); box-shadow:var(--s-pink); }
 
+.products-nav {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+  gap: 10px;
+}
+
+.products-nav button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: #a855f7;
+  color: white;
+  cursor: pointer;
+}
+
+.products-grid {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* 👉 cuando va a la derecha (siguiente) */
+.products-grid.slide-next {
+  transform: translateX(-40px);
+  opacity: 0;
+}
+
+/* 👉 cuando va a la izquierda (anterior) */
+.products-grid.slide-prev {
+  transform: translateX(40px);
+  opacity: 0;
+}
+
 /* ── Promos / Eventos ── */
 .promo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
 

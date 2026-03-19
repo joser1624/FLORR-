@@ -157,7 +157,12 @@
     </div>
 
     <div class="products-grid" id="products-grid"></div>
-  </div>
+    </div>
+      
+    <div class="products-nav">
+      <button onclick="prevPage()">⬅ Anterior</button>
+      <button onclick="nextPage()">Siguiente ➡</button>
+    </div>
 </section>
 
 <!-- ░░ PROMOCIONES ░░ -->
@@ -343,7 +348,7 @@
 </footer>
 
 <!-- Botón flotante WhatsApp -->
-<a href="https://wa.me/51972542802" target="_blank" class="wa-float" title="Escríbenos por WhatsApp">📱</a>
+<a href="https://wa.me/51972542802" target="_blank" class="wa-float" title="Escríbenos por WhatsApp"><img src="/FLORR-/icon/wasap2.png" alt=""></a>
 
 <!-- ░░ SCRIPTS ░░ -->
 <script src="js/main.js"></script>
@@ -365,6 +370,9 @@
     {id:8,nombre:'Caja corazón con rosas',categoria:'Cajas sorpresa',precio:180,stock:4,descripcion:'Caja corazón con 24 rosas'},
   ];
 
+  let paginaActual= 0;
+  let productosPorPagina=4;
+  
   async function cargarCatalogo(){
     try{
       const d=await API.get('/productos');
@@ -386,9 +394,13 @@
 
   function renderCatalogo(){
     const lista=catActual?todosProd.filter(p=>p.categoria===catActual):todosProd;
+    const inicio=paginaActual*productosPorPagina;
+    const fin= inicio+productosPorPagina;
+    const paginaItems=lista.slice(inicio,fin);
+    
     const grid=document.getElementById('products-grid');
-    if(!lista.length){grid.innerHTML='<div style="text-align:center;padding:3rem;color:#b8a8c8;grid-column:1/-1;font-family:Poppins,sans-serif">Sin productos en esta categoría</div>';return;}
-    grid.innerHTML=lista.map(p=>{
+    if(!paginaItems.length){grid.innerHTML='<div style="text-align:center;padding:3rem;color:#b8a8c8;grid-column:1/-1;font-family:Poppins,sans-serif">Sin productos en esta categoría</div>';return;}
+    grid.innerHTML=paginaItems.map(p=>{
       const emoji=CATS_EMOJI[p.categoria]||'🌸';
       const stockBadge=p.stock===0?'<span class="product-badge-stock agotado">Agotado</span>':p.stock<=3?'<span class="product-badge-stock" style="color:#f59e0b">Últimas unidades</span>':'<span class="product-badge-stock">Disponible ✓</span>';
       return`<div class="product-card" onclick="pedirProducto('${p.nombre.replace(/'/g,"\\'")}',${p.precio})">
@@ -405,6 +417,37 @@
       </div>`;
     }).join('');
   }
+
+  function nextPage(){
+  const lista = catActual ? todosProd.filter(p=>p.categoria===catActual) : todosProd;
+  const grid = document.getElementById('products-grid');
+
+  if((paginaActual + 1) * productosPorPagina < lista.length){
+
+    grid.classList.add('slide-next');
+
+    setTimeout(()=>{
+      paginaActual++;
+      renderCatalogo();
+      grid.classList.remove('slide-next');
+    }, 250);
+  }
+}
+
+function prevPage(){
+  const grid = document.getElementById('products-grid');
+
+  if(paginaActual > 0){
+
+    grid.classList.add('slide-prev');
+
+    setTimeout(()=>{
+      paginaActual--;
+      renderCatalogo();
+      grid.classList.remove('slide-prev');
+    }, 250);
+  }
+}
 
   function filtrarCatalogo(el,cat){
     document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
