@@ -103,15 +103,16 @@ class DashboardService {
          ORDER BY total DESC`
       ),
 
-      // Bottom 5 products by sales quantity for current month (least sold)
-      // Falls back to all-time if no sales this month
+      // Bottom 5 products: los menos vendidos del mes actual
+      // Incluye productos activos aunque no tengan ventas este mes (cantidad = 0)
       query(
         `SELECT p.id, p.nombre,
-                COALESCE(SUM(vp.cantidad), 0) AS cantidad
+                COALESCE(SUM(CASE
+                  WHEN DATE_TRUNC('month', v.fecha) = DATE_TRUNC('month', CURRENT_DATE)
+                  THEN vp.cantidad ELSE 0 END), 0) AS cantidad
          FROM productos p
          LEFT JOIN ventas_productos vp ON vp.producto_id = p.id
          LEFT JOIN ventas v ON vp.venta_id = v.id
-           AND DATE_TRUNC('month', v.fecha) = DATE_TRUNC('month', CURRENT_DATE)
          WHERE p.activo = true
          GROUP BY p.id, p.nombre
          ORDER BY cantidad ASC, p.nombre ASC
