@@ -5,6 +5,20 @@
   <title>Gastos — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    body, .admin-layout, .admin-main, .admin-content { overflow-x: hidden; max-width: 100%; }
+    .gastos-filter { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+    .gastos-filter .filter-chips { flex-wrap: wrap; display: flex; gap: 6px; }
+    .gastos-filter .mes-control { width: 100%; }
+    @media (min-width: 641px) {
+      .gastos-filter { flex-direction: row; align-items: center; }
+      .gastos-filter .mes-control { width: auto; margin-left: auto; }
+    }
+    @media (max-width: 640px) {
+      #tabla-gastos-wrap { display: none; }
+      #gastos-cards { display: grid; }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -25,7 +39,7 @@
         <div class="stat-card dorado"><span class="stat-icon">📈</span><div class="stat-label">Ganancia real</div><div class="stat-value" id="ganancia-real">S/ 0.00</div></div>
       </div>
 
-      <div class="filter-bar">
+      <div class="gastos-filter">
         <div class="filter-chips">
           <span class="chip active" onclick="filtrarCat(this,'')">Todos</span>
           <span class="chip" onclick="filtrarCat(this,'flores')">Compra flores</span>
@@ -34,15 +48,18 @@
           <span class="chip" onclick="filtrarCat(this,'mantenimiento')">Mantenimiento</span>
           <span class="chip" onclick="filtrarCat(this,'otros')">Otros</span>
         </div>
-        <input class="form-control" type="month" id="mes-gasto" onchange="cargarGastos()" style="max-width:160px;margin-left:auto" />
+        <input class="form-control mes-control" type="month" id="mes-gasto" onchange="cargarGastos()" />
       </div>
 
-      <div class="table-wrap">
+      <div class="table-wrap" id="tabla-gastos-wrap">
         <table class="data-table">
           <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead>
           <tbody id="tbody-gastos"></tbody>
         </table>
       </div>
+
+      <!-- Cards móvil -->
+      <div id="gastos-cards" class="prod-cards-grid"></div>
     </div>
   </main>
 </div>
@@ -246,7 +263,14 @@
   function renderGastos() {
     const lista = catFiltro ? gastos.filter(g=>g.categoria===catFiltro) : gastos;
     const tbody = document.getElementById('tbody-gastos');
-    if (!lista.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin gastos</td></tr>'; return; }
+    const cardsEl = document.getElementById('gastos-cards');
+
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin gastos</td></tr>';
+      cardsEl.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--gris-400)">Sin gastos</p>';
+      return;
+    }
+
     tbody.innerHTML = lista.map(g => `<tr>
       <td style="font-size:12px">${Fmt.fecha(g.fecha)}</td>
       <td style="font-weight:500">${g.descripcion}</td>
@@ -254,6 +278,24 @@
       <td style="font-weight:600;color:var(--danger)">${Fmt.moneda(g.monto)}</td>
       <td><button class="btn-tbl btn-tbl-delete" onclick="eliminarGasto(${g.id})">Eliminar</button></td>
     </tr>`).join('');
+
+    cardsEl.innerHTML = lista.map(g => `
+      <div class="prod-card">
+        <div class="prod-card-header">
+          <span class="prod-card-emoji">💸</span>
+          <div class="prod-card-title">
+            <span class="prod-card-nombre">${g.descripcion}</span>
+            <span class="badge ${CAT_BADGE[g.categoria]||'badge-gray'}" style="font-size:11px">${CAT_LABELS[g.categoria]||g.categoria}</span>
+          </div>
+        </div>
+        <div class="prod-card-data">
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Monto</span><span class="prod-card-dato-val" style="color:var(--danger)">${Fmt.moneda(g.monto)}</span></div>
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Fecha</span><span class="prod-card-dato-val">${Fmt.fecha(g.fecha)}</span></div>
+        </div>
+        <div class="prod-card-actions">
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);flex:1" onclick="eliminarGasto(${g.id})">🗑️ Eliminar</button>
+        </div>
+      </div>`).join('');
   }
 
   function filtrarCat(el, cat) {
