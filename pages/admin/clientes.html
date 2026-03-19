@@ -5,6 +5,15 @@
   <title>Clientes — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    body, .admin-layout, .admin-main, .admin-content { overflow-x: hidden; max-width: 100%; }
+    @media (max-width: 640px) {
+      .filter-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+      .filter-bar .form-control { max-width: 100% !important; width: 100%; margin-left: 0 !important; }
+      #tabla-cli-wrap { display: none; }
+      #cli-cards { display: grid; }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -32,7 +41,7 @@
         </div>
       </div>
 
-      <div class="table-wrap">
+      <div class="table-wrap" id="tabla-cli-wrap">
         <table class="data-table">
           <thead><tr><th>Cliente</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Registrado</th><th>Acciones</th></tr></thead>
           <tbody id="tbody-clientes">
@@ -40,6 +49,9 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Cards móvil -->
+      <div id="cli-cards" class="prod-cards-grid"></div>
       
       <!-- Paginación -->
       <div id="paginacion-clientes" style="display:flex;justify-content:center;gap:8px;margin-top:1rem"></div>
@@ -165,8 +177,11 @@
     }
     
     const tbody = document.getElementById('tbody-clientes');
+    const cardsEl = document.getElementById('cli-cards');
+
     if (!lista.length) { 
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin clientes</td></tr>'; 
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin clientes</td></tr>';
+      cardsEl.innerHTML = '<p style="text-align:center;padding:2rem;color:var(--gris-400)">Sin clientes</p>';
       return; 
     }
     
@@ -201,6 +216,30 @@
           </div>
         </td>
       </tr>`;
+    }).join('');
+
+    cardsEl.innerHTML = lista.map(c => {
+      const initials = c.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const fechaRegistro = c.created_at ? new Date(c.created_at).toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+      return `<div class="prod-card">
+        <div class="prod-card-header">
+          <div class="avatar" style="font-size:14px;width:36px;height:36px;flex-shrink:0">${initials}</div>
+          <div class="prod-card-title">
+            <span class="prod-card-nombre">${c.nombre}</span>
+            <a href="https://wa.me/51${c.telefono}" target="_blank" style="font-size:11px;color:var(--rosa-500);text-decoration:none">📱 ${Fmt.tel(c.telefono)}</a>
+          </div>
+        </div>
+        <div class="prod-card-data">
+          <div class="prod-card-dato" style="grid-column:1/-1"><span class="prod-card-dato-label">Email</span><span class="prod-card-dato-val" style="font-size:12px">${c.email || '—'}</span></div>
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Registrado</span><span class="prod-card-dato-val" style="font-size:12px">${fechaRegistro}</span></div>
+          <div class="prod-card-dato"><span class="prod-card-dato-label">Dirección</span><span class="prod-card-dato-val" style="font-size:12px">${c.direccion || '—'}</span></div>
+        </div>
+        <div class="prod-card-actions">
+          <button class="btn btn-outline btn-sm" onclick="verDetalles(${c.id})">ℹ️ Ver</button>
+          <button class="btn btn-outline btn-sm" onclick="editarCliente(${c.id})">✏️ Editar</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="eliminarCliente(${c.id}, '${c.nombre.replace(/'/g, "\\'")}')">🗑️</button>
+        </div>
+      </div>`;
     }).join('');
   }
 
