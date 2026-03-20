@@ -187,13 +187,19 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
 .hero h1 { font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 900; color: var(--ink-900); margin-bottom: 1.5rem; line-height: 1.1; }
 .hero h1 em { background: var(--g-brand); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-style: italic; }
 
+body.dark-mode .hero h1 { color: #fce7f3; }
+
 .hero-desc { font-size: 15px; color: var(--ink-500); max-width: 460px; margin-bottom: 2.5rem; line-height: 1.85; }
 .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 3rem; }
+
+body.dark-mode .hero-desc { color: #e9d5ff; }
 
 .hero-stats { display: flex; gap: 14px; flex-wrap: wrap; }
 .hero-stat { display:flex; align-items:center; gap:8px; background:var(--pub-card); border-radius:var(--r-pill); padding:8px 16px; border:1.5px solid var(--pub-line); box-shadow:var(--s-xs); }
 .hero-stat-num { font-family:var(--display); font-size:20px; font-weight:700; background:var(--g-brand); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 .hero-stat-label { font-size:11px; font-weight:500; color:var(--ink-500); }
+
+body.dark-mode .hero-stat-label { color: #d8b4fe; }
 
 .hero-visual { display:flex; align-items:center; justify-content:center; animation:fadeUp .8s ease .2s both; }
 
@@ -203,9 +209,13 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
 .hero-flower-title { font-family:var(--display); font-size:21px; font-style:italic; font-weight:600; color:var(--ink-900); margin-bottom:.5rem; }
 .hero-flower-price { font-family:var(--display); font-size:34px; font-weight:700; background:var(--g-brand); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:.35rem; }
 
+body.dark-mode .hero-flower-title { color: #fce7f3; }
+
 .hero-trust { display:flex; justify-content:center; gap:24px; padding:1.25rem 2rem; border-top:1px solid var(--pub-line); flex-wrap:wrap; position:relative; z-index:1; }
 .trust-item { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:500; color:var(--ink-500); }
 .trust-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+body.dark-mode .trust-item { color: #d8b4fe; }
 
 /* ── Secciones ── */
 .section { padding: 6rem 2rem; position: relative; }
@@ -215,6 +225,9 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
 .section-header { text-align: center; margin-bottom: 3.5rem; }
 .section-header h2 { font-size: clamp(1.75rem, 3.5vw, 2.75rem); font-weight: 700; color: var(--ink-900); margin: .75rem 0 1rem; }
 .section-header p { font-size: 15px; color: var(--ink-500); max-width: 520px; margin: 0 auto; line-height: 1.85; }
+
+body.dark-mode .section-header h2 { color: #fce7f3; }
+body.dark-mode .section-header p { color: #e9d5ff; }
 
 .section-eyebrow { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--pink); background:var(--pink-soft); padding:6px 14px; border-radius:var(--r-pill); border:1px solid var(--pink-mid); }
 body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color: rgba(236,72,153,.25); }
@@ -415,6 +428,10 @@ body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color
 .product-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .product-price { font-family:var(--display); font-size:22px; font-weight:700; background:var(--g-brand); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
+body.dark-mode .product-cat { color: #e9d5ff; }
+body.dark-mode .product-name { color: #fce7f3; }
+body.dark-mode .product-desc { color: #d8b4fe; }
+
 .btn-pedir { padding:9px 18px; font-size:12px; font-weight:600; font-family:var(--sans); background:var(--g-brand); color:#fff; border:none; border-radius:var(--r-pill); cursor:pointer; transition:all var(--ease); box-shadow:0 4px 14px rgba(236,72,153,.28); }
 .btn-pedir:hover { transform:scale(1.07) translateY(-1px); box-shadow:var(--s-pink); }
 
@@ -525,10 +542,16 @@ body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color
 .promo-card.dorada .promo-descuento { background:linear-gradient(135deg,var(--orange),var(--yellow)); -webkit-background-clip:text; background-clip:text; }
 .promo-vigencia { font-size:11px; color:var(--ink-300); font-weight:500; margin-bottom:1.25rem; }
 
+body.dark-mode .promo-title { color: #fce7f3; }
+body.dark-mode .promo-desc { color: #d8b4fe; }
+body.dark-mode .promo-vigencia { color: #c084fc; }
+
 /* ── Laboratorio ── */
 .lab-layout { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; align-items: start; }
 .lab-section-title { font-family:var(--display); font-size:17px; font-weight:600; color:var(--ink-900); margin-bottom:1.25rem; }
 .lab-flores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+
+body.dark-mode .lab-section-title { color: #fce7f3; }
 
 .lab-flor-card { background:var(--pub-card); border:2px solid var(--pub-line); border-radius:var(--r-md); padding:1rem; text-align:center; cursor:pointer; transition:all var(--ease); box-shadow:var(--s-xs); }
 .lab-flor-card:hover { border-color:var(--pink-mid); box-shadow:var(--s-md); transform:translateY(-3px); }
@@ -541,10 +564,15 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
 .lab-flor-precio { font-size:12px; font-weight:700; color:var(--pink); }
 .lab-flor-stock { font-size:10px; color:var(--ink-300); margin-top:3px; }
 
+body.dark-mode .lab-flor-name { color: #fce7f3; }
+body.dark-mode .lab-flor-stock { color: #c084fc; }
+
 .lab-qty-ctrl { display:flex; align-items:center; gap:9px; justify-content:center; margin-top:9px; }
 .lab-qty-btn { width:28px; height:28px; border-radius:50%; border:2px solid var(--pink-mid); background:var(--pub-card); color:var(--pink); font-size:17px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all var(--ease); line-height:1; }
 .lab-qty-btn:hover { background:var(--pink); color:#fff; border-color:var(--pink); transform:scale(1.12); }
 .lab-qty-num { font-size:14px; font-weight:700; min-width:22px; text-align:center; color:var(--ink-900); }
+
+body.dark-mode .lab-qty-num { color: #fce7f3; }
 
 .lab-resumen { background:var(--pub-card); border:1.5px solid var(--pub-line); border-radius:var(--r-xl); padding:2rem 1.75rem; position:sticky; top:calc(var(--nav-h) + 20px); box-shadow:var(--s-lg); overflow:hidden; }
 .lab-resumen::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background:var(--g-brand); }
@@ -555,12 +583,19 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
 .lab-total { display:flex; justify-content:space-between; align-items:center; padding:15px 0 0; font-weight:700; font-size:15px; border-top:2px solid var(--pub-line); margin-top:6px; color:var(--ink-900); }
 .lab-precio-total { font-family:var(--display); font-size:28px; font-weight:900; background:var(--g-brand); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 
+body.dark-mode .lab-resumen-title { color: #fce7f3; }
+body.dark-mode .lab-item { color: #d8b4fe; }
+body.dark-mode .lab-item span:last-child { color: #fce7f3; }
+body.dark-mode .lab-total { color: #fce7f3; }
+
 /* ── Pagos ── */
 .pago-grid { display:flex; justify-content:center; gap:1.5rem; flex-wrap:wrap; align-items:center; }
 .pago-item { display:flex; flex-direction:column; align-items:center; gap:10px; padding:1.5rem 1.5rem; background:var(--pub-card); border-radius:var(--r-lg); border:1.5px solid var(--pub-line); box-shadow:var(--s-xs); transition:all var(--ease); min-width:90px; }
 .pago-item:hover { border-color:var(--pink-mid); box-shadow:var(--s-md); transform:translateY(-4px); }
 .pago-icon { font-size:36px; }
 .pago-label { font-size:12px; font-weight:600; color:var(--ink-700); }
+
+body.dark-mode .pago-label { color: #fce7f3; }
 
 /* ── Contacto ── */
 .contact-card { background:var(--pub-card); border-radius:var(--r-xl); padding:3rem 2.5rem; text-align:center; max-width:460px; width:100%; box-shadow:var(--s-xl); border:1.5px solid var(--pub-line); position:relative; overflow:hidden; }
