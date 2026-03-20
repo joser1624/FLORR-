@@ -221,6 +221,27 @@
     <div class="lab-layout">
       <div>
         <div class="lab-section-title">🌸 Selecciona flores y materiales</div>
+        
+        <!-- Filtros de categoría -->
+        <div class="lab-filters">
+          <button class="lab-filter-chip lab-filter-active" onclick="filtrarLabPub(this,'')">
+            <span class="lab-filter-icon">🌺</span>
+            <span class="lab-filter-label">Todos</span>
+          </button>
+          <button class="lab-filter-chip" onclick="filtrarLabPub(this,'flores')">
+            <span class="lab-filter-icon">🌹</span>
+            <span class="lab-filter-label">Flores</span>
+          </button>
+          <button class="lab-filter-chip" onclick="filtrarLabPub(this,'materiales')">
+            <span class="lab-filter-icon">📦</span>
+            <span class="lab-filter-label">Materiales</span>
+          </button>
+          <button class="lab-filter-chip" onclick="filtrarLabPub(this,'accesorios')">
+            <span class="lab-filter-icon">🎀</span>
+            <span class="lab-filter-label">Accesorios</span>
+          </button>
+        </div>
+        
         <div class="lab-flores-grid" id="lab-flores-grid"></div>
       </div>
 
@@ -501,6 +522,8 @@ function prevPage(){
   }
 
   /* ── LABORATORIO ── */
+  let labFiltroActual = '';
+  
   async function cargarInventarioPub(){
     try{
       const d=await API.get('/inventario');
@@ -520,13 +543,37 @@ function prevPage(){
     renderLabPub();
   }
 
+  function filtrarLabPub(el, tipo) {
+    document.querySelectorAll('.lab-filter-chip').forEach(c => c.classList.remove('lab-filter-active'));
+    el.classList.add('lab-filter-active');
+    labFiltroActual = tipo;
+    renderLabPub();
+  }
+
+  function getStockBadge(stock) {
+    if (stock >= 20) {
+      return '<span class="lab-stock-badge lab-stock-disponible">✓ Disponible</span>';
+    } else if (stock >= 10) {
+      return '<span class="lab-stock-badge lab-stock-pocos">⚠ Quedan pocos</span>';
+    } else if (stock > 0) {
+      return '<span class="lab-stock-badge lab-stock-ultimos">⚠ Últimos</span>';
+    } else {
+      return '<span class="lab-stock-badge lab-stock-agotado">✗ Agotado</span>';
+    }
+  }
+
   function renderLabPub(){
     const grid=document.getElementById('lab-flores-grid');
-    grid.innerHTML=inventarioPub.map(item=>{
+    const itemsFiltrados = labFiltroActual 
+      ? inventarioPub.filter(i => i.tipo === labFiltroActual)
+      : inventarioPub;
+    
+    grid.innerHTML=itemsFiltrados.map(item=>{
       const qty=selLab[item.id]||0;
       const emoji=FLORES_EMOJI_PUB[item.nombre]||TIPO_EMOJI_PUB[item.tipo]||'🌸';
       const costo=parseFloat(item.costo||item.precio_costo||0);
       return`<div class="lab-flor-card ${qty>0?'selected':''}">
+        ${getStockBadge(item.stock)}
         <div class="lab-flor-emoji">${emoji}</div>
         <div class="lab-flor-name">${item.nombre}</div>
         <div class="lab-flor-precio">S/ ${costo.toFixed(2)} c/u</div>

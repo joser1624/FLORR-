@@ -549,14 +549,111 @@ body.dark-mode .promo-vigencia { color: #c084fc; }
 /* ── Laboratorio ── */
 .lab-layout { display: grid; grid-template-columns: 1fr 360px; gap: 2rem; align-items: start; }
 .lab-section-title { font-family:var(--display); font-size:17px; font-weight:600; color:var(--ink-900); margin-bottom:1.25rem; }
-.lab-flores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
 
 body.dark-mode .lab-section-title { color: #fce7f3; }
 
-.lab-flor-card { background:var(--pub-card); border:2px solid var(--pub-line); border-radius:var(--r-md); padding:1rem; text-align:center; cursor:pointer; transition:all var(--ease); box-shadow:var(--s-xs); }
+/* Filtros del laboratorio */
+.lab-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.lab-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--pink-soft);
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(252,231,243,0.8) 100%);
+  color: var(--ink-700);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(236,72,153,0.08);
+}
+
+.lab-filter-chip:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 16px rgba(236,72,153,0.2);
+  border-color: var(--pink-mid);
+}
+
+.lab-filter-active {
+  background: var(--g-brand);
+  color: white;
+  border-color: var(--pink);
+  box-shadow: 0 4px 16px rgba(236,72,153,0.35);
+  transform: scale(1.03);
+}
+
+.lab-filter-active:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.lab-filter-icon {
+  font-size: 16px;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.lab-filter-chip:hover .lab-filter-icon {
+  transform: rotate(10deg) scale(1.15);
+}
+
+.lab-filter-label {
+  font-family: var(--sans);
+  letter-spacing: 0.02em;
+}
+
+.lab-flores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; }
+
+.lab-flor-card { background:var(--pub-card); border:2px solid var(--pub-line); border-radius:var(--r-md); padding:1rem; text-align:center; cursor:pointer; transition:all var(--ease); box-shadow:var(--s-xs); position: relative; }
 .lab-flor-card:hover { border-color:var(--pink-mid); box-shadow:var(--s-md); transform:translateY(-3px); }
 .lab-flor-card.selected { border-color:var(--pink); background:var(--pink-soft); box-shadow:0 0 0 3px rgba(236,72,153,.12); }
 body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
+
+/* Badges de stock en laboratorio */
+.lab-stock-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: var(--r-pill);
+  letter-spacing: 0.03em;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border: 1.5px solid;
+}
+
+.lab-stock-disponible {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border-color: rgba(16,185,129,0.2);
+}
+
+.lab-stock-pocos {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-color: rgba(245,158,11,0.2);
+}
+
+.lab-stock-ultimos {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+  color: #7c2d12;
+  border-color: rgba(249,115,22,0.2);
+}
+
+.lab-stock-agotado {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border-color: rgba(239,68,68,0.2);
+}
 
 .lab-flor-emoji { font-size:36px; display:block; margin-bottom:7px; transition:transform var(--ease-bounce); }
 .lab-flor-card:hover .lab-flor-emoji { transform:scale(1.18) rotate(8deg); }
