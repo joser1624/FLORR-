@@ -139,30 +139,60 @@
 </section>
 
 <!-- ░░ CATÁLOGO ░░ -->
-<section class="section section-alt" id="catalogo">
+<section class="section section-andina" id="catalogo">
   <div class="container">
     <div class="section-header">
-      <span class="section-eyebrow">Nuestros productos</span>
+      <span class="section-eyebrow">🌸 Nuestros productos</span>
       <h2>Para cada momento especial</h2>
       <p>Elige entre nuestra variedad de arreglos y regalos. Todo hecho con amor desde Sicuani.</p>
     </div>
 
-    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:2.75rem;flex-wrap:wrap">
-      <button class="chip active" onclick="filtrarCatalogo(this,'')">Todos</button>
-      <button class="chip" onclick="filtrarCatalogo(this,'Ramos')">🌹 Ramos</button>
-      <button class="chip" onclick="filtrarCatalogo(this,'Arreglos')">💐 Arreglos</button>
-      <button class="chip" onclick="filtrarCatalogo(this,'Peluches')">🧸 Peluches</button>
-      <button class="chip" onclick="filtrarCatalogo(this,'Cajas sorpresa')">🎁 Cajas sorpresa</button>
-      <button class="chip" onclick="filtrarCatalogo(this,'Globos')">🎈 Globos</button>
+    <!-- Separador floral -->
+    <div class="floral-divider">🌸 🌼 🌺 🌻 🌸 🌼 🌺</div>
+
+    <!-- Chips de categorías mejorados -->
+    <div class="cat-chips-wrap">
+      <button class="cat-chip cat-chip-active" onclick="filtrarCatalogo(this,'')">
+        <span class="cat-chip-icon">🌺</span>
+        <span class="cat-chip-label">Todos</span>
+      </button>
+      <button class="cat-chip" onclick="filtrarCatalogo(this,'Ramos')">
+        <span class="cat-chip-icon">🌹</span>
+        <span class="cat-chip-label">Ramos</span>
+      </button>
+      <button class="cat-chip" onclick="filtrarCatalogo(this,'Arreglos')">
+        <span class="cat-chip-icon">💐</span>
+        <span class="cat-chip-label">Arreglos</span>
+      </button>
+      <button class="cat-chip" onclick="filtrarCatalogo(this,'Peluches')">
+        <span class="cat-chip-icon">🧸</span>
+        <span class="cat-chip-label">Peluches</span>
+      </button>
+      <button class="cat-chip" onclick="filtrarCatalogo(this,'Cajas sorpresa')">
+        <span class="cat-chip-icon">🎁</span>
+        <span class="cat-chip-label">Cajas</span>
+      </button>
+      <button class="cat-chip" onclick="filtrarCatalogo(this,'Globos')">
+        <span class="cat-chip-icon">🎈</span>
+        <span class="cat-chip-label">Globos</span>
+      </button>
     </div>
 
+    <!-- Grid de productos -->
     <div class="products-grid" id="products-grid"></div>
-    </div>
       
+    <!-- Navegación mejorada -->
     <div class="products-nav">
-      <button onclick="prevPage()">⬅ Anterior</button>
-      <button onclick="nextPage()">Siguiente ➡</button>
+      <button class="nav-btn nav-btn-prev" onclick="prevPage()">
+        <span class="nav-btn-icon">←</span>
+        <span class="nav-btn-text">Anterior</span>
+      </button>
+      <button class="nav-btn nav-btn-next" onclick="nextPage()">
+        <span class="nav-btn-text">Siguiente</span>
+        <span class="nav-btn-icon">→</span>
+      </button>
     </div>
+  </div>
 </section>
 
 <!-- ░░ PROMOCIONES ░░ -->
@@ -376,21 +406,31 @@
   async function cargarCatalogo(){
     try{
       const d=await API.get('/productos');
-      const nuevos=d.data?.data||d.data||d.productos||d||[];
-      if(!Array.isArray(nuevos)||!nuevos.length) throw new Error('sin datos');
+      let nuevos=d.data?.data||d.data||d.productos||d||[];
+      if(!Array.isArray(nuevos)) throw new Error('respuesta inválida');
+      
+      // FILTRO CRÍTICO: solo productos publicados
+      nuevos=nuevos.filter(p=>{
+        // Si el campo publicado existe, debe ser true
+        // Si no existe, se asume publicado (compatibilidad)
+        return p.publicado === undefined || p.publicado === true || p.publicado === 1;
+      });
+      
+      console.log('📊 Productos totales:', (d.data?.data||d.data||[]).length);
+      console.log('✅ Productos publicados:', nuevos.length);
+      
       const cambio=JSON.stringify(nuevos)!==JSON.stringify(todosProd);
       todosProd=nuevos;
       document.getElementById('stat-productos').textContent='+'+todosProd.length;
       if(cambio)renderCatalogo();
     }catch(e){
-      // Fallback siempre que la API no devuelva productos
-      todosProd=PRODUCTOS_FALLBACK;
-      renderCatalogo();
+      console.error('Error cargando catálogo:', e);
+      if(!todosProd.length){ todosProd=PRODUCTOS_FALLBACK; renderCatalogo(); }
     }
   }
 
-  // Polling: refresca el catálogo cada 30 segundos automáticamente
-  setInterval(cargarCatalogo, 30000);
+  // Polling cada 10 segundos
+  setInterval(cargarCatalogo, 10000);
 
   function renderCatalogo(){
     const lista=catActual?todosProd.filter(p=>p.categoria===catActual):todosProd;
@@ -450,8 +490,8 @@ function prevPage(){
 }
 
   function filtrarCatalogo(el,cat){
-    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-    el.classList.add('active');catActual=cat;renderCatalogo();
+    document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('cat-chip-active'));
+    el.classList.add('cat-chip-active');catActual=cat;renderCatalogo();
   }
 
   function pedirProducto(nombre,precio){
@@ -485,10 +525,11 @@ function prevPage(){
     grid.innerHTML=inventarioPub.map(item=>{
       const qty=selLab[item.id]||0;
       const emoji=FLORES_EMOJI_PUB[item.nombre]||TIPO_EMOJI_PUB[item.tipo]||'🌸';
+      const costo=parseFloat(item.costo||item.precio_costo||0);
       return`<div class="lab-flor-card ${qty>0?'selected':''}">
         <div class="lab-flor-emoji">${emoji}</div>
         <div class="lab-flor-name">${item.nombre}</div>
-        <div class="lab-flor-precio">S/ ${item.costo.toFixed(2)} c/u</div>
+        <div class="lab-flor-precio">S/ ${costo.toFixed(2)} c/u</div>
         <div class="lab-flor-stock">Stock: ${item.stock}</div>
         <div class="lab-qty-ctrl">
           <button class="lab-qty-btn" onclick="cambiarQtyPub(${item.id},-1)">−</button>
@@ -513,8 +554,15 @@ function prevPage(){
       document.getElementById('lab-precio-pub').textContent='S/ 0.00';return;
     }
     let costo=0;
-    el.innerHTML=ids.map(id=>{const item=inventarioPub.find(i=>i.id==id);const sub=item.costo*selLab[id];costo+=sub;return`<div class="lab-item"><span>${item.nombre} × ${selLab[id]}</span><span>S/ ${sub.toFixed(2)}</span></div>`;}).join('');
-    const precio=costo/0.6;document.getElementById('lab-precio-pub').textContent=`S/ ${precio.toFixed(2)}`;
+    el.innerHTML=ids.map(id=>{
+      const item=inventarioPub.find(i=>i.id==id);
+      const costoItem=parseFloat(item.costo||item.precio_costo||0);
+      const sub=costoItem*selLab[id];
+      costo+=sub;
+      return`<div class="lab-item"><span>${item.nombre} × ${selLab[id]}</span><span>S/ ${sub.toFixed(2)}</span></div>`;
+    }).join('');
+    const precio=costo/0.6;
+    document.getElementById('lab-precio-pub').textContent=`S/ ${precio.toFixed(2)}`;
   }
 
   function limpiarLabPub(){selLab={};renderLabPub();renderResumenPub();}

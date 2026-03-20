@@ -14,6 +14,25 @@
     /* Evitar scroll horizontal */
     body, .admin-layout, .admin-main, .admin-content { overflow-x: hidden; max-width: 100%; }
 
+    /* Botón toggle publicado */
+    .btn-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: var(--radius-pill);
+      border: 1.5px solid var(--gris-200);
+      background: var(--gris-50); color: var(--gris-600);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all .2s; white-space: nowrap;
+    }
+    .btn-toggle:hover { border-color: var(--gris-300); background: var(--gris-100); transform: translateY(-1px); }
+    .btn-toggle.active {
+      background: linear-gradient(135deg, var(--success), #4ade80);
+      border-color: var(--success); color: #fff;
+      box-shadow: 0 2px 8px rgba(34,197,94,.25);
+    }
+    .btn-toggle.active:hover { filter: brightness(1.08); }
+    .toggle-icon { font-size: 14px; line-height: 1; }
+    .toggle-label { font-size: 11px; }
+
     /* Filter bar apilado en móvil */
     .filter-bar { flex-wrap: wrap; gap: 8px; }
     .filter-bar .filter-chips { flex-wrap: wrap; }
@@ -79,6 +98,16 @@
       min-height: 38px;
       justify-content: center;
     }
+    .btn-tbl-success {
+      background: linear-gradient(135deg, var(--success), #4ade80);
+      color: #fff; border-color: var(--success);
+    }
+    .btn-tbl-success:hover { filter: brightness(1.08); }
+    .btn-tbl-gray {
+      background: var(--gris-100); color: var(--gris-600);
+      border-color: var(--gris-200);
+    }
+    .btn-tbl-gray:hover { background: var(--gris-200); }
 
     /* Ocultar cards en desktop, mostrar tabla */
     .prod-cards-container { display: none; }
@@ -153,11 +182,12 @@
               <th>Stock</th>
               <th>Última modificación</th>
               <th>Estado</th>
+              <th>Publicado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-productos">
-            <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando productos...</td></tr>
+            <tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando productos...</td></tr>
           </tbody>
         </table>
         <div style="padding:10px 16px;font-size:11px;color:var(--gris-400);border-top:1px solid var(--gris-50)">
@@ -260,6 +290,46 @@
   const CATS_EMOJI = { Ramos:'🌹', Arreglos:'💐', Peluches:'🧸', 'Cajas sorpresa':'🎁', Globos:'🎈', Otros:'🌸' };
   const CATS_COLOR = { Ramos:'badge-rosa', Arreglos:'badge-dorado', Peluches:'badge-gray', 'Cajas sorpresa':'badge-warning', Globos:'badge-info', Otros:'badge-gray' };
 
+  async function togglePublicado(id, nuevoEstado) {
+    try {
+      console.log('🔄 Toggle publicado:', { id, nuevoEstado });
+      
+      // Obtener el producto completo
+      const prod = todosProductos.find(p => String(p.id) === String(id));
+      if (!prod) {
+        console.error('❌ Producto no encontrado:', id);
+        Toast.error('Producto no encontrado');
+        return;
+      }
+
+      console.log('📦 Producto encontrado:', prod);
+
+      // Enviar todos los campos requeridos + publicado (convertir a números)
+      const payload = {
+        nombre: prod.nombre,
+        precio: parseFloat(prod.precio),
+        costo: parseFloat(prod.costo),
+        stock: parseInt(prod.stock),
+        categoria: prod.categoria,
+        descripcion: prod.descripcion || '',
+        publicado: nuevoEstado
+      };
+
+      console.log('📤 Enviando payload:', payload);
+      const response = await API.put('/productos/' + id, payload);
+      console.log('✅ Respuesta del servidor:', response);
+      
+      Toast.success(nuevoEstado ? 'Producto publicado en catálogo' : 'Producto ocultado del catálogo');
+      
+      // Actualizar localmente
+      prod.publicado = nuevoEstado;
+      renderTabla();
+    } catch (error) {
+      console.error('❌ Error al cambiar estado publicado:', error);
+      Toast.error('Error al actualizar el producto');
+    }
+  }
+
   async function cargarProductos() {
     try {
       // Cargar productos, arreglos e inventario en paralelo
@@ -274,6 +344,14 @@
       let productos = [];
       if (productosResponse.data) {
         productos = productosResponse.data.data || productosResponse.data;
+      }
+      
+      // DEBUG: verificar campo publicado
+      console.log('🔍 Productos del backend:', productos.length);
+      if (productos.length > 0) {
+        console.log('🔍 Primer producto:', productos[0]);
+        console.log('🔍 Campo publicado existe?', 'publicado' in productos[0]);
+        console.log('🔍 Valor publicado:', productos[0].publicado);
       }
       
       const arreglos = arreglosResponse.data || [];
@@ -416,6 +494,15 @@
         ? '<span class="badge badge-info" style="font-size:10px;margin-left:6px">🧪 Laboratorio</span>'
         : '';
       
+      // Toggle publicado
+      const publicadoActual = p.publicado !== false; // por defecto true si no existe
+      const publicadoBtn = p.esArreglo 
+        ? '<span style="font-size:11px;color:var(--gris-400)">—</span>' // arreglos no se publican individualmente
+        : `<button class="btn-toggle ${publicadoActual?'active':''}" onclick="togglePublicado('${p.id}',${!publicadoActual})" title="${publicadoActual?'Ocultar del catálogo público':'Publicar en catálogo público'}">
+            <span class="toggle-icon">${publicadoActual?'👁':'🚫'}</span>
+            <span class="toggle-label">${publicadoActual?'Visible':'Oculto'}</span>
+          </button>`;
+      
       return `<tr>
         <td>
           <div style="display:flex;align-items:center;gap:10px">
@@ -433,6 +520,7 @@
         <td>${stockBadge}</td>
         <td style="font-size:12px;color:var(--gris-500)">${fechaMod}</td>
         <td><span class="badge ${p.activo !== false ? 'badge-success' : 'badge-gray'}">${p.activo !== false ? 'Activo' : 'Inactivo'}</span></td>
+        <td>${publicadoBtn}</td>
         <td>
           <div class="tbl-actions-cell">
             <button class="btn-tbl btn-tbl-edit" onclick="editarProducto('${p.id}')">${p.esArreglo ? 'Ver' : 'Editar'}</button>
@@ -449,6 +537,10 @@
       const emoji = CATS_EMOJI[p.categoria] || '🌸';
       const origenBadge = p.esArreglo ? '<span class="badge badge-info" style="font-size:10px">🧪 Lab</span>' : '';
       const estadoBadge = `<span class="badge ${p.activo !== false ? 'badge-success' : 'badge-gray'}">${p.activo !== false ? 'Activo' : 'Inactivo'}</span>`;
+      
+      const publicadoActual = p.publicado !== false;
+      const publicadoBadge = p.esArreglo ? '' : `<span class="badge ${publicadoActual?'badge-info':'badge-gray'}" style="font-size:10px">${publicadoActual?'👁 Visible':'🚫 Oculto'}</span>`;
+      
       let stockBadge;
       if (p.esArreglo) {
         stockBadge = p.stock === 0 ? '<span class="badge badge-danger">Agotado</span>' : p.stock <= 3 ? `<span class="badge badge-warning">Bajo (${p.stock})</span>` : `<span class="badge badge-success">${p.stock} disp.</span>`;
@@ -468,6 +560,7 @@
           <span class="badge ${CATS_COLOR[p.categoria]||'badge-gray'}">${p.categoria}</span>
           ${estadoBadge}
           ${stockBadge}
+          ${publicadoBadge}
         </div>
         <div class="prod-card-datos">
           <div class="prod-dato">
@@ -488,6 +581,7 @@
           </div>
         </div>
         <div class="prod-card-actions">
+          ${p.esArreglo ? '' : `<button class="btn-tbl ${publicadoActual?'btn-tbl-success':'btn-tbl-gray'}" onclick="togglePublicado('${p.id}',${!publicadoActual})" style="flex:0 0 auto">${publicadoActual?'👁':'🚫'}</button>`}
           <button class="btn-tbl btn-tbl-edit" onclick="editarProducto('${p.id}')">${p.esArreglo ? '👁 Ver' : '✏️ Editar'}</button>
           <button class="btn-tbl btn-tbl-delete" onclick="eliminarProducto('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">🗑 Eliminar</button>
         </div>

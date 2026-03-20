@@ -81,8 +81,8 @@ class ProductosService {
     }
 
     const result = await query(
-      `INSERT INTO productos (nombre, descripcion, categoria, precio, costo, stock, activo, imagen_url) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      `INSERT INTO productos (nombre, descripcion, categoria, precio, costo, stock, activo, imagen_url, publicado) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
        RETURNING *`,
       [
         data.nombre.trim(),
@@ -92,7 +92,8 @@ class ProductosService {
         data.costo,
         stock,
         data.activo !== undefined ? data.activo : true,
-        data.imagen_url || null
+        data.imagen_url || null,
+        data.publicado !== undefined ? data.publicado : true
       ]
     );
     return result.rows[0];
@@ -126,8 +127,8 @@ class ProductosService {
       `UPDATE productos 
        SET nombre = $1, descripcion = $2, categoria = $3, precio = $4, 
            costo = $5, stock = $6, activo = $7, imagen_url = $8, 
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9 
+           publicado = $9, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $10 
        RETURNING *`,
       [
         data.nombre ? data.nombre.trim() : data.nombre,
@@ -138,6 +139,7 @@ class ProductosService {
         data.stock,
         data.activo !== undefined ? data.activo : true,
         data.imagen_url !== undefined ? data.imagen_url : null,
+        data.publicado !== undefined ? data.publicado : true,
         id
       ]
     );
