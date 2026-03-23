@@ -704,28 +704,119 @@ function prevPage(){
   }
 
   /* ── EVENTOS ── */
-  async function cargarEventos(){
-    try{const d=await API.get('/eventos?activo=true');renderEventos(d.data||d.eventos||d||[]);}
-    catch{renderEventos([
-      {nombre:'Día de la Madre',descripcion:'Honra a mamá con el arreglo perfecto',emoji:'🌹',fecha:'2026-05-10'},
-      {nombre:'Día del Amor y la Amistad',descripcion:'Celebra con flores para tus seres queridos',emoji:'💐',fecha:'2026-07-23'},
-      {nombre:'Aniversarios',descripcion:'Sorprende a quien más quieres con un arreglo único',emoji:'💕',fecha:null},
-    ]);}
+  function cargarEventos(){
+    // Cargar eventos desde localStorage
+    const eventosGuardados = localStorage.getItem('ee_eventos');
+    let eventos = [];
+    
+    if (eventosGuardados) {
+      try {
+        const todosEventos = JSON.parse(eventosGuardados);
+        // Filtrar solo eventos futuros
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        eventos = todosEventos
+          .filter(e => {
+            const fechaEvento = new Date(e.fecha);
+            return fechaEvento >= hoy;
+          })
+          .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      } catch (error) {
+        console.error('Error al cargar eventos:', error);
+      }
+    }
+    
+    // Si no hay eventos, mostrar mock
+    if (eventos.length === 0) {
+      eventos = [
+        {nombre:'Día de la Madre',descripcion:'Honra a mamá con el arreglo perfecto',emoji:'🌹',fecha:'2026-05-10',imagen:'',precioOriginal:150,precioFinal:120,productos:[]},
+        {nombre:'Día del Amor y la Amistad',descripcion:'Celebra con flores para tus seres queridos',emoji:'💐',fecha:'2026-07-23',imagen:'',precioOriginal:180,precioFinal:140,productos:[]},
+      ];
+    }
+    
+    renderEventos(eventos);
   }
 
   function renderEventos(eventos){
     const grid=document.getElementById('eventos-grid');
-    if(!eventos.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#b8a8c8">No hay eventos próximos</div>';return;}
-    grid.innerHTML=eventos.map(e=>`<div class="promo-card">
-      <div class="promo-tag">✦ Evento especial</div>
-      <div style="font-size:38px;margin:10px 0">${e.emoji||'🌸'}</div>
-      <div class="promo-title">${e.nombre}</div>
-      <div class="promo-desc">${e.descripcion||''}</div>
-      ${e.fecha?`<div class="promo-vigencia">📅 ${new Date(e.fecha).toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'})}</div>`:''}
-      <div style="margin-top:1.35rem">
-        <a href="https://wa.me/51972542802?text=${encodeURIComponent('¡Hola! Quisiera un arreglo especial para: '+e.nombre)}" target="_blank" class="btn btn-outline btn-sm">Encargar →</a>
-      </div>
-    </div>`).join('');
+    if(!eventos.length){
+      grid.innerHTML='<div style="text-align:center;padding:2rem;color:#b8a8c8">No hay eventos próximos</div>';
+      return;
+    }
+    
+    grid.innerHTML=eventos.map(e=>{
+      const descuento = e.precioOriginal && e.precioFinal ? 
+        Math.round(((e.precioOriginal - e.precioFinal) / e.precioOriginal) * 100) : 0;
+      
+      const fechaEvento = new Date(e.fecha);
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const diasRestantes = Math.ceil((fechaEvento - hoy) / (1000 * 60 * 60 * 24));
+      
+      const fechaFormateada = fechaEvento.toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short' 
+      });
+
+      return `<div class="promo-card" onclick="pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${e.precioFinal || 0})">
+        ${descuento > 0 ? `<div class="promo-tag">-${descuento}% OFF</div>` : '<div class="promo-tag">✦ Evento especial</div>'}
+        
+        ${e.imagen ? `
+          <div class="promo-img">
+            <img src="${e.imagen}" 
+                 alt="${e.nombre}"
+                 style="width:100%;height:100%;object-fit:cover"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+            <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:64px;background:#f0e8f5">
+              ${e.emoji||'🌸'}
+            </div>
+          </div>
+        ` : `<div style="font-size:38px;margin:10px 0">${e.emoji||'🌸'}</div>`}
+        
+        <div class="promo-body">
+          ${!e.imagen ? `<div class="promo-emoji">${e.emoji||'🌸'}</div>` : ''}
+          <div class="promo-title">${e.nombre}</div>
+          ${e.descripcion ? `<div class="promo-desc">${e.descripcion}</div>` : ''}
+          <div class="promo-date">📅 ${fechaFormateada}</div>
+          
+          ${diasRestantes <= 7 ? `
+            <div style="background:rgba(245,158,11,0.1);color:#f59e0b;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;text-align:center;margin:8px 0">
+              ${diasRestantes === 0 ? '¡HOY!' : diasRestantes === 1 ? '¡MAÑANA!' : `¡FALTAN ${diasRestantes} DÍAS!`}
+            </div>
+          ` : ''}
+
+          ${e.productos && e.productos.length > 0 ? `
+            <div style="font-size:11px;color:var(--gris-600);margin:8px 0;line-height:1.5">
+              <strong>Incluye:</strong><br>
+              ${e.productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
+              ${e.productos.length > 3 ? `<br>• Y ${e.productos.length - 3} más...` : ''}
+            </div>
+          ` : ''}
+
+          ${e.precioOriginal && e.precioFinal ? `
+            <div class="promo-price">
+              <span class="promo-price-old">S/ ${e.precioOriginal.toFixed(2)}</span>
+              <span class="promo-price-new">S/ ${e.precioFinal.toFixed(2)}</span>
+            </div>
+          ` : ''}
+
+          <div style="margin-top:1.35rem">
+            <button class="btn btn-primary" style="width:100%">
+              📱 Pedir por WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function pedirEvento(nombre, precio) {
+    const mensaje = precio > 0 ? 
+      `¡Hola! Quisiera información sobre el evento: ${nombre} (S/ ${precio.toFixed(2)})` :
+      `¡Hola! Quisiera información sobre el evento: ${nombre}`;
+    
+    window.open(`https://wa.me/51972542802?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
   /* ── NAVBAR ── */
