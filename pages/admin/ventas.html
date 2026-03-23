@@ -5,6 +5,158 @@
   <title>Ventas — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    /* ═══════════════════════════════════════
+       ESTILOS PARA RECIBO IMPRIMIBLE
+    ═══════════════════════════════════════ */
+    @media print {
+      /* Ocultar todo excepto el recibo */
+      body * {
+        visibility: hidden;
+      }
+      #recibo-print, #recibo-print * {
+        visibility: visible;
+      }
+      #recibo-print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+      }
+      
+      /* Configuración de página */
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+    }
+
+    /* Estilos del recibo */
+    .recibo-container {
+      width: 80mm;
+      max-width: 100%;
+      margin: 0 auto;
+      background: white;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #000;
+      padding: 10mm;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .recibo-header {
+      text-align: center;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .recibo-logo {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .recibo-empresa {
+      font-weight: bold;
+      font-size: 13px;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .recibo-info {
+      font-size: 10px;
+      color: #333;
+    }
+
+    .recibo-section {
+      margin-bottom: 12px;
+    }
+
+    .recibo-section-title {
+      font-weight: bold;
+      font-size: 10px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      color: #666;
+    }
+
+    .recibo-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .recibo-productos {
+      border-top: 1px dashed #000;
+      border-bottom: 1px dashed #000;
+      padding: 8px 0;
+      margin: 12px 0;
+    }
+
+    .recibo-producto {
+      margin-bottom: 6px;
+    }
+
+    .recibo-producto-nombre {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .recibo-producto-detalle {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      padding-left: 8px;
+    }
+
+    .recibo-total {
+      border-top: 2px solid #000;
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+
+    .recibo-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+
+    .recibo-footer {
+      text-align: center;
+      border-top: 2px dashed #000;
+      padding-top: 12px;
+      margin-top: 12px;
+      font-size: 10px;
+    }
+
+    .recibo-gracias {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .recibo-contacto {
+      margin-top: 8px;
+      font-size: 9px;
+      color: #666;
+    }
+
+    /* Modal para vista previa */
+    #modal-recibo .modal {
+      max-width: 400px;
+    }
+
+    #modal-recibo .modal-body {
+      padding: 0;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -121,6 +273,26 @@
   </div>
 </div>
 
+<!-- Modal Recibo Imprimible -->
+<div class="modal-overlay" id="modal-recibo">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Recibo de Venta</h3>
+      <button class="btn-close" onclick="Modal.close('modal-recibo')">×</button>
+    </div>
+    <div class="modal-body" id="recibo-preview">
+      <!-- Contenido del recibo generado dinámicamente -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-recibo')">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="imprimirRecibo()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contenedor oculto para impresión -->
+<div id="recibo-print" style="display:none"></div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -228,7 +400,10 @@
         <td style="font-size:12px">${v.trabajador_nombre || v.trabajador || '—'}</td>
         <td><span class="badge badge-gray">${metodoIcon[metodo]||''} ${metodo}</span></td>
         <td style="font-weight:600;color:var(--rosa-600)">${Fmt.moneda(v.total)}</td>
-        <td><button class="btn-tbl btn-tbl-view" onclick="verDetalleVenta(${v.id})">Ver</button></td>
+        <td>
+          <button class="btn-tbl btn-tbl-view" onclick="verDetalleVenta(${v.id})" title="Ver detalle">Ver</button>
+          <button class="btn-tbl btn-tbl-edit" onclick="generarRecibo(${v.id})" title="Imprimir recibo" style="margin-left:4px">🖨️</button>
+        </td>
       </tr>`;
     }).join('');
 
@@ -514,6 +689,153 @@
         }
       }
     }
+  }
+
+  // ═══════════════════════════════════════
+  // FUNCIONES DE RECIBO IMPRIMIBLE
+  // ═══════════════════════════════════════
+
+  /**
+   * Genera y muestra el recibo de una venta
+   * @param {number} ventaId - ID de la venta
+   */
+  async function generarRecibo(ventaId) {
+    try {
+      const response = await API.get('/ventas/' + ventaId);
+      const venta = response.data?.venta || response.venta || response.data || response;
+      
+      if (!venta) {
+        Toast.error('No se pudo cargar la venta');
+        return;
+      }
+
+      const reciboHTML = crearReciboHTML(venta);
+      
+      // Mostrar en modal de vista previa
+      document.getElementById('recibo-preview').innerHTML = reciboHTML;
+      
+      // Copiar al contenedor de impresión
+      document.getElementById('recibo-print').innerHTML = reciboHTML;
+      
+      Modal.open('modal-recibo');
+    } catch (error) {
+      console.error('Error al generar recibo:', error);
+      Toast.error('No se pudo generar el recibo');
+    }
+  }
+
+  /**
+   * Crea el HTML del recibo con los datos de la venta
+   * @param {object} venta - Datos de la venta
+   * @returns {string} HTML del recibo
+   */
+  function crearReciboHTML(venta) {
+    const productos = venta.productos || [];
+    const metodo = venta.metodo_pago || venta.metodo || 'Efectivo';
+    const fecha = new Date(venta.fecha || venta.created_at);
+    const fechaStr = fecha.toLocaleDateString('es-PE', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+    const horaStr = fecha.toLocaleTimeString('es-PE', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+    // Calcular subtotal
+    const subtotal = productos.reduce((sum, p) => {
+      return sum + (parseFloat(p.precio_unitario || p.precio || 0) * parseInt(p.cantidad || 0));
+    }, 0);
+
+    return `
+      <div class="recibo-container">
+        <!-- Header -->
+        <div class="recibo-header">
+          <div class="recibo-logo">🌸</div>
+          <div class="recibo-empresa">Encantos Eternos</div>
+          <div class="recibo-info">Florería y Regalos</div>
+          <div class="recibo-info">Jr. Ejemplo 123, Lima</div>
+          <div class="recibo-info">Tel: (01) 234-5678</div>
+        </div>
+
+        <!-- Información de la venta -->
+        <div class="recibo-section">
+          <div class="recibo-row">
+            <span>Recibo:</span>
+            <span>#${String(venta.id).padStart(6, '0')}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Fecha:</span>
+            <span>${fechaStr}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Hora:</span>
+            <span>${horaStr}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Atendió:</span>
+            <span>${venta.trabajador_nombre || venta.trabajador || 'N/A'}</span>
+          </div>
+        </div>
+
+        <!-- Productos -->
+        <div class="recibo-productos">
+          <div class="recibo-section-title">Productos</div>
+          ${productos.map(p => {
+            const nombre = p.producto_nombre || p.nombre || 'Producto';
+            const cantidad = parseInt(p.cantidad || 0);
+            const precio = parseFloat(p.precio_unitario || p.precio || 0);
+            const total = cantidad * precio;
+            
+            return `
+              <div class="recibo-producto">
+                <div class="recibo-producto-nombre">${nombre}</div>
+                <div class="recibo-producto-detalle">
+                  <span>${cantidad} x ${Fmt.moneda(precio)}</span>
+                  <span>${Fmt.moneda(total)}</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Totales -->
+        <div class="recibo-section">
+          <div class="recibo-row">
+            <span>Subtotal:</span>
+            <span>${Fmt.moneda(subtotal)}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Método de pago:</span>
+            <span>${metodo}</span>
+          </div>
+          <div class="recibo-total">
+            <div class="recibo-total-row">
+              <span>TOTAL:</span>
+              <span>${Fmt.moneda(venta.total)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="recibo-footer">
+          <div class="recibo-gracias">¡Gracias por su compra!</div>
+          <div class="recibo-info">Vuelva pronto</div>
+          <div class="recibo-contacto">
+            WhatsApp: 987 654 321<br>
+            www.encantoseternos.com
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Imprime el recibo
+   */
+  function imprimirRecibo() {
+    window.print();
   }
 </script>
 </body>

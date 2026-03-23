@@ -288,22 +288,37 @@
     const btnImprimir = document.getElementById('btn-imprimir');
     const estadoCaja = document.getElementById('estado-caja');
 
+    console.log('Actualizando botones con estado:', estado);
+
+    if (!btnAbrir || !btnCerrar || !btnImprimir || !estadoCaja) {
+      console.error('Error: No se encontraron los elementos de botones');
+      return;
+    }
+
     if (estado === 'abierta') {
+      // Caja abierta: mostrar solo botón de cerrar
       btnAbrir.style.display = 'none';
-      btnCerrar.style.display = 'block';
+      btnCerrar.style.display = 'inline-block';
       btnImprimir.disabled = false;
       estadoCaja.innerHTML = '<span class="badge badge-success" style="font-size:12px">✓ Caja abierta</span>';
-    } else if (estado === 'cerrada') {
-      btnAbrir.style.display = 'none';
-      btnCerrar.style.display = 'none';
-      btnImprimir.disabled = false;
-      estadoCaja.innerHTML = '<span class="badge badge-gray" style="font-size:12px">🔒 Caja cerrada</span>';
     } else {
-      btnAbrir.style.display = 'block';
+      // Caja cerrada o sin abrir: mostrar solo botón de abrir
+      // Esto permite abrir una nueva caja para el día siguiente
+      btnAbrir.style.display = 'inline-block';
       btnCerrar.style.display = 'none';
-      btnImprimir.disabled = true;
-      estadoCaja.innerHTML = '<span class="badge badge-warning" style="font-size:12px">⚠ Caja no abierta</span>';
+      
+      if (estado === 'cerrada') {
+        btnImprimir.disabled = false;
+        estadoCaja.innerHTML = '<span class="badge badge-gray" style="font-size:12px">🔒 Caja cerrada - Puedes abrir nueva caja</span>';
+      } else {
+        // Estado 'sin_abrir' o cualquier otro
+        btnImprimir.disabled = true;
+        estadoCaja.innerHTML = '<span class="badge badge-warning" style="font-size:12px">⚠ Caja no abierta</span>';
+      }
     }
+
+    console.log('Botón abrir display:', btnAbrir.style.display);
+    console.log('Botón cerrar display:', btnCerrar.style.display);
   }
 
   function renderCaja(d) {
