@@ -45,7 +45,7 @@ class CajaService {
    * Requirements: 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13
    * New: Arqueo de caja con monto físico contado
    */
-  async cierre(trabajadorId, montoCierreF isico = null, observacionesDiferencia = null) {
+  async cierre(trabajadorId, montoCierreFisico = null, observacionesDiferencia = null) {
     // Validate that a register is open for today
     const cajaResult = await query(
       "SELECT * FROM caja WHERE fecha = CURRENT_DATE AND estado = 'abierta'",
@@ -94,15 +94,15 @@ class CajaService {
     let diferenciaCierre = 0;
     let montoCierreValidado = null;
 
-    if (montoCierreF isico !== null && montoCierreF isico !== undefined) {
+    if (montoCierreFisico !== null && montoCierreFisico !== undefined) {
       // Validar que monto_cierre_fisico >= 0
-      if (montoCierreF isico < 0) {
+      if (montoCierreFisico < 0) {
         const error = new Error('El monto físico contado debe ser mayor o igual a cero');
         error.statusCode = 400;
         throw error;
       }
 
-      montoCierreValidado = parseFloat(montoCierreF isico);
+      montoCierreValidado = parseFloat(montoCierreFisico);
       diferenciaCierre = montoCierreValidado - saldoEsperado;
 
       // Si hay diferencia, validar que se proporcionen observaciones
@@ -329,8 +329,8 @@ class CajaService {
     return this.apertura(trabajadorId, montoApertura);
   }
 
-  async closeCaja(trabajadorId, montoCierreF isico = null, observacionesDiferencia = null) {
-    return this.cierre(trabajadorId, montoCierreF isico, observacionesDiferencia);
+  async closeCaja(trabajadorId, montoCierreFisico = null, observacionesDiferencia = null) {
+    return this.cierre(trabajadorId, montoCierreFisico, observacionesDiferencia);
   }
 
   async getHistory(limit = 50) {
