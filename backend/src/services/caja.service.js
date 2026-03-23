@@ -41,10 +41,11 @@ class CajaService {
   }
 
   /**
-   * Close cash register for today
+   * Close cash register for today with physical count
    * Requirements: 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13
+   * New: Arqueo de caja con monto físico contado
    */
-  async cierre(trabajadorId) {
+  async cierre(trabajadorId, montoCierreF isico = null, observacionesDiferencia = null) {
     // Validate that a register is open for today
     const cajaResult = await query(
       "SELECT * FROM caja WHERE fecha = CURRENT_DATE AND estado = 'abierta'",
@@ -56,6 +57,8 @@ class CajaService {
       error.statusCode = 404;
       throw error;
     }
+
+    const cajaActual = cajaResult.rows[0];
 
     // Calculate totals by payment method from today's sales
     const totalsResult = await query(
@@ -82,6 +85,35 @@ class CajaService {
     const totalTarjeta = parseFloat(totals.total_tarjeta);
     const totalVentas = parseFloat(totals.total_ventas);
     const totalGastos = parseFloat(gastosResult.rows[0].total_gastos);
+    const montoApertura = parseFloat(cajaActual.monto_apertura);
+
+    // Calcular saldo esperado
+    const saldoEsperado = montoApertura + totalVentas - totalGastos;
+
+    // Calcular diferencia si se proporcionó monto físico
+    let diferenciaCierre = 0;
+    let montoCierreValidado = null;
+
+    if (montoCierreF isico !== null && montoCierreF isico !== undefined) {
+      // Validar que monto_cierre_fisico >= 0
+      if (montoCierreF isico < 0) {
+        const error = new Error('El monto físico contado debe ser mayor o igual a cero');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      montoCierreValidado = parseFloat(montoCierreF isico);
+      diferenciaCierre = montoCierreValidado - saldoEsperado;
+
+      // Si hay diferencia, validar que se proporcionen observaciones
+      if (Math.abs(diferenciaCierre) > 0.01) { // Tolerancia de 1 centavo
+        if (!observacionesDiferencia || observacionesDiferencia.trim().length < 10) {
+          const error = new Error('Debe proporcionar observaciones (mínimo 10 caracteres) cuando hay diferencia en el arqueo');
+          error.statusCode = 400;
+          throw error;
+        }
+      }
+    }
 
     // Update caja: set estado to "cerrada" and record trabajador_cierre_id
     const result = await query(
@@ -92,29 +124,53 @@ class CajaService {
            total_ventas = $4,
            total_gastos = $5,
            trabajador_cierre_id = $6,
+           monto_cierre_fisico = $7,
+           diferencia_cierre = $8,
+           observaciones_diferencia = $9,
            estado = 'cerrada',
            updated_at = NOW()
        WHERE fecha = CURRENT_DATE AND estado = 'abierta'
        RETURNING *`,
-      [totalEfectivo, totalDigital, totalTarjeta, totalVentas, totalGastos, trabajadorId]
+      [
+        totalEfectivo, 
+        totalDigital, 
+        totalTarjeta, 
+        totalVentas, 
+        totalGastos, 
+        trabajadorId,
+        montoCierreValidado,
+        diferenciaCierre,
+        observacionesDiferencia
+      ]
     );
 
     const caja = result.rows[0];
+    
+    // Determinar estado del arqueo
+    let estadoArqueo = 'cuadrado';
+    if (diferenciaCierre > 0.01) estadoArqueo = 'sobrante';
+    if (diferenciaCierre < -0.01) estadoArqueo = 'faltante';
+
     return {
       ...caja,
       monto_apertura: parseFloat(caja.monto_apertura),
       monto_cierre: caja.monto_cierre !== null ? parseFloat(caja.monto_cierre) : null,
+      monto_cierre_fisico: caja.monto_cierre_fisico !== null ? parseFloat(caja.monto_cierre_fisico) : null,
+      diferencia_cierre: parseFloat(caja.diferencia_cierre || 0),
       total_efectivo: parseFloat(caja.total_efectivo),
       total_digital: parseFloat(caja.total_digital),
       total_tarjeta: parseFloat(caja.total_tarjeta),
       total_ventas: parseFloat(caja.total_ventas),
-      total_gastos: parseFloat(caja.total_gastos)
+      total_gastos: parseFloat(caja.total_gastos),
+      saldo_esperado: saldoEsperado,
+      estado_arqueo: estadoArqueo
     };
   }
 
   /**
-   * Get today's cash register
+   * Get today's cash register with arqueo information
    * Requirements: 12.14, 12.15
+   * New: Incluye saldo_esperado y estado_arqueo
    */
   async getHoy() {
     const result = await query(
@@ -161,15 +217,31 @@ class CajaService {
       []
     );
 
+    // Calcular saldo esperado
+    const montoApertura = parseFloat(caja.monto_apertura || 0);
+    const totalVentas = caja.total_ventas !== null ? parseFloat(caja.total_ventas) : 0;
+    const totalGastos = caja.total_gastos !== null ? parseFloat(caja.total_gastos) : 0;
+    const saldoEsperado = montoApertura + totalVentas - totalGastos;
+
+    // Determinar estado del arqueo
+    const diferenciaCierre = parseFloat(caja.diferencia_cierre || 0);
+    let estadoArqueo = 'cuadrado';
+    if (diferenciaCierre > 0.01) estadoArqueo = 'sobrante';
+    if (diferenciaCierre < -0.01) estadoArqueo = 'faltante';
+
     return {
       ...caja,
-      monto_apertura: parseFloat(caja.monto_apertura),
+      monto_apertura: montoApertura,
       monto_cierre: caja.monto_cierre !== null ? parseFloat(caja.monto_cierre) : null,
+      monto_cierre_fisico: caja.monto_cierre_fisico !== null ? parseFloat(caja.monto_cierre_fisico) : null,
+      diferencia_cierre: diferenciaCierre,
       total_efectivo: caja.total_efectivo !== null ? parseFloat(caja.total_efectivo) : null,
       total_digital: caja.total_digital !== null ? parseFloat(caja.total_digital) : null,
       total_tarjeta: caja.total_tarjeta !== null ? parseFloat(caja.total_tarjeta) : null,
-      total_ventas: caja.total_ventas !== null ? parseFloat(caja.total_ventas) : null,
-      total_gastos: caja.total_gastos !== null ? parseFloat(caja.total_gastos) : null,
+      total_ventas: totalVentas,
+      total_gastos: totalGastos,
+      saldo_esperado: saldoEsperado,
+      estado_arqueo: estadoArqueo,
       ventas: ventasResult.rows.map(v => ({
         id: v.id,
         fecha: v.fecha,
@@ -183,8 +255,9 @@ class CajaService {
   }
 
   /**
-   * Get cash register history with pagination
+   * Get cash register history with pagination and arqueo status
    * Requirements: 12.16
+   * New: Incluye estado_arqueo en cada registro
    */
   async getHistorial(page = 1, limit = 50) {
     const offset = (page - 1) * limit;
@@ -204,16 +277,32 @@ class CajaService {
       [limit, offset]
     );
 
-    const rows = result.rows.map(caja => ({
-      ...caja,
-      monto_apertura: parseFloat(caja.monto_apertura),
-      monto_cierre: caja.monto_cierre !== null ? parseFloat(caja.monto_cierre) : null,
-      total_efectivo: caja.total_efectivo !== null ? parseFloat(caja.total_efectivo) : null,
-      total_digital: caja.total_digital !== null ? parseFloat(caja.total_digital) : null,
-      total_tarjeta: caja.total_tarjeta !== null ? parseFloat(caja.total_tarjeta) : null,
-      total_ventas: caja.total_ventas !== null ? parseFloat(caja.total_ventas) : null,
-      total_gastos: caja.total_gastos !== null ? parseFloat(caja.total_gastos) : null
-    }));
+    const rows = result.rows.map(caja => {
+      const montoApertura = parseFloat(caja.monto_apertura || 0);
+      const totalVentas = caja.total_ventas !== null ? parseFloat(caja.total_ventas) : 0;
+      const totalGastos = caja.total_gastos !== null ? parseFloat(caja.total_gastos) : 0;
+      const saldoEsperado = montoApertura + totalVentas - totalGastos;
+      
+      const diferenciaCierre = parseFloat(caja.diferencia_cierre || 0);
+      let estadoArqueo = 'cuadrado';
+      if (diferenciaCierre > 0.01) estadoArqueo = 'sobrante';
+      if (diferenciaCierre < -0.01) estadoArqueo = 'faltante';
+
+      return {
+        ...caja,
+        monto_apertura: montoApertura,
+        monto_cierre: caja.monto_cierre !== null ? parseFloat(caja.monto_cierre) : null,
+        monto_cierre_fisico: caja.monto_cierre_fisico !== null ? parseFloat(caja.monto_cierre_fisico) : null,
+        diferencia_cierre: diferenciaCierre,
+        total_efectivo: caja.total_efectivo !== null ? parseFloat(caja.total_efectivo) : null,
+        total_digital: caja.total_digital !== null ? parseFloat(caja.total_digital) : null,
+        total_tarjeta: caja.total_tarjeta !== null ? parseFloat(caja.total_tarjeta) : null,
+        total_ventas: totalVentas,
+        total_gastos: totalGastos,
+        saldo_esperado: saldoEsperado,
+        estado_arqueo: estadoArqueo
+      };
+    });
 
     return {
       data: rows,
@@ -240,8 +329,8 @@ class CajaService {
     return this.apertura(trabajadorId, montoApertura);
   }
 
-  async closeCaja(trabajadorId) {
-    return this.cierre(trabajadorId);
+  async closeCaja(trabajadorId, montoCierreF isico = null, observacionesDiferencia = null) {
+    return this.cierre(trabajadorId, montoCierreF isico, observacionesDiferencia);
   }
 
   async getHistory(limit = 50) {

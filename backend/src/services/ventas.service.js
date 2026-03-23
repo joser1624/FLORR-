@@ -75,6 +75,7 @@ class VentasService {
 
   /**
    * Create venta with transaction support
+   * New: Valida que haya caja abierta antes de crear venta
    */
   async create(data, trabajadorId) {
     const { productos, metodo_pago, cliente_id } = data;
@@ -91,6 +92,18 @@ class VentasService {
     const client = await getClient();
     try {
       await client.query('BEGIN');
+
+      // VALIDACIÓN CRÍTICA: Verificar que hay caja abierta para hoy
+      const cajaResult = await client.query(
+        "SELECT id FROM caja WHERE fecha = CURRENT_DATE AND estado = 'abierta'",
+        []
+      );
+
+      if (cajaResult.rows.length === 0) {
+        const error = new Error('Debe abrir la caja del día antes de realizar ventas');
+        error.statusCode = 400;
+        throw error;
+      }
 
       for (const item of productos) {
         const { producto_id, cantidad, precio_unitario } = item;

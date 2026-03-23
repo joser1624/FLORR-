@@ -39,16 +39,31 @@ class CajaController {
   /**
    * POST /api/caja/cierre
    * Requirements: 12.6-12.13
+   * New: Acepta monto_cierre_fisico y observaciones_diferencia
    */
   async cierre(req, res, next) {
     try {
       const trabajadorId = req.user.id;
+      const { monto_cierre_fisico, observaciones_diferencia } = req.body;
 
-      const caja = await cajaService.cierre(trabajadorId);
-      res.json({ success: true, data: caja, mensaje: 'Caja cerrada correctamente' });
+      const caja = await cajaService.cierre(trabajadorId, monto_cierre_fisico, observaciones_diferencia);
+      
+      // Si hay diferencia, incluir warning en la respuesta
+      let mensaje = 'Caja cerrada correctamente';
+      if (caja.diferencia_cierre && Math.abs(caja.diferencia_cierre) > 0.01) {
+        const tipoDiferencia = caja.diferencia_cierre > 0 ? 'sobrante' : 'faltante';
+        mensaje += `. Arqueo con ${tipoDiferencia}: S/ ${Math.abs(caja.diferencia_cierre).toFixed(2)}`;
+      }
+
+      res.json({ 
+        success: true, 
+        data: caja, 
+        mensaje,
+        warning: caja.diferencia_cierre && Math.abs(caja.diferencia_cierre) > 0.01 ? 'Hay diferencia en el arqueo' : null
+      });
     } catch (error) {
-      if (error.statusCode === 404) {
-        return res.status(404).json({ error: true, mensaje: error.message });
+      if (error.statusCode === 404 || error.statusCode === 400) {
+        return res.status(error.statusCode).json({ error: true, mensaje: error.message });
       }
       next(error);
     }
