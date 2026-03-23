@@ -68,6 +68,9 @@ function renderSidebar(activePage) {
   html += `
     </nav>
     <div class="sidebar-footer">
+      <button class="btn-home" onclick="window.location.href='../../index.html'" style="width:100%;padding:10px 16px;margin-bottom:8px;background:var(--gris-700);border:none;border-radius:6px;color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.2s;font-weight:500">
+        <span>🏠</span> Ir a inicio
+      </button>
       <button class="btn-logout" onclick="handleLogout()">
         <span>↩</span> Cerrar sesión
       </button>

@@ -84,6 +84,9 @@
       <!-- Alertas de stock -->
       <div id="alertas-stock"></div>
 
+      <!-- Estado de Caja -->
+      <div id="estado-caja-card"></div>
+
       <!-- Gráficos + Pedidos recientes -->
       <div class="dash-grid-main" style="display:grid;gap:1.25rem;margin-bottom:1.25rem">
 
@@ -225,6 +228,87 @@
   </div>
 </div>
 
+<!-- Modal Apertura de Caja -->
+<div class="modal-overlay" id="modal-apertura-caja">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>💰 Apertura de Caja</h3>
+      <button class="btn-close" onclick="Modal.close('modal-apertura-caja')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <div class="form-group">
+          <label class="form-label">Monto inicial en efectivo (S/)</label>
+          <input class="form-control" type="number" id="apertura-caja-monto" step="0.50" min="0" placeholder="Ej: 100.00" required />
+        </div>
+        <div style="font-size:12px;color:var(--gris-500)">Este monto es el efectivo con el que empiezas el día (fondo de caja)</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-apertura-caja')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="abrirCajaDesdePanel()">Confirmar apertura</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cierre de Caja con Doblaje -->
+<div class="modal-overlay" id="modal-cierre-caja">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>🔒 Cierre de Caja - Doblaje</h3>
+      <button class="btn-close" onclick="Modal.close('modal-cierre-caja')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <!-- Resumen del día -->
+        <div style="background:var(--gris-50);padding:1rem;border-radius:8px;margin-bottom:1rem">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--gris-700)">📊 Resumen del día</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:var(--gris-600)">Monto de apertura:</span>
+            <span id="cierre-apertura" style="font-weight:600">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:var(--gris-600)">Ventas en efectivo:</span>
+            <span id="cierre-ventas-efectivo" style="font-weight:600;color:var(--success)">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
+            <span style="color:var(--gris-600)">Gastos del día:</span>
+            <span id="cierre-gastos" style="font-weight:600;color:var(--danger)">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;padding-top:8px;border-top:1px solid var(--gris-200)">
+            <span style="font-weight:700">Efectivo esperado:</span>
+            <span id="cierre-esperado" style="font-weight:700;color:var(--primary)">S/ 0.00</span>
+          </div>
+        </div>
+
+        <!-- Input monto físico -->
+        <div class="form-group">
+          <label class="form-label">💵 Monto en efectivo contado (físico)</label>
+          <input class="form-control" type="number" id="cierre-monto-fisico" step="0.50" min="0" placeholder="Ej: 1250.00" oninput="calcularDiferenciaCierre()" required />
+          <div style="font-size:11px;color:var(--gris-500);margin-top:4px">Ingresa el efectivo que tienes físicamente en caja</div>
+        </div>
+
+        <!-- Preview de diferencia -->
+        <div id="cierre-preview" style="display:none;background:var(--gris-50);padding:1rem;border-radius:8px;border:2px solid var(--gris-200)">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">🔍 Resultado del cuadre</div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>Diferencia:</span>
+            <span id="cierre-diferencia" style="font-weight:700">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span>Estado:</span>
+            <span id="cierre-estado" style="font-weight:700"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-cierre-caja')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmarCierreCaja()">Confirmar Cierre</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Historial de Movimientos -->
 <div class="modal-overlay" id="modal-historial-capital">
   <div class="modal" style="max-width:900px">
@@ -289,6 +373,243 @@
       renderVentasTrabajadoresMock();
     }
     await loadCapital();
+    await loadEstadoCaja();
+  }
+
+  // ============================================
+  // ESTADO DE CAJA
+  // ============================================
+
+  let cajaActual = null;
+
+  async function loadEstadoCaja() {
+    const user = Auth.getUser();
+    // Solo mostrar para admin y empleado
+    if (!user || !['admin', 'empleado'].includes(user.rol)) {
+      return;
+    }
+
+    try {
+      const response = await API.get('/caja/hoy');
+      cajaActual = response.data || response;
+      renderEstadoCaja(cajaActual);
+    } catch (error) {
+      if (error.message && error.message.includes('No hay caja abierta')) {
+        cajaActual = null;
+        renderEstadoCajaSinAbrir();
+      } else {
+        console.error('Error al cargar estado de caja:', error);
+      }
+    }
+  }
+
+  function renderEstadoCaja(caja) {
+    const container = document.getElementById('estado-caja-card');
+    const efectivoEsperado = parseFloat(caja.monto_apertura || 0) + 
+                             parseFloat(caja.ventas?.filter(v => v.metodo === 'Efectivo').reduce((s, v) => s + parseFloat(v.total || 0), 0) || 0) - 
+                             parseFloat(caja.gastos_total || 0);
+
+    if (caja.estado === 'abierta') {
+      container.innerHTML = `
+        <div class="card" style="padding:1.25rem;margin-bottom:1.25rem;background:linear-gradient(135deg, #2D8C4E 0%, #1E6FA8 100%);color:white">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="font-size:13px;opacity:0.9;margin-bottom:4px">💰 Caja del Día</div>
+              <div style="font-size:24px;font-weight:700">Caja Abierta</div>
+              <div style="font-size:12px;opacity:0.8;margin-top:4px">Apertura: ${Fmt.moneda(caja.monto_apertura)}</div>
+            </div>
+            <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="abrirModalCierreCaja()">🔒 Cerrar Caja</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.2)">
+            <div style="text-align:center">
+              <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Ventas Efectivo</div>
+              <div style="font-size:16px;font-weight:600;color:#90EE90">${Fmt.moneda(caja.ventas?.filter(v => v.metodo === 'Efectivo').reduce((s, v) => s + parseFloat(v.total || 0), 0) || 0)}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Gastos</div>
+              <div style="font-size:16px;font-weight:600;color:#FFB6C1">${Fmt.moneda(caja.gastos_total || 0)}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;opacity:0.8;margin-bottom:4px">Efectivo Esperado</div>
+              <div style="font-size:16px;font-weight:600">${Fmt.moneda(efectivoEsperado)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (caja.estado === 'cerrada') {
+      const diferencia = parseFloat(caja.diferencia || 0);
+      const estadoCuadre = caja.estado_cuadre || 'sin_cuadre';
+      let colorEstado = 'var(--gris-600)';
+      let iconoEstado = '📊';
+      let textoEstado = 'Sin cuadre';
+
+      if (estadoCuadre === 'cuadrado') {
+        colorEstado = 'var(--success)';
+        iconoEstado = '✅';
+        textoEstado = 'Cuadrado';
+      } else if (estadoCuadre === 'faltante') {
+        colorEstado = 'var(--danger)';
+        iconoEstado = '⚠️';
+        textoEstado = `Faltante: ${Fmt.moneda(Math.abs(diferencia))}`;
+      } else if (estadoCuadre === 'sobrante') {
+        colorEstado = 'var(--warning)';
+        iconoEstado = '📈';
+        textoEstado = `Sobrante: ${Fmt.moneda(diferencia)}`;
+      }
+
+      container.innerHTML = `
+        <div class="card" style="padding:1.25rem;margin-bottom:1.25rem;background:var(--gris-100);border:2px solid var(--gris-200)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            <div>
+              <div style="font-size:13px;color:var(--gris-600);margin-bottom:4px">💰 Caja del Día</div>
+              <div style="font-size:24px;font-weight:700;color:var(--gris-800)">Caja Cerrada</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:12px;color:var(--gris-600)">Estado del cuadre</div>
+              <div style="font-size:16px;font-weight:700;color:${colorEstado}">${iconoEstado} ${textoEstado}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding-top:1rem;border-top:1px solid var(--gris-200)">
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Apertura</div>
+              <div style="font-size:14px;font-weight:600">${Fmt.moneda(caja.monto_apertura)}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Ventas</div>
+              <div style="font-size:14px;font-weight:600;color:var(--success)">${Fmt.moneda(caja.total_ventas)}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Gastos</div>
+              <div style="font-size:14px;font-weight:600;color:var(--danger)">${Fmt.moneda(caja.total_gastos)}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Cierre Físico</div>
+              <div style="font-size:14px;font-weight:600">${caja.monto_cierre !== null ? Fmt.moneda(caja.monto_cierre) : 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  function renderEstadoCajaSinAbrir() {
+    const container = document.getElementById('estado-caja-card');
+    container.innerHTML = `
+      <div class="card" style="padding:1.25rem;margin-bottom:1.25rem;background:linear-gradient(135deg, #C87B1A 0%, #D4A017 100%);color:white">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:13px;opacity:0.9;margin-bottom:4px">⚠️ Caja del Día</div>
+            <div style="font-size:24px;font-weight:700">Caja No Abierta</div>
+            <div style="font-size:12px;opacity:0.8;margin-top:4px">Debes abrir la caja para comenzar a operar</div>
+          </div>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border:none" onclick="Modal.open('modal-apertura-caja')">🔓 Abrir Caja</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function abrirCajaDesdePanel() {
+    const monto = parseFloat(document.getElementById('apertura-caja-monto').value) || 0;
+    
+    if (monto < 0) {
+      Toast.warning('El monto debe ser mayor o igual a 0');
+      return;
+    }
+    
+    try {
+      await API.post('/caja/apertura', { monto_apertura: monto });
+      Toast.success(`Caja abierta con ${Fmt.moneda(monto)}`);
+      Modal.close('modal-apertura-caja');
+      document.getElementById('apertura-caja-monto').value = '';
+      await loadEstadoCaja();
+    } catch (error) {
+      console.error('Error al abrir caja:', error);
+      Toast.error(error.message || 'Error al abrir la caja');
+    }
+  }
+
+  function abrirModalCierreCaja() {
+    if (!cajaActual) {
+      Toast.warning('No hay caja abierta');
+      return;
+    }
+
+    const ventasEfectivo = cajaActual.ventas?.filter(v => v.metodo === 'Efectivo').reduce((s, v) => s + parseFloat(v.total || 0), 0) || 0;
+    const efectivoEsperado = parseFloat(cajaActual.monto_apertura || 0) + ventasEfectivo - parseFloat(cajaActual.gastos_total || 0);
+
+    document.getElementById('cierre-apertura').textContent = Fmt.moneda(cajaActual.monto_apertura);
+    document.getElementById('cierre-ventas-efectivo').textContent = Fmt.moneda(ventasEfectivo);
+    document.getElementById('cierre-gastos').textContent = Fmt.moneda(cajaActual.gastos_total || 0);
+    document.getElementById('cierre-esperado').textContent = Fmt.moneda(efectivoEsperado);
+    document.getElementById('cierre-monto-fisico').value = '';
+    document.getElementById('cierre-preview').style.display = 'none';
+
+    Modal.open('modal-cierre-caja');
+  }
+
+  function calcularDiferenciaCierre() {
+    const montoFisico = parseFloat(document.getElementById('cierre-monto-fisico').value);
+    
+    if (isNaN(montoFisico) || montoFisico < 0) {
+      document.getElementById('cierre-preview').style.display = 'none';
+      return;
+    }
+
+    const ventasEfectivo = cajaActual.ventas?.filter(v => v.metodo === 'Efectivo').reduce((s, v) => s + parseFloat(v.total || 0), 0) || 0;
+    const efectivoEsperado = parseFloat(cajaActual.monto_apertura || 0) + ventasEfectivo - parseFloat(cajaActual.gastos_total || 0);
+    const diferencia = montoFisico - efectivoEsperado;
+
+    document.getElementById('cierre-diferencia').textContent = Fmt.moneda(Math.abs(diferencia));
+    
+    const preview = document.getElementById('cierre-preview');
+    const estadoEl = document.getElementById('cierre-estado');
+    const diferenciaEl = document.getElementById('cierre-diferencia');
+
+    if (diferencia === 0) {
+      preview.style.borderColor = 'var(--success)';
+      preview.style.background = 'rgba(45, 140, 78, 0.1)';
+      estadoEl.textContent = '✅ Cuadrado';
+      estadoEl.style.color = 'var(--success)';
+      diferenciaEl.textContent = 'S/ 0.00';
+      diferenciaEl.style.color = 'var(--success)';
+    } else if (diferencia < 0) {
+      preview.style.borderColor = 'var(--danger)';
+      preview.style.background = 'rgba(196, 50, 50, 0.1)';
+      estadoEl.textContent = '⚠️ Faltante';
+      estadoEl.style.color = 'var(--danger)';
+      diferenciaEl.textContent = '- ' + Fmt.moneda(Math.abs(diferencia));
+      diferenciaEl.style.color = 'var(--danger)';
+    } else {
+      preview.style.borderColor = 'var(--warning)';
+      preview.style.background = 'rgba(200, 123, 26, 0.1)';
+      estadoEl.textContent = '📈 Sobrante';
+      estadoEl.style.color = 'var(--warning)';
+      diferenciaEl.textContent = '+ ' + Fmt.moneda(diferencia);
+      diferenciaEl.style.color = 'var(--warning)';
+    }
+
+    preview.style.display = 'block';
+  }
+
+  async function confirmarCierreCaja() {
+    const montoFisico = parseFloat(document.getElementById('cierre-monto-fisico').value);
+    
+    if (isNaN(montoFisico) || montoFisico < 0) {
+      Toast.warning('Ingresa un monto válido');
+      return;
+    }
+
+    try {
+      const response = await API.post('/caja/cierre', { monto_cierre: montoFisico });
+      const data = response.data || response;
+      
+      Toast.success(data.mensaje || 'Caja cerrada correctamente');
+      Modal.close('modal-cierre-caja');
+      await loadEstadoCaja();
+    } catch (error) {
+      console.error('Error al cerrar caja:', error);
+      Toast.error(error.message || 'Error al cerrar la caja');
+    }
   }
 
   // ============================================

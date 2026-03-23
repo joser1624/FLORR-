@@ -467,9 +467,36 @@ function prevPage(){
   /* ── LABORATORIO ── */
   async function cargarInventarioPub(){
     try{
-      const d=await API.get('/inventario');
-      inventarioPub=(d.data?.data||d.data||d.items||d||[]).filter(i=>i.stock>0);
-    }catch{
+      console.log('🔄 Cargando inventario público desde /inventario...');
+      const response = await API.get('/inventario');
+      console.log('✅ Respuesta recibida:', response);
+      
+      // Backend retorna: { success: true, data: { data: [...], total, page, limit, pages } }
+      let items = [];
+      
+      if (response.data) {
+        if (Array.isArray(response.data)) {
+          items = response.data;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          items = response.data.data;
+        } else if (Array.isArray(response.data.items)) {
+          items = response.data.items;
+        }
+      } else if (Array.isArray(response)) {
+        items = response;
+      }
+      
+      // Filtrar solo items con stock disponible
+      inventarioPub = items.filter(i => i.stock > 0);
+      console.log('✅ Inventario público cargado:', inventarioPub.length, 'items con stock');
+      
+      if (inventarioPub.length === 0) {
+        console.warn('⚠️ No hay items con stock disponible');
+        // Usar datos mock si no hay items
+        throw new Error('Sin items disponibles');
+      }
+    }catch(error){
+      console.warn('⚠️ Usando datos mock para laboratorio:', error.message);
       inventarioPub=[
         {id:1,nombre:'Rosas rojas',tipo:'flores',stock:45,costo:3.5},
         {id:2,nombre:'Lirios blancos',tipo:'flores',stock:8,costo:2.8},
@@ -486,14 +513,23 @@ function prevPage(){
 
   function renderLabPub(){
     const grid=document.getElementById('lab-flores-grid');
+    
+    if (!inventarioPub || inventarioPub.length === 0) {
+      grid.innerHTML = '<div style="text-align:center;padding:3rem;color:#b8a8c8;font-size:14px;grid-column:1/-1">No hay items disponibles en este momento</div>';
+      return;
+    }
+    
     grid.innerHTML=inventarioPub.map(item=>{
       const qty=selLab[item.id]||0;
       const emoji=FLORES_EMOJI_PUB[item.nombre]||TIPO_EMOJI_PUB[item.tipo]||'🌸';
+      const costo = parseFloat(item.costo) || 0;
+      const stock = parseInt(item.stock) || 0;
+      
       return`<div class="lab-flor-card ${qty>0?'selected':''}">
         <div class="lab-flor-emoji">${emoji}</div>
         <div class="lab-flor-name">${item.nombre}</div>
-        <div class="lab-flor-precio">S/ ${item.costo.toFixed(2)} c/u</div>
-        <div class="lab-flor-stock">Stock: ${item.stock}</div>
+        <div class="lab-flor-precio">S/ ${costo.toFixed(2)} c/u</div>
+        <div class="lab-flor-stock">Stock: ${stock}</div>
         <div class="lab-qty-ctrl">
           <button class="lab-qty-btn" onclick="cambiarQtyPub(${item.id},-1)">−</button>
           <span class="lab-qty-num">${qty}</span>
@@ -504,21 +540,33 @@ function prevPage(){
   }
 
   function cambiarQtyPub(id,delta){
-    const item=inventarioPub.find(i=>i.id===id);if(!item)return;
-    const nuevo=Math.max(0,Math.min(item.stock,(selLab[id]||0)+delta));
+    const item=inventarioPub.find(i=>i.id==id);
+    if(!item)return;
+    const stock = parseInt(item.stock) || 0;
+    const nuevo=Math.max(0,Math.min(stock,(selLab[id]||0)+delta));
     if(nuevo===0)delete selLab[id];else selLab[id]=nuevo;
     renderLabPub();renderResumenPub();
   }
 
   function renderResumenPub(){
-    const ids=Object.keys(selLab);const el=document.getElementById('lab-items-list');
+    const ids=Object.keys(selLab);
+    const el=document.getElementById('lab-items-list');
     if(!ids.length){
       el.innerHTML='<div style="color:#b8a8c8;font-size:13px;text-align:center;padding:2.5rem 0;line-height:1.8;font-family:Poppins,sans-serif">Selecciona flores para<br>comenzar tu arreglo</div>';
-      document.getElementById('lab-precio-pub').textContent='S/ 0.00';return;
+      document.getElementById('lab-precio-pub').textContent='S/ 0.00';
+      return;
     }
     let costo=0;
-    el.innerHTML=ids.map(id=>{const item=inventarioPub.find(i=>i.id==id);const sub=item.costo*selLab[id];costo+=sub;return`<div class="lab-item"><span>${item.nombre} × ${selLab[id]}</span><span>S/ ${sub.toFixed(2)}</span></div>`;}).join('');
-    const precio=costo/0.6;document.getElementById('lab-precio-pub').textContent=`S/ ${precio.toFixed(2)}`;
+    el.innerHTML=ids.map(id=>{
+      const item=inventarioPub.find(i=>i.id==id);
+      if(!item)return '';
+      const costoItem = parseFloat(item.costo) || 0;
+      const sub = costoItem * selLab[id];
+      costo += sub;
+      return`<div class="lab-item"><span>${item.nombre} × ${selLab[id]}</span><span>S/ ${sub.toFixed(2)}</span></div>`;
+    }).join('');
+    const precio=costo/0.6;
+    document.getElementById('lab-precio-pub').textContent=`S/ ${precio.toFixed(2)}`;
   }
 
   function limpiarLabPub(){selLab={};renderLabPub();renderResumenPub();}

@@ -178,6 +178,7 @@
               <th>Ventas</th>
               <th>Gastos</th>
               <th>Saldo</th>
+              <th>Cuadre</th>
               <th>Estado</th>
               <th>Trabajador</th>
             </tr>
@@ -193,6 +194,63 @@
   </div>
 </div>
 
+<!-- Modal Cierre de Caja con Doblaje -->
+<div class="modal-overlay" id="modal-cierre-caja">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>🔒 Cierre de Caja - Doblaje</h3>
+      <button class="btn-close" onclick="Modal.close('modal-cierre-caja')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <!-- Resumen del día -->
+        <div style="background:var(--gris-50);padding:1rem;border-radius:8px;margin-bottom:1rem">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--gris-700)">📊 Resumen del día</div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:var(--gris-600)">Monto de apertura:</span>
+            <span id="cierre-modal-apertura" style="font-weight:600">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:var(--gris-600)">Ventas en efectivo:</span>
+            <span id="cierre-modal-ventas-efectivo" style="font-weight:600;color:var(--success)">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
+            <span style="color:var(--gris-600)">Gastos del día:</span>
+            <span id="cierre-modal-gastos" style="font-weight:600;color:var(--danger)">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;padding-top:8px;border-top:1px solid var(--gris-200)">
+            <span style="font-weight:700">Efectivo esperado:</span>
+            <span id="cierre-modal-esperado" style="font-weight:700;color:var(--primary)">S/ 0.00</span>
+          </div>
+        </div>
+
+        <!-- Input monto físico -->
+        <div class="form-group">
+          <label class="form-label">💵 Monto en efectivo contado (físico)</label>
+          <input class="form-control" type="number" id="cierre-modal-monto-fisico" step="0.50" min="0" placeholder="Ej: 1250.00" oninput="calcularDiferenciaCierreCaja()" required />
+          <div style="font-size:11px;color:var(--gris-500);margin-top:4px">Ingresa el efectivo que tienes físicamente en caja</div>
+        </div>
+
+        <!-- Preview de diferencia -->
+        <div id="cierre-modal-preview" style="display:none;background:var(--gris-50);padding:1rem;border-radius:8px;border:2px solid var(--gris-200)">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px">🔍 Resultado del cuadre</div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>Diferencia:</span>
+            <span id="cierre-modal-diferencia" style="font-weight:700">S/ 0.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span>Estado:</span>
+            <span id="cierre-modal-estado" style="font-weight:700"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-cierre-caja')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmarCierreCajaConDoblaje()">Confirmar Cierre</button>
+    </div>
+  </div>
+</div>
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -345,15 +403,120 @@
   }
 
   function confirmarCierre() {
-    Modal.confirm(
-      '¿Cerrar la caja del día? Esta acción calculará los totales finales y no se podrá revertir.',
-      async () => {
-        await cerrarCaja();
+    // Abrir modal de doblaje en lugar de confirmación simple
+    abrirModalCierreCaja();
+  }
+
+  let cajaActualData = null;
+
+  function abrirModalCierreCaja() {
+    // Obtener datos actuales de la caja
+    const apertura = parseFloat(document.getElementById('apertura-monto').textContent.replace('S/', '').replace(',', '').trim()) || 0;
+    const ventasHoy = parseFloat(document.getElementById('ventas-hoy-caja').textContent.replace('S/', '').replace(',', '').trim()) || 0;
+    const gastosHoy = parseFloat(document.getElementById('gastos-hoy-caja').textContent.replace('S/', '').replace(',', '').trim()) || 0;
+    
+    // Calcular ventas en efectivo desde la tabla de transacciones
+    const tbody = document.getElementById('tbody-transacciones');
+    let ventasEfectivo = 0;
+    
+    if (tbody && tbody.rows.length > 0) {
+      for (let row of tbody.rows) {
+        const metodoCell = row.cells[3];
+        const montoCell = row.cells[4];
+        if (metodoCell && montoCell && metodoCell.textContent.includes('Efectivo')) {
+          const monto = parseFloat(montoCell.textContent.replace('+', '').replace('S/', '').replace(',', '').trim()) || 0;
+          ventasEfectivo += monto;
+        }
       }
-    );
+    }
+
+    const efectivoEsperado = apertura + ventasEfectivo - gastosHoy;
+
+    // Guardar datos para usar en el cálculo
+    cajaActualData = {
+      apertura: apertura,
+      ventasEfectivo: ventasEfectivo,
+      gastos: gastosHoy,
+      esperado: efectivoEsperado
+    };
+
+    // Llenar modal
+    document.getElementById('cierre-modal-apertura').textContent = Fmt.moneda(apertura);
+    document.getElementById('cierre-modal-ventas-efectivo').textContent = Fmt.moneda(ventasEfectivo);
+    document.getElementById('cierre-modal-gastos').textContent = Fmt.moneda(gastosHoy);
+    document.getElementById('cierre-modal-esperado').textContent = Fmt.moneda(efectivoEsperado);
+    document.getElementById('cierre-modal-monto-fisico').value = '';
+    document.getElementById('cierre-modal-preview').style.display = 'none';
+
+    Modal.open('modal-cierre-caja');
+  }
+
+  function calcularDiferenciaCierreCaja() {
+    const montoFisico = parseFloat(document.getElementById('cierre-modal-monto-fisico').value);
+    
+    if (isNaN(montoFisico) || montoFisico < 0 || !cajaActualData) {
+      document.getElementById('cierre-modal-preview').style.display = 'none';
+      return;
+    }
+
+    const efectivoEsperado = cajaActualData.esperado;
+    const diferencia = montoFisico - efectivoEsperado;
+
+    document.getElementById('cierre-modal-diferencia').textContent = Fmt.moneda(Math.abs(diferencia));
+    
+    const preview = document.getElementById('cierre-modal-preview');
+    const estadoEl = document.getElementById('cierre-modal-estado');
+    const diferenciaEl = document.getElementById('cierre-modal-diferencia');
+
+    if (diferencia === 0) {
+      preview.style.borderColor = 'var(--success)';
+      preview.style.background = 'rgba(45, 140, 78, 0.1)';
+      estadoEl.textContent = '✅ Cuadrado';
+      estadoEl.style.color = 'var(--success)';
+      diferenciaEl.textContent = 'S/ 0.00';
+      diferenciaEl.style.color = 'var(--success)';
+    } else if (diferencia < 0) {
+      preview.style.borderColor = 'var(--danger)';
+      preview.style.background = 'rgba(196, 50, 50, 0.1)';
+      estadoEl.textContent = '⚠️ Faltante';
+      estadoEl.style.color = 'var(--danger)';
+      diferenciaEl.textContent = '- ' + Fmt.moneda(Math.abs(diferencia));
+      diferenciaEl.style.color = 'var(--danger)';
+    } else {
+      preview.style.borderColor = 'var(--warning)';
+      preview.style.background = 'rgba(200, 123, 26, 0.1)';
+      estadoEl.textContent = '📈 Sobrante';
+      estadoEl.style.color = 'var(--warning)';
+      diferenciaEl.textContent = '+ ' + Fmt.moneda(diferencia);
+      diferenciaEl.style.color = 'var(--warning)';
+    }
+
+    preview.style.display = 'block';
+  }
+
+  async function confirmarCierreCajaConDoblaje() {
+    const montoFisico = parseFloat(document.getElementById('cierre-modal-monto-fisico').value);
+    
+    if (isNaN(montoFisico) || montoFisico < 0) {
+      Toast.warning('Ingresa un monto válido');
+      return;
+    }
+
+    try {
+      const response = await API.post('/caja/cierre', { monto_cierre: montoFisico });
+      const data = response.data || response;
+      
+      Toast.success(data.mensaje || 'Caja cerrada correctamente');
+      Modal.close('modal-cierre-caja');
+      await cargarCaja();
+    } catch (error) {
+      console.error('Error al cerrar caja:', error);
+      Toast.error(error.message || 'Error al cerrar la caja');
+    }
   }
 
   async function cerrarCaja() {
+    // Esta función ya no se usa directamente, se usa confirmarCierreCajaConDoblaje
     try {
       const response = await API.post('/caja/cierre');
       Toast.success('Caja cerrada correctamente');
@@ -383,9 +546,8 @@
   async function cargarHistorial(pagina = 1) {
     try {
       const response = await API.get(`/caja/historial?page=${pagina}&limit=${historialLimitePorPagina}`);
-      const result = response.data || response;
-      const historial = result.data || [];
-      const paginacion = result.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 };
+      const historial = response.data || [];
+      const paginacion = response.pagination || { total: 0, page: 1, limit: 10, totalPages: 1 };
       
       historialPaginaActual = pagina;
       renderHistorial(historial);
@@ -402,7 +564,7 @@
     const tbody = document.getElementById('tbody-historial');
     
     if (!historial || historial.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin historial de cajas</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin historial de cajas</td></tr>';
       return;
     }
 
@@ -421,12 +583,30 @@
         : '<span class="badge badge-gray">Cerrada</span>';
       const trabajador = caja.trabajador_apertura_nombre || 'N/A';
 
+      // Determinar estado del cuadre
+      let cuadreHtml = '<span style="color:var(--gris-400);font-size:12px">—</span>';
+      
+      if (caja.estado === 'cerrada' && caja.monto_cierre !== null) {
+        const montoCierre = parseFloat(caja.monto_cierre);
+        const efectivoEsperado = apertura + parseFloat(caja.total_efectivo || 0) - gastos;
+        const diferencia = montoCierre - efectivoEsperado;
+
+        if (diferencia === 0) {
+          cuadreHtml = '<span style="color:var(--success);font-weight:600;font-size:12px">✅ Cuadrado</span>';
+        } else if (diferencia < 0) {
+          cuadreHtml = `<span style="color:var(--danger);font-weight:600;font-size:12px">⚠️ -${Fmt.moneda(Math.abs(diferencia))}</span>`;
+        } else {
+          cuadreHtml = `<span style="color:var(--warning);font-weight:600;font-size:12px">📈 +${Fmt.moneda(diferencia)}</span>`;
+        }
+      }
+
       return `<tr>
         <td style="font-weight:500">${fecha}</td>
         <td>${Fmt.moneda(apertura)}</td>
         <td style="color:var(--success);font-weight:600">${Fmt.moneda(ventas)}</td>
         <td style="color:var(--danger)">${Fmt.moneda(gastos)}</td>
         <td style="font-weight:700">${Fmt.moneda(saldo)}</td>
+        <td>${cuadreHtml}</td>
         <td>${estado}</td>
         <td style="font-size:12px">${trabajador}</td>
       </tr>`;

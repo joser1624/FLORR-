@@ -123,13 +123,48 @@
 
   async function cargarInventarioLab() {
     try {
+      console.log('🔄 Cargando inventario desde /inventario...');
       const response = await API.get('/inventario');
-      // Backend puede retornar: { data: { data: [...] } } o { data: [...] } o directamente [...]
-      inventario = response.data?.data || response.data || response.items || response || [];
-      console.log('Inventario cargado en laboratorio:', inventario.length, 'items');
+      console.log('✅ Respuesta recibida:', response);
+      console.log('📦 response.data:', response.data);
+      
+      // Backend retorna: { success: true, data: { data: [...], total, page, limit, pages } }
+      let items = [];
+      
+      if (response.data) {
+        if (Array.isArray(response.data)) {
+          // Si data es directamente un array
+          items = response.data;
+          console.log('📋 Caso 1: data es array directo');
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          // Si data contiene otro data con el array
+          items = response.data.data;
+          console.log('📋 Caso 2: data.data es array');
+        } else if (Array.isArray(response.data.items)) {
+          // Si data contiene items
+          items = response.data.items;
+          console.log('📋 Caso 3: data.items es array');
+        } else {
+          console.warn('⚠️ Estructura de datos no reconocida:', response.data);
+        }
+      } else if (Array.isArray(response)) {
+        // Si response es directamente un array
+        items = response;
+        console.log('📋 Caso 4: response es array directo');
+      }
+      
+      inventario = items;
+      console.log('✅ Inventario cargado:', inventario.length, 'items');
+      console.log('📦 Primeros 3 items:', inventario.slice(0, 3));
+      
+      if (inventario.length === 0) {
+        console.warn('⚠️ No se encontraron items en el inventario');
+        Toast.warning('No hay items en el inventario. Agrega items desde la sección de Inventario.');
+      }
     } catch (error) {
-      console.error('Error al cargar inventario:', error);
-      Toast.error('No se pudo cargar el inventario desde el servidor');
+      console.error('❌ Error al cargar inventario:', error);
+      console.error('Error completo:', error.message);
+      Toast.error('No se pudo cargar el inventario: ' + (error.message || 'Error desconocido'));
       inventario = [];
     }
     renderGrid();
