@@ -46,22 +46,37 @@ function renderSidebar(activePage) {
     </div>
     <nav class="sidebar-nav">`;
 
-  NAV_ITEMS.forEach(item => {
+  let currentSection = null;
+  let sectionItems = [];
+
+  NAV_ITEMS.forEach((item, index) => {
     if (item.section) {
-      // Filtrar secciones según rol
-      if (item.section === 'Negocio' && user.rol === 'empleado') return;
-      html += `<div class="nav-section-label">${item.section}</div>`;
+      // Renderizar sección anterior si tiene items
+      if (currentSection && sectionItems.length > 0) {
+        html += `<div class="nav-section-label">${currentSection}</div>`;
+        html += sectionItems.join('');
+      }
+      // Iniciar nueva sección
+      currentSection = item.section;
+      sectionItems = [];
     } else {
-      // Permisos por rol
+      // Verificar permisos
       if (!canAccess(item.href, user.rol)) return;
+      
       const isActive = activePage && item.href.includes(activePage);
       const badgeHtml = item.badge ? `<span class="nav-badge" id="badge-${item.badge}">0</span>` : '';
-      html += `
+      sectionItems.push(`
         <a href="${item.href}" class="nav-item ${isActive ? 'active' : ''}">
           <span class="nav-icon">${item.icon}</span>
           ${item.label}
           ${badgeHtml}
-        </a>`;
+        </a>`);
+    }
+    
+    // Renderizar última sección
+    if (index === NAV_ITEMS.length - 1 && sectionItems.length > 0) {
+      html += `<div class="nav-section-label">${currentSection}</div>`;
+      html += sectionItems.join('');
     }
   });
 
@@ -89,11 +104,39 @@ function getRoleLabel(rol) {
 }
 
 function canAccess(href, rol) {
-  const empleadoBlocked = ['reportes.html','gastos.html','trabajadores.html'];
-  const duenaBlocked    = ['ventas.html','caja.html','pedidos.html'];
-  if (rol === 'empleado' && empleadoBlocked.some(p => href.includes(p))) return false;
-  if (rol === 'duena'    && duenaBlocked.some(p => href.includes(p)))    return false;
-  return true;
+  // Admin tiene acceso a todo
+  if (rol === 'admin') return true;
+  
+  // Empleado: Solo operaciones diarias
+  if (rol === 'empleado') {
+    const empleadoAllowed = [
+      'ventas.html',
+      'pedidos.html',
+      'caja.html',
+      'productos.html',    // Solo lectura (para ver catálogo en ventas)
+      'laboratorio.html',  // Puede crear arreglos
+      'clientes.html'      // Solo lectura (para buscar en ventas)
+    ];
+    return empleadoAllowed.some(p => href.includes(p));
+  }
+  
+  // Dueña: Reportes, gastos, contenido
+  if (rol === 'duena') {
+    const duenaAllowed = [
+      'dashboard.html',
+      'productos.html',    // Solo lectura
+      'inventario.html',   // Puede ver inventario (supervisión)
+      'laboratorio.html',  // Solo lectura
+      'clientes.html',
+      'gastos.html',
+      'reportes.html',
+      'promociones.html',
+      'eventos.html'
+    ];
+    return duenaAllowed.some(p => href.includes(p));
+  }
+  
+  return false;
 }
 
 async function loadBadges() {
@@ -166,9 +209,36 @@ function requireAuth() {
   return true;
 }
 
+// Verificar permisos para la página actual
+function checkPageAccess(pageName) {
+  const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
+  const currentPage = pageName + '.html';
+  
+  if (!canAccess(currentPage, user.rol)) {
+    console.warn(`Usuario ${user.rol} no tiene acceso a ${pageName}`);
+    Toast.error('No tienes permisos para acceder a esta página');
+    setTimeout(() => {
+      // Redirigir según rol
+      if (user.rol === 'empleado') {
+        window.location.href = 'ventas.html';
+      } else if (user.rol === 'duena') {
+        window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    }, 1500);
+    return false;
+  }
+  return true;
+}
+
 // Inicializar layout completo
 function initAdminLayout(activePage, pageTitle, breadcrumb) {
   if (!requireAuth()) return;
+  
+  // Verificar permisos de acceso a la página
+  if (!checkPageAccess(activePage)) return;
+  
   renderSidebar(activePage);
   renderTopbar(pageTitle, breadcrumb);
 
