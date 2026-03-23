@@ -749,63 +749,71 @@ function prevPage(){
       const descuento = e.precioOriginal && e.precioFinal ? 
         Math.round(((e.precioOriginal - e.precioFinal) / e.precioOriginal) * 100) : 0;
       
-      const fechaEvento = new Date(e.fecha);
+      const fechaEvento = new Date(e.fecha + 'T00:00:00');
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
       const diasRestantes = Math.ceil((fechaEvento - hoy) / (1000 * 60 * 60 * 24));
       
+      // Fecha completa y formateada
       const fechaFormateada = fechaEvento.toLocaleDateString('es-PE', { 
-        day: '2-digit', 
-        month: 'short' 
+        weekday: 'long',
+        day: 'numeric', 
+        month: 'long',
+        year: 'numeric'
       });
+      
+      // Capitalizar primera letra
+      const fechaCapitalizada = fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1);
 
       return `<div class="promo-card" onclick="pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${e.precioFinal || 0})">
-        ${descuento > 0 ? `<div class="promo-tag">-${descuento}% OFF</div>` : '<div class="promo-tag">✦ Evento especial</div>'}
+        ${descuento > 0 ? `<div class="promo-tag">-${descuento}% OFF</div>` : ''}
         
         ${e.imagen ? `
           <div class="promo-img">
             <img src="${e.imagen}" 
                  alt="${e.nombre}"
                  style="width:100%;height:100%;object-fit:cover"
-                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-            <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:64px;background:#f0e8f5">
-              ${e.emoji||'🌸'}
-            </div>
+                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:72px;background:linear-gradient(135deg, #f0e8f5, #fce7f3)\\'>${e.emoji||'🌸'}</div>'" />
           </div>
-        ` : `<div style="font-size:38px;margin:10px 0">${e.emoji||'🌸'}</div>`}
+        ` : `
+          <div class="promo-img" style="display:flex;align-items:center;justify-content:center;font-size:72px;background:linear-gradient(135deg, #f0e8f5, #fce7f3)">
+            ${e.emoji||'🌸'}
+          </div>
+        `}
         
         <div class="promo-body">
-          ${!e.imagen ? `<div class="promo-emoji">${e.emoji||'🌸'}</div>` : ''}
-          <div class="promo-title">${e.nombre}</div>
-          ${e.descripcion ? `<div class="promo-desc">${e.descripcion}</div>` : ''}
-          <div class="promo-date">📅 ${fechaFormateada}</div>
+          <div class="promo-title">${e.emoji||'🌸'} ${e.nombre}</div>
           
-          ${diasRestantes <= 7 ? `
-            <div style="background:rgba(245,158,11,0.1);color:#f59e0b;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;text-align:center;margin:8px 0">
-              ${diasRestantes === 0 ? '¡HOY!' : diasRestantes === 1 ? '¡MAÑANA!' : `¡FALTAN ${diasRestantes} DÍAS!`}
+          ${e.descripcion ? `<div class="promo-desc">${e.descripcion}</div>` : ''}
+          
+          <div class="promo-date">📅 ${fechaCapitalizada}</div>
+          
+          ${diasRestantes <= 7 && diasRestantes >= 0 ? `
+            <div style="background:linear-gradient(135deg, #fef3c7, #fde68a);color:#92400e;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:700;text-align:center;margin:12px 0;box-shadow:0 2px 8px rgba(245,158,11,0.2);letter-spacing:0.03em">
+              ${diasRestantes === 0 ? '🔥 ¡ES HOY!' : diasRestantes === 1 ? '⚡ ¡MAÑANA!' : `⏰ ¡FALTAN ${diasRestantes} DÍAS!`}
             </div>
           ` : ''}
 
           ${e.productos && e.productos.length > 0 ? `
-            <div style="font-size:11px;color:var(--gris-600);margin:8px 0;line-height:1.5">
-              <strong>Incluye:</strong><br>
-              ${e.productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
-              ${e.productos.length > 3 ? `<br>• Y ${e.productos.length - 3} más...` : ''}
+            <div style="background:rgba(204,56,112,0.04);padding:12px;border-radius:10px;margin:12px 0">
+              <div style="font-size:11px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">✨ Incluye:</div>
+              <div style="font-size:12px;color:var(--ink-600);line-height:1.7">
+                ${e.productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
+                ${e.productos.length > 3 ? `<br>• Y ${e.productos.length - 3} producto${e.productos.length - 3 > 1 ? 's' : ''} más` : ''}
+              </div>
             </div>
           ` : ''}
 
           ${e.precioOriginal && e.precioFinal ? `
             <div class="promo-price">
-              <span class="promo-price-old">S/ ${e.precioOriginal.toFixed(2)}</span>
-              <span class="promo-price-new">S/ ${e.precioFinal.toFixed(2)}</span>
+              <span class="promo-price-old">S/ ${parseFloat(e.precioOriginal).toFixed(2)}</span>
+              <span class="promo-price-new">S/ ${parseFloat(e.precioFinal).toFixed(2)}</span>
             </div>
           ` : ''}
 
-          <div style="margin-top:1.35rem">
-            <button class="btn btn-primary" style="width:100%">
-              📱 Pedir por WhatsApp
-            </button>
-          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:16px;font-weight:600" onclick="event.stopPropagation();pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${e.precioFinal || 0})">
+            📱 Pedir por WhatsApp
+          </button>
         </div>
       </div>`;
     }).join('');
