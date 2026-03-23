@@ -413,3 +413,15 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
   .hero-stat { padding: 6px 12px; }
   .hero-stat-num { font-size: 16px; }
 }
+
+  .navbar-brand img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  margin-right: 10px;
+  flex-shrink: 0; /* evita que se deforme */
+}
+.navbar-brand {
+  display: flex;
+  align-items: center;
+}
