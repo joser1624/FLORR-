@@ -58,6 +58,22 @@
   </main>
 </div>
 
+<!-- Modal advertencia caja cerrada -->
+<div class="modal-overlay" id="modal-caja-cerrada" style="z-index:10000">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header" style="background:var(--warning);color:white">
+      <h3>⚠️ Caja no abierta</h3>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0 0 1rem 0;font-size:15px">No puedes realizar ventas sin antes abrir la caja del día.</p>
+      <p style="margin:0;color:var(--gris-500);font-size:13px">Debes abrir la caja antes de registrar cualquier venta.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="irACaja()">Abrir caja ahora</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal nueva venta -->
 <div class="modal-overlay" id="modal-venta">
   <div class="modal" style="max-width:640px">
@@ -132,9 +148,27 @@
   let paginaActual = 1;
   let totalPaginas = 1;
   const LIMITE_POR_PAGINA = 50;
+  let cajaAbierta = false; // Estado de la caja
 
   // Fecha de hoy por defecto
   document.getElementById('fecha-filtro').value = new Date().toISOString().split('T')[0];
+
+  // Verificar estado de caja al cargar
+  async function verificarEstadoCaja() {
+    try {
+      const response = await API.get('/caja/hoy');
+      const caja = response.data?.caja || response.caja || response.data || response;
+      
+      if (caja && caja.estado === 'abierta') {
+        cajaAbierta = true;
+      } else {
+        cajaAbierta = false;
+      }
+    } catch (error) {
+      console.error('Error al verificar estado de caja:', error);
+      cajaAbierta = false;
+    }
+  }
 
   async function cargarVentas(pagina = 1) {
     try {
@@ -379,6 +413,13 @@
       return; 
     }
     
+    // Verificar nuevamente el estado de caja antes de registrar
+    if (!cajaAbierta) {
+      Modal.close('modal-venta');
+      Modal.open('modal-caja-cerrada');
+      return;
+    }
+    
     const clienteId = document.getElementById('venta-cliente').value;
     
     const payload = {
@@ -405,7 +446,15 @@
       await cargarVentas(paginaActual); // Recargar la página actual
     } catch (error) {
       console.error('Error al registrar venta:', error);
-      Toast.error(error.message || 'Error al registrar la venta');
+      
+      // Si el error es por caja cerrada, mostrar modal específico
+      if (error.message && error.message.includes('caja')) {
+        cajaAbierta = false;
+        Modal.close('modal-venta');
+        Modal.open('modal-caja-cerrada');
+      } else {
+        Toast.error(error.message || 'Error al registrar la venta');
+      }
     }
   }
 
@@ -470,6 +519,12 @@
   }
 
   function abrirModalVenta() {
+    // Verificar si la caja está abierta antes de permitir nueva venta
+    if (!cajaAbierta) {
+      Modal.open('modal-caja-cerrada');
+      return;
+    }
+    
     itemsVenta = [];
     renderItemsVenta();
     document.getElementById('metodo-pago').value = 'Efectivo';
@@ -477,6 +532,11 @@
     Modal.open('modal-venta');
   }
 
+  function irACaja() {
+    window.location.href = './caja.html';
+  }
+
+  verificarEstadoCaja();
   cargarVentas();
   cargarProductosSelect();
   cargarClientesSelect();
