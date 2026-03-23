@@ -93,6 +93,34 @@
         <div class="stat-card warning"><span class="stat-icon">💰</span><div class="stat-label">Total del día</div><div class="stat-value" id="caja-total">S/ 0.00</div></div>
       </div>
 
+      <!-- Tarjeta de arqueo (solo visible cuando hay datos) -->
+      <div id="tarjeta-arqueo" style="display:none;margin-bottom:1.5rem">
+        <div class="card" style="padding:1.25rem;border:2px solid var(--rosa-200)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <div style="font-weight:600;font-size:15px">📊 Arqueo de Caja</div>
+            <div id="badge-arqueo"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem">
+            <div>
+              <div style="font-size:12px;color:var(--gris-500);margin-bottom:0.25rem">Monto esperado</div>
+              <div style="font-size:18px;font-weight:600" id="arqueo-esperado">S/ 0.00</div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--gris-500);margin-bottom:0.25rem">Monto contado</div>
+              <div style="font-size:18px;font-weight:600" id="arqueo-contado">S/ 0.00</div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--gris-500);margin-bottom:0.25rem">Diferencia</div>
+              <div style="font-size:18px;font-weight:600" id="arqueo-diferencia">S/ 0.00</div>
+            </div>
+          </div>
+          <div id="arqueo-observaciones" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--gris-100)">
+            <div style="font-size:12px;color:var(--gris-500);margin-bottom:0.25rem">Observaciones:</div>
+            <div style="font-size:13px;color:var(--gris-700)" id="arqueo-obs-texto"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Detalle por método -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
 
@@ -161,6 +189,85 @@
   </div>
 </div>
 
+<!-- Modal cierre con arqueo -->
+<div class="modal-overlay" id="modal-cierre-arqueo">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>💰 Cierre de caja con arqueo</h3>
+      <button class="btn-close" onclick="Modal.close('modal-cierre-arqueo')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-stack">
+        <!-- Información del sistema -->
+        <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:1rem;margin-bottom:1rem">
+          <div style="font-size:13px;color:var(--gris-600);margin-bottom:0.5rem">Según el sistema, deberías tener:</div>
+          <div style="font-size:28px;font-weight:700;color:var(--rosa-600);font-family:var(--font-display)" id="saldo-esperado-modal">S/ 0.00</div>
+          <div style="font-size:11px;color:var(--gris-500);margin-top:0.25rem">
+            Apertura: <span id="apertura-modal">S/ 0</span> + 
+            Ventas: <span id="ventas-modal">S/ 0</span> - 
+            Gastos: <span id="gastos-modal">S/ 0</span>
+          </div>
+        </div>
+
+        <!-- Input monto físico -->
+        <div class="form-group">
+          <label class="form-label">¿Cuánto dinero físico contaste en la caja? <span class="req">*</span></label>
+          <input 
+            class="form-control" 
+            type="number" 
+            id="monto-fisico-contado" 
+            step="0.50" 
+            min="0" 
+            placeholder="Ej: 580.00"
+            oninput="calcularDiferencia()"
+            style="font-size:18px;font-weight:600"
+          />
+          <div style="font-size:12px;color:var(--gris-500);margin-top:0.25rem">
+            Cuenta todo el efectivo físico que hay en la caja
+          </div>
+        </div>
+
+        <!-- Diferencia calculada -->
+        <div id="diferencia-container" style="display:none">
+          <div style="border-radius:var(--radius-md);padding:1rem;margin-bottom:1rem" id="diferencia-card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:13px;font-weight:500" id="diferencia-label">Diferencia</div>
+                <div style="font-size:11px;color:var(--gris-600);margin-top:2px" id="diferencia-descripcion"></div>
+              </div>
+              <div style="font-size:24px;font-weight:700;font-family:var(--font-display)" id="diferencia-monto">S/ 0.00</div>
+            </div>
+          </div>
+
+          <!-- Observaciones (obligatorio si hay diferencia) -->
+          <div class="form-group" id="observaciones-group">
+            <label class="form-label">Observaciones sobre la diferencia <span class="req">*</span></label>
+            <textarea 
+              class="form-control" 
+              id="observaciones-diferencia" 
+              rows="3" 
+              placeholder="Explica por qué hay diferencia (mínimo 10 caracteres)"
+              style="resize:vertical"
+            ></textarea>
+            <div style="font-size:12px;color:var(--gris-500);margin-top:0.25rem">
+              Ejemplo: "Se dio vuelto de más en una venta" o "Encontré un billete extra"
+            </div>
+          </div>
+        </div>
+
+        <!-- Advertencia si diferencia es grande -->
+        <div id="advertencia-diferencia" style="display:none;background:var(--warning-light);border-left:4px solid var(--warning);padding:0.75rem;border-radius:var(--radius-sm);font-size:13px">
+          ⚠️ La diferencia es mayor a S/ 10. Verifica bien el conteo antes de confirmar.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-cierre-arqueo')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmarCierreConArqueo()" id="btn-confirmar-cierre">Confirmar cierre</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal historial -->
 <div class="modal-overlay" id="modal-historial">
   <div class="modal" style="max-width:900px">
@@ -178,6 +285,7 @@
               <th>Ventas</th>
               <th>Gastos</th>
               <th>Saldo</th>
+              <th>Arqueo</th>
               <th>Estado</th>
               <th>Trabajador</th>
             </tr>
@@ -198,6 +306,13 @@
 <script>
   initAdminLayout('caja', 'Caja del día', 'Operaciones');
 
+  let datosArqueo = {
+    saldoEsperado: 0,
+    apertura: 0,
+    ventas: 0,
+    gastos: 0
+  };
+
   const hoy = new Date();
   document.getElementById('fecha-hoy-txt').textContent =
     hoy.toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
@@ -208,19 +323,67 @@
       const data = response.data || response;
       renderCaja(data);
       actualizarBotones(data.estado);
+      
+      // Mostrar tarjeta de arqueo si la caja está cerrada y tiene datos de arqueo
+      if (data.estado === 'cerrada' && data.monto_cierre_fisico !== null && data.monto_cierre_fisico !== undefined) {
+        mostrarTarjetaArqueo(data);
+      } else {
+        document.getElementById('tarjeta-arqueo').style.display = 'none';
+      }
     } catch (error) {
       // Error esperado: no hay caja abierta para hoy
       if (error.message && error.message.includes('No hay caja abierta')) {
         console.log('No hay caja abierta para hoy - mostrando vista inicial');
         renderCajaSinAbrir();
         actualizarBotones('sin_abrir');
+        document.getElementById('tarjeta-arqueo').style.display = 'none';
       } else {
         // Error inesperado
         console.error('Error al cargar caja:', error);
         Toast.error('No se pudo cargar la información de la caja');
         renderCajaSinAbrir();
         actualizarBotones('sin_abrir');
+        document.getElementById('tarjeta-arqueo').style.display = 'none';
       }
+    }
+  }
+
+  function mostrarTarjetaArqueo(data) {
+    const tarjeta = document.getElementById('tarjeta-arqueo');
+    const saldoEsperado = datosArqueo.saldoEsperado;
+    const montoContado = parseFloat(data.monto_cierre_fisico || 0);
+    const diferencia = parseFloat(data.diferencia_cierre || 0);
+    const estadoArqueo = data.estado_arqueo;
+    
+    // Mostrar tarjeta
+    tarjeta.style.display = 'block';
+    
+    // Actualizar valores
+    document.getElementById('arqueo-esperado').textContent = Fmt.moneda(saldoEsperado);
+    document.getElementById('arqueo-contado').textContent = Fmt.moneda(montoContado);
+    document.getElementById('arqueo-diferencia').textContent = Fmt.moneda(Math.abs(diferencia));
+    
+    // Badge según estado
+    const badgeArqueo = document.getElementById('badge-arqueo');
+    const diferenciaEl = document.getElementById('arqueo-diferencia');
+    
+    if (estadoArqueo === 'cuadrado') {
+      badgeArqueo.innerHTML = '<span class="badge badge-success">✅ Cuadrado</span>';
+      diferenciaEl.style.color = 'var(--success)';
+    } else if (estadoArqueo === 'faltante') {
+      badgeArqueo.innerHTML = '<span class="badge badge-danger">⚠️ Faltante</span>';
+      diferenciaEl.style.color = 'var(--danger)';
+    } else if (estadoArqueo === 'sobrante') {
+      badgeArqueo.innerHTML = '<span class="badge badge-warning">ℹ️ Sobrante</span>';
+      diferenciaEl.style.color = 'var(--warning)';
+    }
+    
+    // Mostrar observaciones si existen
+    if (data.observaciones_diferencia) {
+      document.getElementById('arqueo-observaciones').style.display = 'block';
+      document.getElementById('arqueo-obs-texto').textContent = data.observaciones_diferencia;
+    } else {
+      document.getElementById('arqueo-observaciones').style.display = 'none';
     }
   }
 
@@ -253,6 +416,15 @@
     const ventas = d.ventas || [];
     const apertura = d.monto_apertura || 0;
     const gastosTotal = d.gastos_total || 0;
+    
+    // Guardar datos para el arqueo
+    const totalVentas = ventas.reduce((s, v) => s + parseFloat(v.total || 0), 0);
+    datosArqueo = {
+      saldoEsperado: apertura + totalVentas - gastosTotal,
+      apertura: apertura,
+      ventas: totalVentas,
+      gastos: gastosTotal
+    };
     
     // Calcular totales por método de pago
     const efectivo = ventas.filter(v => v.metodo === 'Efectivo').reduce((s, v) => s + parseFloat(v.total || 0), 0);
@@ -345,18 +517,138 @@
   }
 
   function confirmarCierre() {
-    Modal.confirm(
-      '¿Cerrar la caja del día? Esta acción calculará los totales finales y no se podrá revertir.',
-      async () => {
-        await cerrarCaja();
-      }
-    );
+    // Abrir modal de arqueo en lugar de confirmación simple
+    document.getElementById('saldo-esperado-modal').textContent = Fmt.moneda(datosArqueo.saldoEsperado);
+    document.getElementById('apertura-modal').textContent = Fmt.moneda(datosArqueo.apertura);
+    document.getElementById('ventas-modal').textContent = Fmt.moneda(datosArqueo.ventas);
+    document.getElementById('gastos-modal').textContent = Fmt.moneda(datosArqueo.gastos);
+    
+    // Limpiar campos
+    document.getElementById('monto-fisico-contado').value = '';
+    document.getElementById('observaciones-diferencia').value = '';
+    document.getElementById('diferencia-container').style.display = 'none';
+    document.getElementById('advertencia-diferencia').style.display = 'none';
+    
+    Modal.open('modal-cierre-arqueo');
   }
 
-  async function cerrarCaja() {
+  function calcularDiferencia() {
+    const montoFisico = parseFloat(document.getElementById('monto-fisico-contado').value) || 0;
+    const diferencia = montoFisico - datosArqueo.saldoEsperado;
+    
+    if (montoFisico === 0) {
+      document.getElementById('diferencia-container').style.display = 'none';
+      document.getElementById('advertencia-diferencia').style.display = 'none';
+      return;
+    }
+    
+    // Mostrar diferencia
+    document.getElementById('diferencia-container').style.display = 'block';
+    document.getElementById('diferencia-monto').textContent = Fmt.moneda(Math.abs(diferencia));
+    
+    const diferenciaCard = document.getElementById('diferencia-card');
+    const diferenciaLabel = document.getElementById('diferencia-label');
+    const diferenciaDescripcion = document.getElementById('diferencia-descripcion');
+    
+    if (Math.abs(diferencia) < 0.01) {
+      // Cuadrado
+      diferenciaCard.style.background = 'var(--success-light)';
+      diferenciaCard.style.border = '2px solid var(--success)';
+      diferenciaLabel.textContent = '✅ ¡Caja cuadrada!';
+      diferenciaLabel.style.color = 'var(--success)';
+      diferenciaDescripcion.textContent = 'El monto físico coincide con el sistema';
+      document.getElementById('diferencia-monto').style.color = 'var(--success)';
+      document.getElementById('observaciones-group').style.display = 'none';
+      document.getElementById('advertencia-diferencia').style.display = 'none';
+    } else if (diferencia < 0) {
+      // Faltante
+      diferenciaCard.style.background = 'var(--danger-light)';
+      diferenciaCard.style.border = '2px solid var(--danger)';
+      diferenciaLabel.textContent = '⚠️ Faltante en caja';
+      diferenciaLabel.style.color = 'var(--danger)';
+      diferenciaDescripcion.textContent = 'Hay menos dinero del esperado';
+      document.getElementById('diferencia-monto').style.color = 'var(--danger)';
+      document.getElementById('observaciones-group').style.display = 'block';
+      
+      // Advertencia si es mayor a S/ 10
+      if (Math.abs(diferencia) > 10) {
+        document.getElementById('advertencia-diferencia').style.display = 'block';
+      } else {
+        document.getElementById('advertencia-diferencia').style.display = 'none';
+      }
+    } else {
+      // Sobrante
+      diferenciaCard.style.background = 'var(--warning-light)';
+      diferenciaCard.style.border = '2px solid var(--warning)';
+      diferenciaLabel.textContent = 'ℹ️ Sobrante en caja';
+      diferenciaLabel.style.color = 'var(--warning)';
+      diferenciaDescripcion.textContent = 'Hay más dinero del esperado';
+      document.getElementById('diferencia-monto').style.color = 'var(--warning)';
+      document.getElementById('observaciones-group').style.display = 'block';
+      
+      // Advertencia si es mayor a S/ 10
+      if (Math.abs(diferencia) > 10) {
+        document.getElementById('advertencia-diferencia').style.display = 'block';
+      } else {
+        document.getElementById('advertencia-diferencia').style.display = 'none';
+      }
+    }
+  }
+
+  async function confirmarCierreConArqueo() {
+    const montoFisico = parseFloat(document.getElementById('monto-fisico-contado').value);
+    
+    if (!montoFisico && montoFisico !== 0) {
+      Toast.warning('Debes ingresar el monto físico contado');
+      return;
+    }
+    
+    if (montoFisico < 0) {
+      Toast.warning('El monto físico no puede ser negativo');
+      return;
+    }
+    
+    const diferencia = montoFisico - datosArqueo.saldoEsperado;
+    const observaciones = document.getElementById('observaciones-diferencia').value.trim();
+    
+    // Validar observaciones si hay diferencia
+    if (Math.abs(diferencia) >= 0.01) {
+      if (!observaciones || observaciones.length < 10) {
+        Toast.warning('Debes explicar la diferencia (mínimo 10 caracteres)');
+        return;
+      }
+    }
+    
+    // Confirmación adicional si la diferencia es mayor a S/ 10
+    if (Math.abs(diferencia) > 10) {
+      const confirmar = confirm(
+        `La diferencia es de ${Fmt.moneda(Math.abs(diferencia))}. ¿Estás seguro de que el conteo es correcto?`
+      );
+      if (!confirmar) return;
+    }
+    
     try {
-      const response = await API.post('/caja/cierre');
-      Toast.success('Caja cerrada correctamente');
+      const payload = {
+        montoCierreFisico: montoFisico
+      };
+      
+      // Solo enviar observaciones si hay diferencia
+      if (Math.abs(diferencia) >= 0.01 && observaciones) {
+        payload.observacionesDiferencia = observaciones;
+      }
+      
+      const response = await API.post('/caja/cierre', payload);
+      
+      // Mostrar mensaje según el resultado
+      if (Math.abs(diferencia) < 0.01) {
+        Toast.success('✅ ¡Caja cerrada! Todo cuadró perfectamente');
+      } else if (diferencia < 0) {
+        Toast.warning(`⚠️ Caja cerrada con faltante de ${Fmt.moneda(Math.abs(diferencia))}`);
+      } else {
+        Toast.warning(`ℹ️ Caja cerrada con sobrante de ${Fmt.moneda(diferencia)}`);
+      }
+      
+      Modal.close('modal-cierre-arqueo');
       await cargarCaja(); // Recargar datos desde el backend
     } catch (error) {
       console.error('Error al cerrar caja:', error);
@@ -402,7 +694,7 @@
     const tbody = document.getElementById('tbody-historial');
     
     if (!historial || historial.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin historial de cajas</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin historial de cajas</td></tr>';
       return;
     }
 
@@ -420,6 +712,20 @@
         ? '<span class="badge badge-success">Abierta</span>' 
         : '<span class="badge badge-gray">Cerrada</span>';
       const trabajador = caja.trabajador_apertura_nombre || 'N/A';
+      
+      // Estado de arqueo
+      let arqueo = '<span style="font-size:11px;color:var(--gris-400)">—</span>';
+      if (caja.estado === 'cerrada' && caja.estado_arqueo) {
+        if (caja.estado_arqueo === 'cuadrado') {
+          arqueo = '<span class="badge badge-success" style="font-size:11px">✅ Cuadrado</span>';
+        } else if (caja.estado_arqueo === 'faltante') {
+          const diff = Math.abs(parseFloat(caja.diferencia_cierre || 0));
+          arqueo = `<span class="badge badge-danger" style="font-size:11px">⚠️ -${Fmt.moneda(diff)}</span>`;
+        } else if (caja.estado_arqueo === 'sobrante') {
+          const diff = Math.abs(parseFloat(caja.diferencia_cierre || 0));
+          arqueo = `<span class="badge badge-warning" style="font-size:11px">ℹ️ +${Fmt.moneda(diff)}</span>`;
+        }
+      }
 
       return `<tr>
         <td style="font-weight:500">${fecha}</td>
@@ -427,6 +733,7 @@
         <td style="color:var(--success);font-weight:600">${Fmt.moneda(ventas)}</td>
         <td style="color:var(--danger)">${Fmt.moneda(gastos)}</td>
         <td style="font-weight:700">${Fmt.moneda(saldo)}</td>
+        <td>${arqueo}</td>
         <td>${estado}</td>
         <td style="font-size:12px">${trabajador}</td>
       </tr>`;
