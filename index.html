@@ -10,6 +10,48 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/variables.css" />
   <link rel="stylesheet" href="css/public.css" />
+  <style>
+    /* Estilos para filtros de laboratorio */
+    .lab-filter-btn {
+      padding: 8px 16px;
+      border: 2px solid var(--gris-200);
+      background: var(--blanco);
+      color: var(--gris-700);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: 'Poppins', sans-serif;
+    }
+    .lab-filter-btn:hover {
+      border-color: var(--rosa-400);
+      background: var(--rosa-50);
+      color: var(--rosa-600);
+      transform: translateY(-1px);
+    }
+    .lab-filter-btn.active {
+      border-color: var(--rosa-500);
+      background: var(--rosa-500);
+      color: white;
+      box-shadow: 0 2px 8px rgba(204, 56, 112, 0.3);
+    }
+    .dark-mode .lab-filter-btn {
+      background: var(--gris-800);
+      border-color: var(--gris-700);
+      color: var(--gris-300);
+    }
+    .dark-mode .lab-filter-btn:hover {
+      background: var(--rosa-900);
+      border-color: var(--rosa-600);
+      color: var(--rosa-200);
+    }
+    .dark-mode .lab-filter-btn.active {
+      background: var(--rosa-600);
+      border-color: var(--rosa-500);
+      color: white;
+    }
+  </style>
   <script>
     // Aplicar dark mode antes del render para evitar flash
     if (localStorage.getItem('ee_dark') === '1') document.documentElement.classList.add('dark-mode-pre');
@@ -194,7 +236,26 @@
 
     <div class="lab-layout">
       <div>
-        <div class="lab-section-title">🌸 Selecciona flores y materiales</div>
+        <!-- Filtros por categoría -->
+        <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;justify-content:center">
+          <button class="lab-filter-btn active" onclick="filtrarLabCategoria('destacados')" id="filter-destacados">
+            ⭐ Destacados
+          </button>
+          <button class="lab-filter-btn" onclick="filtrarLabCategoria('flores')" id="filter-flores">
+            🌹 Flores
+          </button>
+          <button class="lab-filter-btn" onclick="filtrarLabCategoria('materiales')" id="filter-materiales">
+            📦 Materiales
+          </button>
+          <button class="lab-filter-btn" onclick="filtrarLabCategoria('accesorios')" id="filter-accesorios">
+            🎀 Accesorios
+          </button>
+          <button class="lab-filter-btn" onclick="filtrarLabCategoria('todos')" id="filter-todos">
+            🌸 Ver todos
+          </button>
+        </div>
+
+        <div class="lab-section-title" id="lab-categoria-titulo">⭐ Destacados</div>
         <div class="lab-flores-grid" id="lab-flores-grid"></div>
       </div>
 
@@ -361,6 +422,10 @@
   const FLORES_EMOJI_PUB={'Rosas rojas':'🌹','Lirios blancos':'🤍','Girasoles':'🌻','Rosas rosadas':'🌸','Tulipanes':'🌷','Margaritas':'🌼','Orquídeas':'🌺'};
   const TIPO_EMOJI_PUB={flores:'🌸',materiales:'🎀',accesorios:'🎁'};
   let todosProd=[],catActual='',selLab={},inventarioPub=[];
+  let categoriaLabActual='destacados'; // Nueva variable para filtro de laboratorio
+  
+  // Items destacados (los más populares o recomendados)
+  const ITEMS_DESTACADOS = ['Rosas rojas', 'Rosas rosadas', 'Girasoles', 'Papel decorativo', 'Cinta satinada', 'Caja decorativa'];
 
   /* ── CATÁLOGO ── */
   const PRODUCTOS_FALLBACK=[
@@ -519,7 +584,23 @@ function prevPage(){
       return;
     }
     
-    grid.innerHTML=inventarioPub.map(item=>{
+    // Filtrar según categoría seleccionada
+    let itemsFiltrados = inventarioPub;
+    
+    if (categoriaLabActual === 'destacados') {
+      itemsFiltrados = inventarioPub.filter(item => 
+        ITEMS_DESTACADOS.includes(item.nombre)
+      );
+    } else if (categoriaLabActual !== 'todos') {
+      itemsFiltrados = inventarioPub.filter(item => item.tipo === categoriaLabActual);
+    }
+    
+    if (itemsFiltrados.length === 0) {
+      grid.innerHTML = '<div style="text-align:center;padding:3rem;color:#b8a8c8;font-size:14px;grid-column:1/-1">No hay items en esta categoría</div>';
+      return;
+    }
+    
+    grid.innerHTML=itemsFiltrados.map(item=>{
       const qty=selLab[item.id]||0;
       const emoji=FLORES_EMOJI_PUB[item.nombre]||TIPO_EMOJI_PUB[item.tipo]||'🌸';
       const costo = parseFloat(item.costo) || 0;
@@ -537,6 +618,26 @@ function prevPage(){
         </div>
       </div>`;
     }).join('');
+  }
+
+  function filtrarLabCategoria(categoria) {
+    categoriaLabActual = categoria;
+    
+    // Actualizar botones activos
+    document.querySelectorAll('.lab-filter-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('filter-' + categoria).classList.add('active');
+    
+    // Actualizar título
+    const titulos = {
+      'destacados': '⭐ Destacados',
+      'flores': '🌹 Flores',
+      'materiales': '📦 Materiales',
+      'accesorios': '🎀 Accesorios',
+      'todos': '🌸 Todos los productos'
+    };
+    document.getElementById('lab-categoria-titulo').textContent = titulos[categoria] || '🌸 Productos';
+    
+    renderLabPub();
   }
 
   function cambiarQtyPub(id,delta){
