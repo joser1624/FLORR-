@@ -20,6 +20,14 @@ class DashboardService {
       ventasTrabajadoresResult,
       bottomProductosResult,
       pedidosRecientesResult,
+      // NUEVAS QUERIES
+      cajaHoyResult,
+      ventasDiaAnteriorResult,
+      ventasMesAnteriorResult,
+      pedidosUrgentesResult,
+      pedidosParaHoyResult,
+      pedidosSinPagoResult,
+      metodosPagoResult,
     ] = await Promise.all([
       // Req 3.1: Total sales for current day
       query(
@@ -119,13 +127,72 @@ class DashboardService {
          LIMIT 5`
       ),
 
-      // Pedidos recientes: últimos 10 pedidos ordenados por fecha
+      // Pedidos recientes: últimos 5 pedidos ordenados por fecha (reducido de 10 a 5)
       query(
         `SELECT id, cliente_nombre AS cliente, cliente_telefono AS telefono,
                 fecha_entrega, total, estado, fecha_pedido
          FROM pedidos
          ORDER BY fecha_pedido DESC
-         LIMIT 10`
+         LIMIT 5`
+      ),
+
+      // NUEVAS QUERIES PARA MEJORAS DEL DASHBOARD
+
+      // Estado de caja del día
+      query(
+        `SELECT id, fecha, estado, monto_apertura, 
+                trabajador_apertura_id, hora_apertura, hora_cierre,
+                total_ventas, total_gastos,
+                monto_cierre_fisico, diferencia_cierre, estado_arqueo
+         FROM caja
+         WHERE fecha = CURRENT_DATE`
+      ).catch(() => ({ rows: [] })), // Si no hay caja, retornar array vacío
+
+      // Ventas del día anterior (para comparativa)
+      query(
+        `SELECT COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE DATE(fecha) = CURRENT_DATE - 1`
+      ),
+
+      // Ventas del mes anterior (para comparativa)
+      query(
+        `SELECT COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE DATE_TRUNC('month', fecha) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')`
+      ),
+
+      // Pedidos atrasados (fecha_entrega < hoy y estado no completado)
+      query(
+        `SELECT COUNT(*) AS total
+         FROM pedidos
+         WHERE fecha_entrega < CURRENT_DATE
+         AND estado NOT IN ('completado', 'cancelado')`
+      ),
+
+      // Pedidos para hoy (fecha_entrega = hoy)
+      query(
+        `SELECT COUNT(*) AS total
+         FROM pedidos
+         WHERE DATE(fecha_entrega) = CURRENT_DATE
+         AND estado NOT IN ('completado', 'cancelado')`
+      ),
+
+      // Pedidos sin pago (anticipo = 0 o null)
+      query(
+        `SELECT COUNT(*) AS total
+         FROM pedidos
+         WHERE (anticipo = 0 OR anticipo IS NULL)
+         AND estado NOT IN ('completado', 'cancelado')`
+      ),
+
+      // Distribución de métodos de pago del día
+      query(
+        `SELECT metodo_pago, COUNT(*) AS cantidad, COALESCE(SUM(total), 0) AS total
+         FROM ventas
+         WHERE DATE(fecha) = CURRENT_DATE
+         GROUP BY metodo_pago
+         ORDER BY total DESC`
       ),
     ]);
 
@@ -139,14 +206,58 @@ class DashboardService {
       ? parseFloat(((ganancia_mes / ventas_mes) * 100).toFixed(2))
       : 0;
 
+    // Calcular comparativas
+    const ventas_dia = parseFloat(ventasDiaResult.rows[0].total);
+    const ventas_dia_anterior = parseFloat(ventasDiaAnteriorResult.rows[0].total);
+    const ventas_mes_anterior = parseFloat(ventasMesAnteriorResult.rows[0].total);
+
+    const comparativa_dia = ventas_dia_anterior > 0
+      ? parseFloat((((ventas_dia - ventas_dia_anterior) / ventas_dia_anterior) * 100).toFixed(1))
+      : 0;
+
+    const comparativa_mes = ventas_mes_anterior > 0
+      ? parseFloat((((ventas_mes - ventas_mes_anterior) / ventas_mes_anterior) * 100).toFixed(1))
+      : 0;
+
+    // Procesar estado de caja
+    const cajaHoy = cajaHoyResult.rows.length > 0 ? {
+      id: cajaHoyResult.rows[0].id,
+      fecha: cajaHoyResult.rows[0].fecha,
+      estado: cajaHoyResult.rows[0].estado,
+      monto_apertura: parseFloat(cajaHoyResult.rows[0].monto_apertura || 0),
+      hora_apertura: cajaHoyResult.rows[0].hora_apertura,
+      hora_cierre: cajaHoyResult.rows[0].hora_cierre,
+      total_ventas: parseFloat(cajaHoyResult.rows[0].total_ventas || 0),
+      total_gastos: parseFloat(cajaHoyResult.rows[0].total_gastos || 0),
+      monto_cierre_fisico: cajaHoyResult.rows[0].monto_cierre_fisico ? parseFloat(cajaHoyResult.rows[0].monto_cierre_fisico) : null,
+      diferencia_cierre: cajaHoyResult.rows[0].diferencia_cierre ? parseFloat(cajaHoyResult.rows[0].diferencia_cierre) : null,
+      estado_arqueo: cajaHoyResult.rows[0].estado_arqueo,
+    } : null;
+
     return {
-      ventas_dia: parseFloat(ventasDiaResult.rows[0].total),
+      ventas_dia,
+      ventas_dia_anterior,
+      comparativa_dia,
       ventas_mes,
+      ventas_mes_anterior,
+      comparativa_mes,
       ganancia_mes: parseFloat(ganancia_mes.toFixed(2)),
       margen_mes,
       pedidos_pendientes: parseInt(pedidosPendientesResult.rows[0].total, 10),
       pedidos_hoy: parseInt(pedidosHoyResult.rows[0].total, 10),
       pedidos_mes: parseInt(pedidosMesResult.rows[0].total, 10),
+      // Nuevos datos de alertas de pedidos
+      pedidos_atrasados: parseInt(pedidosUrgentesResult.rows[0].total, 10),
+      pedidos_para_hoy: parseInt(pedidosParaHoyResult.rows[0].total, 10),
+      pedidos_sin_pago: parseInt(pedidosSinPagoResult.rows[0].total, 10),
+      // Estado de caja
+      caja_hoy: cajaHoy,
+      // Métodos de pago
+      metodos_pago: metodosPagoResult.rows.map(m => ({
+        metodo: m.metodo_pago,
+        cantidad: parseInt(m.cantidad, 10),
+        total: parseFloat(m.total),
+      })),
       stock_bajo: stockBajoResult.rows.map(item => ({
         id: item.id,
         nombre: item.nombre,

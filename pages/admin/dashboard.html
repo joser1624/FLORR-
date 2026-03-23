@@ -46,6 +46,42 @@
         </div>
       </div>
 
+      <!-- Accesos rápidos -->
+      <div style="margin-bottom:1.25rem">
+        <div style="font-size:13px;font-weight:600;color:var(--gris-600);margin-bottom:0.75rem">⚡ Accesos rápidos</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="location.href='ventas.html'">+ Nueva Venta</button>
+          <button class="btn btn-outline" onclick="location.href='pedidos.html'">+ Nuevo Pedido</button>
+          <button class="btn btn-outline" onclick="location.href='gastos.html'">+ Registrar Gasto</button>
+          <button class="btn btn-outline" onclick="location.href='caja.html'">🏦 Ver Caja</button>
+        </div>
+      </div>
+
+      <!-- Estado de Caja + Alertas de Pedidos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+        
+        <!-- Estado de Caja -->
+        <div class="card" id="card-caja-estado" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem;display:flex;align-items:center;gap:8px">
+            <span>🏦 Estado de Caja</span>
+          </div>
+          <div id="contenido-caja">
+            <div style="text-align:center;padding:1.5rem;color:var(--gris-400);font-size:13px">Cargando...</div>
+          </div>
+        </div>
+
+        <!-- Alertas de Pedidos -->
+        <div class="card" id="card-alertas-pedidos" style="padding:1.25rem">
+          <div style="font-weight:600;font-size:14px;margin-bottom:1rem;display:flex;align-items:center;gap:8px">
+            <span>⚠️ Pedidos que requieren acción</span>
+          </div>
+          <div id="contenido-alertas-pedidos">
+            <div style="text-align:center;padding:1.5rem;color:var(--gris-400);font-size:13px">Cargando...</div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- Capital del Negocio -->
       <div class="card" style="padding:1.5rem;margin-bottom:1.25rem;background:linear-gradient(135deg, #2D8C4E 0%, #1E6FA8 100%);color:white">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
@@ -553,17 +589,178 @@
   });
 
   function renderStats(data) {
+    // Ventas del día con comparativa
     document.getElementById('stat-dia').textContent = Fmt.moneda(data.ventas_dia || 0);
+    const compDia = data.comparativa_dia || 0;
+    const compDiaEl = document.getElementById('stat-dia-change');
+    if (compDia !== 0) {
+      const signo = compDia > 0 ? '↑' : '↓';
+      const color = compDia > 0 ? 'var(--success)' : 'var(--danger)';
+      compDiaEl.innerHTML = `<span style="color:${color}">${signo} ${Math.abs(compDia)}% vs ayer</span>`;
+      compDiaEl.className = 'stat-change ' + (compDia > 0 ? 'up' : 'down');
+    } else {
+      compDiaEl.textContent = data.pedidos_hoy + ' pedidos hoy';
+      compDiaEl.className = 'stat-change';
+    }
+
+    // Ventas del mes con comparativa
     document.getElementById('stat-mes').textContent = Fmt.moneda(data.ventas_mes || 0);
+    const compMes = data.comparativa_mes || 0;
+    const compMesEl = document.getElementById('stat-mes-change');
+    if (compMes !== 0) {
+      const signo = compMes > 0 ? '↑' : '↓';
+      const color = compMes > 0 ? 'var(--success)' : 'var(--danger)';
+      compMesEl.innerHTML = `<span style="color:${color}">${signo} ${Math.abs(compMes)}% vs mes pasado</span>`;
+      compMesEl.className = 'stat-change ' + (compMes > 0 ? 'up' : 'down');
+    } else {
+      compMesEl.textContent = data.pedidos_mes + ' pedidos este mes';
+      compMesEl.className = 'stat-change';
+    }
+
+    // Ganancia y pedidos pendientes (sin cambios)
     document.getElementById('stat-ganancia').textContent = Fmt.moneda(data.ganancia_mes || 0);
     document.getElementById('stat-pedidos').textContent = Fmt.nro(data.pedidos_pendientes || 0);
-    document.getElementById('stat-dia-change').textContent = data.pedidos_hoy + ' pedidos hoy';
-    document.getElementById('stat-mes-change').textContent = data.pedidos_mes + ' pedidos este mes';
     const pct = data.margen_mes ? data.margen_mes.toFixed(1) + '% de margen' : '—';
     document.getElementById('stat-ganancia-change').textContent = pct;
     const pend = document.getElementById('stat-pedidos-change');
     pend.textContent = data.pedidos_pendientes > 0 ? 'Requieren atención' : 'Todo al día';
     pend.className = 'stat-change ' + (data.pedidos_pendientes > 0 ? 'down' : 'up');
+
+    // Renderizar nuevas secciones
+    renderEstadoCaja(data.caja_hoy, data.ventas_dia);
+    renderAlertasPedidos(data.pedidos_atrasados, data.pedidos_para_hoy, data.pedidos_sin_pago);
+  }
+
+  function renderEstadoCaja(caja, ventasHoy) {
+    const contenido = document.getElementById('contenido-caja');
+    
+    if (!caja) {
+      // No hay caja abierta
+      contenido.innerHTML = `
+        <div style="text-align:center;padding:1rem">
+          <div style="font-size:48px;margin-bottom:0.5rem">🔒</div>
+          <div style="font-size:15px;font-weight:600;color:var(--gris-700);margin-bottom:0.5rem">Caja cerrada</div>
+          <div style="font-size:12px;color:var(--gris-500);margin-bottom:1rem">Debes abrir la caja para comenzar a vender</div>
+          <button class="btn btn-primary btn-sm" onclick="location.href='caja.html'">Abrir caja ahora</button>
+        </div>
+      `;
+      return;
+    }
+
+    if (caja.estado === 'abierta') {
+      const horaApertura = caja.hora_apertura ? new Date(caja.hora_apertura).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '—';
+      const saldoActual = caja.monto_apertura + ventasHoy;
+      
+      contenido.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;padding:12px;background:var(--success-light);border-radius:var(--radius-md);border:1px solid var(--success)">
+          <div style="font-size:32px">✅</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--success)">Caja abierta desde ${horaApertura}</div>
+            <div style="font-size:11px;color:var(--gris-600)">Puedes realizar ventas normalmente</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
+          <div>
+            <div style="font-size:11px;color:var(--gris-500);margin-bottom:4px">Monto inicial</div>
+            <div style="font-size:16px;font-weight:600">${Fmt.moneda(caja.monto_apertura)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--gris-500);margin-bottom:4px">Ventas hoy</div>
+            <div style="font-size:16px;font-weight:600;color:var(--success)">${Fmt.moneda(ventasHoy)}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" style="flex:1" onclick="location.href='caja.html'">Ver detalle</button>
+          <button class="btn btn-danger btn-sm" style="flex:1" onclick="location.href='caja.html'">Cerrar caja</button>
+        </div>
+      `;
+    } else {
+      // Caja cerrada
+      const horaCierre = caja.hora_cierre ? new Date(caja.hora_cierre).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '—';
+      
+      contenido.innerHTML = `
+        <div style="text-align:center;padding:1rem">
+          <div style="font-size:48px;margin-bottom:0.5rem">🔒</div>
+          <div style="font-size:15px;font-weight:600;color:var(--gris-700);margin-bottom:0.5rem">Caja cerrada</div>
+          <div style="font-size:12px;color:var(--gris-500);margin-bottom:0.5rem">Último cierre: Hoy ${horaCierre}</div>
+          ${caja.estado_arqueo ? `<div style="margin-bottom:1rem">${renderBadgeArqueo(caja.estado_arqueo)}</div>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="location.href='caja.html'">Ver detalle</button>
+        </div>
+      `;
+    }
+  }
+
+  function renderBadgeArqueo(estado) {
+    if (estado === 'cuadrado') {
+      return '<span class="badge badge-success">✅ Arqueo cuadrado</span>';
+    } else if (estado === 'faltante') {
+      return '<span class="badge badge-danger">⚠️ Faltante</span>';
+    } else if (estado === 'sobrante') {
+      return '<span class="badge badge-warning">ℹ️ Sobrante</span>';
+    }
+    return '';
+  }
+
+  function renderAlertasPedidos(atrasados, paraHoy, sinPago) {
+    const contenido = document.getElementById('contenido-alertas-pedidos');
+    
+    const total = atrasados + paraHoy + sinPago;
+    
+    if (total === 0) {
+      contenido.innerHTML = `
+        <div style="text-align:center;padding:1.5rem">
+          <div style="font-size:48px;margin-bottom:0.5rem">✅</div>
+          <div style="font-size:15px;font-weight:600;color:var(--success);margin-bottom:0.5rem">Todo al día</div>
+          <div style="font-size:12px;color:var(--gris-500)">No hay pedidos que requieran atención</div>
+        </div>
+      `;
+      return;
+    }
+
+    let alertasHTML = '';
+    
+    if (atrasados > 0) {
+      alertasHTML += `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--danger-light);border-radius:var(--radius-md);border:1px solid var(--danger)">
+          <div style="font-size:28px">🔴</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;color:var(--danger)">${atrasados} pedido${atrasados > 1 ? 's' : ''} atrasado${atrasados > 1 ? 's' : ''}</div>
+            <div style="font-size:11px;color:var(--gris-600)">Fecha de entrega pasada</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    if (paraHoy > 0) {
+      alertasHTML += `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--warning-light);border-radius:var(--radius-md);border:1px solid var(--warning)">
+          <div style="font-size:28px">🟡</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;color:var(--warning)">${paraHoy} pedido${paraHoy > 1 ? 's' : ''} para hoy</div>
+            <div style="font-size:11px;color:var(--gris-600)">Deben entregarse hoy</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    if (sinPago > 0) {
+      alertasHTML += `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(249,115,22,0.1);border-radius:var(--radius-md);border:1px solid #F97316">
+          <div style="font-size:28px">🟠</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;color:#F97316">${sinPago} pedido${sinPago > 1 ? 's' : ''} sin anticipo</div>
+            <div style="font-size:11px;color:var(--gris-600)">Requieren pago inicial</div>
+          </div>
+        </div>
+      `;
+    }
+
+    contenido.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1rem">
+        ${alertasHTML}
+      </div>
+      <button class="btn btn-outline btn-sm" style="width:100%" onclick="location.href='pedidos.html'">Ver todos los pedidos</button>
+    `;
   }
 
   function renderAlertasStock(items) {
