@@ -7,60 +7,240 @@
   <link rel="stylesheet" href="../../css/admin.css" />
   <style>
     @media print {
-      /* Ocultar elementos no necesarios en PDF */
+      /* Ocultar elementos no necesarios */
       .sidebar, .sidebar-overlay, .topbar, 
       .btn, button, .modal-overlay,
-      #estado-caja, #seccion-quiebres {
+      #estado-caja, #seccion-quiebres, #seccion-solicitudes,
+      .page-header > div:last-child {
         display: none !important;
       }
       
-      /* Ajustar layout para impresión */
+      /* Reset de layout */
+      * {
+        box-shadow: none !important;
+      }
+      
+      body {
+        background: white !important;
+        color: #000 !important;
+      }
+      
       .admin-main {
         margin: 0 !important;
-        padding: 20px !important;
+        padding: 0 !important;
       }
       
       .admin-content {
-        max-width: 100% !important;
+        max-width: 210mm !important;
+        margin: 0 auto !important;
+        padding: 15mm !important;
       }
       
-      /* Mejorar tablas en PDF */
-      .data-table {
-        page-break-inside: avoid;
+      /* ═══════════════════════════════════════
+         DISEÑO TIPO BOLETA ELECTRÓNICA
+      ═══════════════════════════════════════ */
+      
+      /* Ocultar título original */
+      .page-header h2,
+      .page-header p {
+        display: none !important;
       }
       
-      .data-table th {
-        background-color: #f5f5f5 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      
-      /* Agregar encabezado de empresa */
+      /* Encabezado tipo boleta */
       .page-header::before {
-        content: "ENCANTOS ETERNOS - Cierre de Caja";
+        content: "";
         display: block;
-        font-size: 24px;
-        font-weight: bold;
         text-align: center;
         margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #333;
       }
       
-      /* Mejorar cards en PDF */
-      .stat-card {
-        border: 1px solid #ddd !important;
+      .page-header::after {
+        content: "ENCANTOS ETERNOS\ARUC: 20XXXXXXXXX\A\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A\ACIERRE DE CAJA\A" attr(data-fecha-cierre) "\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        white-space: pre;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+        font-size: 11pt;
+        line-height: 1.4;
+        margin-bottom: 15px;
+        font-weight: bold;
+      }
+      
+      /* Datos del emisor */
+      .admin-content::before {
+        content: "DATOS DEL EMISOR\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A\ARazón Social:\AEncantos Eternos S.A.C.\A\ADirección Fiscal:\AAv. Principal 123, Lima - Perú\A\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A";
+        display: block;
+        white-space: pre;
+        font-family: 'Courier New', monospace;
+        font-size: 9pt;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        color: #333;
+      }
+      
+      /* Resumen de caja - estilo ticket */
+      .stats-grid {
+        display: block !important;
+        margin: 15px 0 !important;
         page-break-inside: avoid;
       }
       
-      /* Agregar fecha de impresión */
-      body::after {
-        content: "Impreso el: " attr(data-fecha-impresion);
+      .stat-card {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        background: white !important;
+        border: none !important;
+        border-bottom: 1px dashed #ccc !important;
+        padding: 8px 0 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+      
+      .stat-card .stat-icon {
+        display: none !important;
+      }
+      
+      .stat-card .stat-label {
+        font-family: 'Courier New', monospace !important;
+        font-size: 10pt !important;
+        color: #000 !important;
+        font-weight: normal !important;
+        text-transform: uppercase;
+      }
+      
+      .stat-card .stat-value {
+        font-family: 'Courier New', monospace !important;
+        font-size: 11pt !important;
+        color: #000 !important;
+        font-weight: bold !important;
+      }
+      
+      /* Separador de secciones */
+      .stats-grid::before {
+        content: "RESUMEN DE INGRESOS\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         display: block;
-        text-align: right;
-        font-size: 10px;
-        margin-top: 20px;
-        color: #666;
+        white-space: pre;
+        font-family: 'Courier New', monospace;
+        font-size: 10pt;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      
+      .stats-grid::after {
+        content: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-size: 10pt;
+        margin-top: 5px;
+        text-align: center;
+      }
+      
+      /* Ocultar desglose visual, solo mostrar tablas */
+      .admin-content > div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] {
+        display: block !important;
+      }
+      
+      .admin-content > div[style*="display:grid"] > .card:first-child {
+        display: none !important;
+      }
+      
+      /* Tablas estilo ticket */
+      .card {
+        background: white !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 15px 0 !important;
+        page-break-inside: avoid;
+      }
+      
+      .card > div[style*="font-weight:600"] {
+        font-family: 'Courier New', monospace !important;
+        font-size: 10pt !important;
+        font-weight: bold !important;
+        text-align: center;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+      
+      .card::before {
+        content: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-size: 10pt;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      
+      .table-wrap {
+        background: white !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+      
+      .data-table {
+        font-family: 'Courier New', monospace !important;
+        font-size: 9pt !important;
+        border-collapse: collapse !important;
+        page-break-inside: avoid;
+      }
+      
+      .data-table thead th {
+        background: white !important;
+        color: #000 !important;
+        border-top: 1px solid #000 !important;
+        border-bottom: 1px solid #000 !important;
+        padding: 6px 8px !important;
+        font-weight: bold !important;
+        text-transform: uppercase;
+        font-size: 8pt !important;
+      }
+      
+      .data-table tbody td {
+        border-bottom: 1px dashed #ccc !important;
+        padding: 6px 8px !important;
+        color: #000 !important;
+      }
+      
+      .data-table tbody tr:last-child td {
+        border-bottom: 1px solid #000 !important;
+      }
+      
+      /* Badge en tablas */
+      .badge {
+        background: transparent !important;
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        padding: 2px 6px !important;
+        font-size: 7pt !important;
+      }
+      
+      /* Footer del recibo */
+      .admin-content::after {
+        content: "\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A\AFIRMA Y SELLO\A\A\A_______________________________\AResponsable de Caja\A\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\ADocumento generado electrónicamente\AEncantos Eternos © 2024\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        white-space: pre;
+        font-family: 'Courier New', monospace;
+        font-size: 9pt;
+        line-height: 1.5;
+        text-align: center;
+        margin-top: 30px;
+        page-break-inside: avoid;
+      }
+      
+      /* Saltos de página */
+      .page-header,
+      .stats-grid,
+      .card {
+        page-break-inside: avoid;
+      }
+      
+      /* Ajustes finales */
+      @page {
+        margin: 15mm;
+        size: A4 portrait;
       }
     }
     
@@ -206,6 +386,347 @@
     
     .dark-mode #lista-quiebres .card:hover {
       box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+    
+    /* ═══════════════════════════════════════
+       ESTILOS PARA SOLICITUDES DE GASTOS
+    ═══════════════════════════════════════ */
+    
+    /* Cards de solicitudes */
+    .solicitud-card {
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    
+    .solicitud-card-pendiente {
+      background: linear-gradient(135deg, rgba(156,163,175,0.05) 0%, rgba(156,163,175,0.08) 100%);
+    }
+    
+    .solicitud-card-aprobada {
+      background: linear-gradient(135deg, rgba(34,197,94,0.05) 0%, rgba(34,197,94,0.08) 100%);
+    }
+    
+    .solicitud-card-rechazada {
+      background: linear-gradient(135deg, rgba(239,68,68,0.05) 0%, rgba(239,68,68,0.08) 100%);
+    }
+    
+    /* Modo oscuro - backgrounds más visibles */
+    body.dark-mode .solicitud-card-pendiente {
+      background: linear-gradient(135deg, rgba(156,163,175,0.08) 0%, rgba(156,163,175,0.12) 100%);
+    }
+    
+    body.dark-mode .solicitud-card-aprobada {
+      background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.12) 100%);
+    }
+    
+    body.dark-mode .solicitud-card-rechazada {
+      background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.12) 100%);
+    }
+    
+    /* Grid principal de la solicitud */
+    .solicitud-grid {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1.25rem;
+      align-items: center;
+    }
+    
+    /* Caja de hora y trabajador */
+    .solicitud-time-box {
+      text-align: center;
+      min-width: 90px;
+      background: var(--bg-card);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .solicitud-hora {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--success);
+      line-height: 1;
+    }
+    
+    .solicitud-trabajador {
+      font-size: 11px;
+      color: var(--gris-600);
+      margin-top: 6px;
+      font-weight: 600;
+    }
+    
+    body.dark-mode .solicitud-trabajador {
+      color: var(--gris-500);
+    }
+    
+    .solicitud-fecha {
+      font-size: 10px;
+      color: var(--gris-500);
+      margin-top: 2px;
+    }
+    
+    body.dark-mode .solicitud-fecha {
+      color: var(--gris-400);
+    }
+    
+    /* Grid de detalles */
+    .solicitud-detalles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    
+    .solicitud-detalle-item {
+      background: var(--bg-card);
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: var(--shadow-xs);
+    }
+    
+    .solicitud-detalle-label {
+      font-size: 10px;
+      color: var(--gris-600);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    body.dark-mode .solicitud-detalle-label {
+      color: var(--gris-500);
+    }
+    
+    .solicitud-detalle-valor {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gris-800);
+      text-transform: capitalize;
+    }
+    
+    body.dark-mode .solicitud-detalle-valor {
+      color: var(--gris-700);
+    }
+    
+    .solicitud-monto {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--success);
+    }
+    
+    .solicitud-descripcion {
+      grid-column: 1 / -1;
+      background: var(--gris-50);
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--success);
+    }
+    
+    body.dark-mode .solicitud-descripcion {
+      background: var(--gris-100);
+    }
+    
+    .solicitud-rechazo {
+      grid-column: 1 / -1;
+      background: var(--danger-bg);
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--danger);
+    }
+    
+    .solicitud-rechazo .solicitud-detalle-label {
+      color: var(--danger);
+    }
+    
+    .solicitud-rechazo .solicitud-detalle-valor {
+      color: var(--danger);
+      font-style: italic;
+    }
+    
+    /* Columna de acciones */
+    .solicitud-acciones {
+      min-width: 160px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    /* Cajas de estado */
+    .solicitud-estado-box {
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    
+    .solicitud-estado-label {
+      font-size: 11px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    
+    .solicitud-estado-valor {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    
+    .solicitud-estado-info {
+      font-size: 10px;
+      margin-top: 4px;
+    }
+    
+    /* Estado pendiente */
+    .solicitud-pendiente {
+      background: linear-gradient(135deg, var(--gris-100) 0%, var(--gris-200) 100%);
+      border-color: var(--gris-400);
+    }
+    
+    .solicitud-pendiente .solicitud-estado-label {
+      color: var(--gris-600);
+    }
+    
+    .solicitud-pendiente .solicitud-estado-valor {
+      color: var(--gris-700);
+    }
+    
+    body.dark-mode .solicitud-pendiente {
+      background: linear-gradient(135deg, var(--gris-200) 0%, var(--gris-300) 100%);
+    }
+    
+    body.dark-mode .solicitud-pendiente .solicitud-estado-label {
+      color: var(--gris-500);
+    }
+    
+    body.dark-mode .solicitud-pendiente .solicitud-estado-valor {
+      color: var(--gris-600);
+    }
+    
+    /* Estado aprobada */
+    .solicitud-aprobada {
+      background: linear-gradient(135deg, var(--success-bg) 0%, rgba(34,197,94,0.15) 100%);
+      border-color: var(--success);
+    }
+    
+    .solicitud-aprobada .solicitud-estado-label,
+    .solicitud-aprobada .solicitud-estado-valor,
+    .solicitud-aprobada .solicitud-estado-info {
+      color: var(--success);
+    }
+    
+    body.dark-mode .solicitud-aprobada .solicitud-estado-valor {
+      color: var(--verde-400);
+    }
+    
+    /* Estado rechazada */
+    .solicitud-rechazada {
+      background: linear-gradient(135deg, var(--danger-bg) 0%, rgba(239,68,68,0.15) 100%);
+      border-color: var(--danger);
+    }
+    
+    .solicitud-rechazada .solicitud-estado-label,
+    .solicitud-rechazada .solicitud-estado-valor,
+    .solicitud-rechazada .solicitud-estado-info {
+      color: var(--danger);
+    }
+    
+    body.dark-mode .solicitud-rechazada .solicitud-estado-valor {
+      color: #FCA5A5;
+    }
+    
+    /* ═══════════════════════════════════════
+       RESPONSIVE PARA SOLICITUDES
+    ═══════════════════════════════════════ */
+    
+    /* Tablets */
+    @media (max-width: 1024px) {
+      .solicitud-grid {
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
+      }
+      
+      .solicitud-acciones {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        justify-content: space-between;
+        min-width: auto;
+      }
+      
+      .solicitud-estado-box {
+        flex: 1;
+      }
+    }
+    
+    /* Móviles */
+    @media (max-width: 768px) {
+      .solicitud-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .solicitud-time-box {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-width: auto;
+        width: 100%;
+      }
+      
+      .solicitud-hora {
+        font-size: 20px;
+      }
+      
+      .solicitud-trabajador,
+      .solicitud-fecha {
+        text-align: right;
+      }
+      
+      .solicitud-detalles {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      
+      .solicitud-detalle-item {
+        padding: 8px;
+      }
+      
+      .solicitud-detalle-label {
+        font-size: 9px;
+      }
+      
+      .solicitud-detalle-valor {
+        font-size: 12px;
+      }
+      
+      .solicitud-monto {
+        font-size: 16px;
+      }
+      
+      .solicitud-acciones {
+        flex-direction: column;
+      }
+      
+      .solicitud-estado-box {
+        width: 100%;
+      }
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+      .solicitud-card {
+        padding: 1rem;
+      }
+      
+      .solicitud-detalles {
+        grid-template-columns: 1fr;
+      }
+      
+      .solicitud-time-box {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .solicitud-trabajador,
+      .solicitud-fecha {
+        text-align: center;
+      }
     }
   </style>
 </head>
@@ -1386,22 +1907,34 @@
       return;
     }
 
-    // Agregar clase para estilos de impresión
-    document.body.classList.add('imprimiendo');
+    // Agregar fecha al header para el recibo
+    const fecha = new Date();
+    const fechaStr = fecha.toLocaleDateString('es-PE', { 
+      weekday: 'long',
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const horaStr = fecha.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const pageHeader = document.querySelector('.page-header');
+    pageHeader.setAttribute('data-fecha-cierre', `Fecha: ${fechaStr}\nHora: ${horaStr}`);
     
     // Configurar título del documento
     const tituloOriginal = document.title;
-    const fecha = new Date().toLocaleDateString('es-PE');
-    document.title = `Cierre de Caja - ${fecha}`;
+    document.title = `Cierre_Caja_${fecha.toISOString().split('T')[0]}`;
 
     // Imprimir
     window.print();
 
     // Restaurar
     document.title = tituloOriginal;
-    document.body.classList.remove('imprimiendo');
+    pageHeader.removeAttribute('data-fecha-cierre');
     
-    Toast.success('Documento listo para guardar como PDF');
+    Toast.success('Recibo listo para guardar como PDF');
   }
 
   // Notificaciones
@@ -1507,18 +2040,18 @@
       // Determinar color y estado
       let estadoHTML = '';
       let cardBorderColor = '';
-      let cardBgGradient = '';
+      let cardBgClass = '';
       let botonesHTML = '';
       
       if (s.estado === 'pendiente') {
         estadoHTML = `
-          <div style="background:linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--gris-400)">
-            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px;font-weight:600">Estado</div>
-            <div style="font-size:16px;font-weight:700;color:var(--gris-700)">⏳ Pendiente</div>
+          <div class="solicitud-estado-box solicitud-pendiente">
+            <div class="solicitud-estado-label">Estado</div>
+            <div class="solicitud-estado-valor">⏳ Pendiente</div>
           </div>
         `;
         cardBorderColor = 'var(--gris-400)';
-        cardBgGradient = 'linear-gradient(135deg, rgba(156,163,175,0.05) 0%, rgba(156,163,175,0.1) 100%)';
+        cardBgClass = 'solicitud-card-pendiente';
         
         // Botones solo para admin
         if (usuarioRol === 'admin' || usuarioRol === 'duena') {
@@ -1534,74 +2067,74 @@
           month: 'short' 
         }) : '';
         estadoHTML = `
-          <div style="background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--success)">
-            <div style="font-size:11px;color:var(--success);margin-bottom:4px;font-weight:600">Estado</div>
-            <div style="font-size:16px;font-weight:700;color:var(--success)">✅ Aprobada</div>
-            ${s.aprobado_por_nombre ? `<div style="font-size:10px;color:var(--success);margin-top:4px">Por: ${s.aprobado_por_nombre}</div>` : ''}
-            ${fechaAprobacion ? `<div style="font-size:10px;color:var(--success)">${fechaAprobacion}</div>` : ''}
+          <div class="solicitud-estado-box solicitud-aprobada">
+            <div class="solicitud-estado-label">Estado</div>
+            <div class="solicitud-estado-valor">✅ Aprobada</div>
+            ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
+            ${fechaAprobacion ? `<div class="solicitud-estado-info">${fechaAprobacion}</div>` : ''}
           </div>
         `;
         cardBorderColor = 'var(--success)';
-        cardBgGradient = 'linear-gradient(135deg, rgba(45,140,78,0.05) 0%, rgba(45,140,78,0.1) 100%)';
+        cardBgClass = 'solicitud-card-aprobada';
       } else if (s.estado === 'rechazada') {
         const fechaRechazo = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
           day: '2-digit', 
           month: 'short' 
         }) : '';
         estadoHTML = `
-          <div style="background:linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--danger)">
-            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;font-weight:600">Estado</div>
-            <div style="font-size:16px;font-weight:700;color:var(--danger)">❌ Rechazada</div>
-            ${s.aprobado_por_nombre ? `<div style="font-size:10px;color:var(--danger);margin-top:4px">Por: ${s.aprobado_por_nombre}</div>` : ''}
-            ${fechaRechazo ? `<div style="font-size:10px;color:var(--danger)">${fechaRechazo}</div>` : ''}
+          <div class="solicitud-estado-box solicitud-rechazada">
+            <div class="solicitud-estado-label">Estado</div>
+            <div class="solicitud-estado-valor">❌ Rechazada</div>
+            ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
+            ${fechaRechazo ? `<div class="solicitud-estado-info">${fechaRechazo}</div>` : ''}
           </div>
         `;
         cardBorderColor = 'var(--danger)';
-        cardBgGradient = 'linear-gradient(135deg, rgba(196,50,50,0.05) 0%, rgba(196,50,50,0.1) 100%)';
+        cardBgClass = 'solicitud-card-rechazada';
       }
       
       return `
-        <div class="card" style="padding:1.25rem;border-left:6px solid ${cardBorderColor};background:${cardBgGradient}">
-          <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1.25rem;align-items:center">
+        <div class="card solicitud-card ${cardBgClass}" style="border-left:6px solid ${cardBorderColor}">
+          <div class="solicitud-grid">
             <!-- Hora y trabajador -->
-            <div style="text-align:center;min-width:90px;background:var(--card-bg, white);padding:12px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-              <div style="font-size:24px;font-weight:800;color:var(--success);line-height:1">${horaStr}</div>
-              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-top:6px;font-weight:600">${s.trabajador_nombre || 'N/A'}</div>
-              <div style="font-size:10px;color:var(--text-secondary, var(--gris-400));margin-top:2px">${fechaStr}</div>
+            <div class="solicitud-time-box">
+              <div class="solicitud-hora">${horaStr}</div>
+              <div class="solicitud-trabajador">${s.trabajador_nombre || 'N/A'}</div>
+              <div class="solicitud-fecha">${fechaStr}</div>
             </div>
             
             <!-- Detalles -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">
-              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">💰 Monto</div>
-                <div style="font-size:18px;font-weight:700;color:var(--success)">${Fmt.moneda(s.monto)}</div>
+            <div class="solicitud-detalles">
+              <div class="solicitud-detalle-item">
+                <div class="solicitud-detalle-label">💰 Monto</div>
+                <div class="solicitud-detalle-valor solicitud-monto">${Fmt.moneda(s.monto)}</div>
               </div>
-              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📁 Categoría</div>
-                <div style="font-size:14px;font-weight:600;color:var(--text-primary, var(--gris-900));text-transform:capitalize">${s.categoria}</div>
+              <div class="solicitud-detalle-item">
+                <div class="solicitud-detalle-label">📁 Categoría</div>
+                <div class="solicitud-detalle-valor">${s.categoria}</div>
               </div>
-              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">🏢 Empresa</div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary, var(--gris-900))">${s.empresa}</div>
+              <div class="solicitud-detalle-item">
+                <div class="solicitud-detalle-label">🏢 Empresa</div>
+                <div class="solicitud-detalle-valor">${s.empresa}</div>
               </div>
-              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📄 Comprobante</div>
-                <div style="font-size:13px;font-weight:600;color:var(--text-primary, var(--gris-900))">${s.numero_comprobante}</div>
+              <div class="solicitud-detalle-item">
+                <div class="solicitud-detalle-label">📄 Comprobante</div>
+                <div class="solicitud-detalle-valor">${s.numero_comprobante}</div>
               </div>
-              <div style="grid-column:1/-1;background:var(--bg-secondary, var(--gris-50));padding:10px;border-radius:6px;border-left:3px solid var(--success)">
-                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📝 Descripción</div>
-                <div style="font-size:13px;color:var(--text-primary, var(--gris-700))">${s.descripcion}</div>
+              <div class="solicitud-descripcion">
+                <div class="solicitud-detalle-label">📝 Descripción</div>
+                <div class="solicitud-detalle-valor">${s.descripcion}</div>
               </div>
               ${s.comentario_rechazo ? `
-                <div style="grid-column:1/-1;background:var(--danger-light, #ffebee);padding:10px;border-radius:6px;border-left:3px solid var(--danger)">
-                  <div style="font-size:10px;color:var(--danger);margin-bottom:4px;text-transform:uppercase;font-weight:600">💬 Motivo de rechazo</div>
-                  <div style="font-size:13px;color:var(--danger);font-style:italic">"${s.comentario_rechazo}"</div>
+                <div class="solicitud-rechazo">
+                  <div class="solicitud-detalle-label">💬 Motivo de rechazo</div>
+                  <div class="solicitud-detalle-valor">"${s.comentario_rechazo}"</div>
                 </div>
               ` : ''}
             </div>
             
             <!-- Estado y botones -->
-            <div style="min-width:160px;display:flex;flex-direction:column;gap:8px">
+            <div class="solicitud-acciones">
               ${estadoHTML}
               ${botonesHTML ? `<div style="display:flex;gap:8px">${botonesHTML}</div>` : ''}
             </div>
