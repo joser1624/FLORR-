@@ -222,8 +222,9 @@
           <p id="fecha-hoy-txt" style="color:var(--gris-500);font-size:14px"></p>
           <div id="estado-caja" style="margin-top:8px"></div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-outline" onclick="exportarPDF()" id="btn-imprimir">📄 Exportar PDF</button>
+          <button class="btn btn-success" onclick="abrirModalSolicitudGasto()" id="btn-solicitar-gasto" style="display:none">💰 Solicitar Gasto</button>
           <button class="btn btn-warning" onclick="abrirModalQuiebre()" id="btn-quiebre" style="display:none">📊 Quiebre</button>
           <button class="btn btn-primary" onclick="Modal.open('modal-apertura')" id="btn-abrir">Abrir caja</button>
           <button class="btn btn-danger" onclick="confirmarCierre()" id="btn-cerrar" style="display:none">Cerrar caja</button>
@@ -277,6 +278,23 @@
           <span id="count-quiebres" class="badge badge-primary" style="font-size:12px">0 cortes</span>
         </div>
         <div id="lista-quiebres" style="display:grid;gap:12px"></div>
+      </div>
+
+      <!-- Solicitudes de Gastos -->
+      <div id="seccion-solicitudes" style="margin-bottom:1.5rem;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <div style="font-weight:600;font-size:15px">💰 Solicitudes de Gastos</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="count-solicitudes-pendientes" class="badge badge-warning" style="font-size:12px;display:none">0 pendientes</span>
+            <select id="filtro-estado-solicitudes" class="form-control" style="max-width:150px;font-size:13px" onchange="cargarSolicitudesGastos()">
+              <option value="">Todas</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="aprobada">Aprobadas</option>
+              <option value="rechazada">Rechazadas</option>
+            </select>
+          </div>
+        </div>
+        <div id="lista-solicitudes" style="display:grid;gap:12px"></div>
       </div>
 
       <!-- Transacciones del día -->
@@ -509,6 +527,92 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Solicitud de Gasto -->
+<div class="modal-overlay" id="modal-solicitud-gasto">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--success) 0%, #2d8c4e 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem">
+      <div>
+        <h3 style="margin:0;color:white;font-size:1.5rem">💰 Solicitar Gasto</h3>
+        <p style="margin:0.25rem 0 0 0;font-size:13px;opacity:0.9">Completa los datos del comprobante</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-solicitud-gasto')" style="color:white;opacity:0.9">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div class="form-stack">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Monto (S/) <span class="req">*</span></label>
+            <input class="form-control" type="number" id="solicitud-monto" step="0.50" min="0" placeholder="Ej: 50.00" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoría <span class="req">*</span></label>
+            <select class="form-control" id="solicitud-categoria" required>
+              <option value="">Seleccionar...</option>
+              <option value="flores">Flores</option>
+              <option value="transporte">Transporte</option>
+              <option value="materiales">Materiales</option>
+              <option value="mantenimiento">Mantenimiento</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Descripción <span class="req">*</span></label>
+          <textarea class="form-control" id="solicitud-descripcion" rows="2" placeholder="Ej: Compra de rosas rojas para arreglos" required></textarea>
+        </div>
+        
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Empresa/Proveedor <span class="req">*</span></label>
+            <input class="form-control" type="text" id="solicitud-empresa" placeholder="Ej: Flores del Valle" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° Boleta/Factura <span class="req">*</span></label>
+            <input class="form-control" type="text" id="solicitud-comprobante" placeholder="Ej: B001-12345" required />
+          </div>
+        </div>
+        
+        <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px;font-size:12px;color:var(--text-secondary, var(--gris-600));border-left:3px solid var(--success)">
+          <strong>📝 Nota:</strong> Esta solicitud será enviada al administrador para su aprobación. Recibirás una notificación cuando sea revisada.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:1rem 1.5rem;background:var(--gris-50)">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-solicitud-gasto')">Cancelar</button>
+      <button class="btn btn-success btn-sm" onclick="crearSolicitudGasto()" style="padding:10px 24px;font-weight:600">
+        💰 Enviar Solicitud
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Aprobar/Rechazar Solicitud (Admin) -->
+<div class="modal-overlay" id="modal-revisar-solicitud">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>📋 Revisar Solicitud de Gasto</h3>
+      <button class="btn-close" onclick="Modal.close('modal-revisar-solicitud')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detalle-solicitud-revisar" style="padding:1rem">
+        <!-- Contenido dinámico -->
+      </div>
+      <div class="form-group" id="grupo-comentario-rechazo" style="display:none">
+        <label class="form-label">Comentario de rechazo <span class="req">*</span></label>
+        <textarea class="form-control" id="comentario-rechazo" rows="3" placeholder="Explica el motivo del rechazo..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-revisar-solicitud')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="mostrarCampoRechazo()" id="btn-mostrar-rechazo">❌ Rechazar</button>
+      <button class="btn btn-danger btn-sm" onclick="rechazarSolicitud()" id="btn-confirmar-rechazo" style="display:none">Confirmar Rechazo</button>
+      <button class="btn btn-success btn-sm" onclick="aprobarSolicitud()" id="btn-aprobar">✅ Aprobar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -551,7 +655,9 @@
     const btnCerrar = document.getElementById('btn-cerrar');
     const btnImprimir = document.getElementById('btn-imprimir');
     const btnQuiebre = document.getElementById('btn-quiebre');
+    const btnSolicitarGasto = document.getElementById('btn-solicitar-gasto');
     const estadoCaja = document.getElementById('estado-caja');
+    const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
 
     console.log('Actualizando botones con estado:', estado);
 
@@ -561,18 +667,32 @@
     }
 
     if (estado === 'abierta') {
-      // Caja abierta: mostrar botones de quiebre y cerrar
+      // Caja abierta: mostrar botones de quiebre, cerrar y solicitar gasto
       btnAbrir.style.display = 'none';
       btnCerrar.style.display = 'inline-block';
       btnQuiebre.style.display = 'inline-block';
       btnImprimir.disabled = false;
+      
+      // Mostrar botón de solicitar gasto para todos los roles
+      if (btnSolicitarGasto) {
+        btnSolicitarGasto.style.display = 'inline-block';
+      }
+      
       estadoCaja.innerHTML = '<span class="badge badge-success" style="font-size:12px">✓ Caja abierta</span>';
+      
+      // Cargar solicitudes de gastos
+      cargarSolicitudesGastos();
     } else {
       // Caja cerrada o sin abrir: mostrar solo botón de abrir
       // Esto permite abrir una nueva caja para el día siguiente
       btnAbrir.style.display = 'inline-block';
       btnCerrar.style.display = 'none';
       btnQuiebre.style.display = 'none';
+      
+      // Ocultar botón de solicitar gasto
+      if (btnSolicitarGasto) {
+        btnSolicitarGasto.style.display = 'none';
+      }
       
       if (estado === 'cerrada') {
         btnImprimir.disabled = false;
@@ -582,11 +702,15 @@
         btnImprimir.disabled = true;
         estadoCaja.innerHTML = '<span class="badge badge-warning" style="font-size:12px">⚠ Caja no abierta</span>';
       }
+      
+      // Ocultar sección de solicitudes
+      document.getElementById('seccion-solicitudes').style.display = 'none';
     }
 
     console.log('Botón abrir display:', btnAbrir.style.display);
     console.log('Botón cerrar display:', btnCerrar.style.display);
     console.log('Botón quiebre display:', btnQuiebre ? btnQuiebre.style.display : 'N/A');
+    console.log('Botón solicitar gasto display:', btnSolicitarGasto ? btnSolicitarGasto.style.display : 'N/A');
   }
 
   function renderCaja(d) {
@@ -1287,6 +1411,338 @@
   // Verificar caja al cargar y cada 30 minutos
   verificarCajaAbierta();
   setInterval(verificarCajaAbierta, 30 * 60 * 1000); // 30 minutos
+
+  // =====================
+  // SOLICITUDES DE GASTOS
+  // =====================
+  
+  let solicitudActualId = null;
+  
+  async function cargarSolicitudesGastos() {
+    try {
+      const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
+      const estado = document.getElementById('filtro-estado-solicitudes')?.value || '';
+      
+      let url = '/solicitudes-gastos';
+      if (estado) {
+        url += `?estado=${estado}`;
+      }
+      
+      const response = await API.get(url);
+      const solicitudes = response.data || [];
+      
+      console.log('📋 Solicitudes cargadas:', solicitudes.length);
+      
+      if (solicitudes.length > 0) {
+        renderSolicitudes(solicitudes, user.rol);
+        document.getElementById('seccion-solicitudes').style.display = 'block';
+        
+        // Actualizar contador de pendientes
+        const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
+        const badgePendientes = document.getElementById('count-solicitudes-pendientes');
+        if (badgePendientes) {
+          badgePendientes.textContent = `${pendientes} ${pendientes === 1 ? 'pendiente' : 'pendientes'}`;
+          badgePendientes.style.display = pendientes > 0 ? 'inline-flex' : 'none';
+        }
+      } else {
+        document.getElementById('seccion-solicitudes').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error al cargar solicitudes:', error);
+      document.getElementById('seccion-solicitudes').style.display = 'none';
+    }
+  }
+  
+  function renderSolicitudes(solicitudes, usuarioRol) {
+    const container = document.getElementById('lista-solicitudes');
+    
+    container.innerHTML = solicitudes.map(s => {
+      const fecha = new Date(s.fecha_solicitud);
+      const fechaStr = fecha.toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+      const horaStr = fecha.toLocaleTimeString('es-PE', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      // Determinar color y estado
+      let estadoHTML = '';
+      let cardBorderColor = '';
+      let cardBgGradient = '';
+      let botonesHTML = '';
+      
+      if (s.estado === 'pendiente') {
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--gris-400)">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px;font-weight:600">Estado</div>
+            <div style="font-size:16px;font-weight:700;color:var(--gris-700)">⏳ Pendiente</div>
+          </div>
+        `;
+        cardBorderColor = 'var(--gris-400)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(156,163,175,0.05) 0%, rgba(156,163,175,0.1) 100%)';
+        
+        // Botones solo para admin
+        if (usuarioRol === 'admin' || usuarioRol === 'duena') {
+          botonesHTML = `
+            <button class="btn btn-success btn-sm" onclick="abrirModalRevisarSolicitud(${s.id})" style="flex:1">
+              ✅ Revisar
+            </button>
+          `;
+        }
+      } else if (s.estado === 'aprobada') {
+        const fechaAprobacion = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
+          day: '2-digit', 
+          month: 'short' 
+        }) : '';
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--success)">
+            <div style="font-size:11px;color:var(--success);margin-bottom:4px;font-weight:600">Estado</div>
+            <div style="font-size:16px;font-weight:700;color:var(--success)">✅ Aprobada</div>
+            ${s.aprobado_por_nombre ? `<div style="font-size:10px;color:var(--success);margin-top:4px">Por: ${s.aprobado_por_nombre}</div>` : ''}
+            ${fechaAprobacion ? `<div style="font-size:10px;color:var(--success)">${fechaAprobacion}</div>` : ''}
+          </div>
+        `;
+        cardBorderColor = 'var(--success)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(45,140,78,0.05) 0%, rgba(45,140,78,0.1) 100%)';
+      } else if (s.estado === 'rechazada') {
+        const fechaRechazo = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
+          day: '2-digit', 
+          month: 'short' 
+        }) : '';
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--danger)">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;font-weight:600">Estado</div>
+            <div style="font-size:16px;font-weight:700;color:var(--danger)">❌ Rechazada</div>
+            ${s.aprobado_por_nombre ? `<div style="font-size:10px;color:var(--danger);margin-top:4px">Por: ${s.aprobado_por_nombre}</div>` : ''}
+            ${fechaRechazo ? `<div style="font-size:10px;color:var(--danger)">${fechaRechazo}</div>` : ''}
+          </div>
+        `;
+        cardBorderColor = 'var(--danger)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(196,50,50,0.05) 0%, rgba(196,50,50,0.1) 100%)';
+      }
+      
+      return `
+        <div class="card" style="padding:1.25rem;border-left:6px solid ${cardBorderColor};background:${cardBgGradient}">
+          <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1.25rem;align-items:center">
+            <!-- Hora y trabajador -->
+            <div style="text-align:center;min-width:90px;background:var(--card-bg, white);padding:12px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
+              <div style="font-size:24px;font-weight:800;color:var(--success);line-height:1">${horaStr}</div>
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-top:6px;font-weight:600">${s.trabajador_nombre || 'N/A'}</div>
+              <div style="font-size:10px;color:var(--text-secondary, var(--gris-400));margin-top:2px">${fechaStr}</div>
+            </div>
+            
+            <!-- Detalles -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">
+              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">💰 Monto</div>
+                <div style="font-size:18px;font-weight:700;color:var(--success)">${Fmt.moneda(s.monto)}</div>
+              </div>
+              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📁 Categoría</div>
+                <div style="font-size:14px;font-weight:600;color:var(--text-primary, var(--gris-900));text-transform:capitalize">${s.categoria}</div>
+              </div>
+              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">🏢 Empresa</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary, var(--gris-900))">${s.empresa}</div>
+              </div>
+              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📄 Comprobante</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-primary, var(--gris-900))">${s.numero_comprobante}</div>
+              </div>
+              <div style="grid-column:1/-1;background:var(--bg-secondary, var(--gris-50));padding:10px;border-radius:6px;border-left:3px solid var(--success)">
+                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📝 Descripción</div>
+                <div style="font-size:13px;color:var(--text-primary, var(--gris-700))">${s.descripcion}</div>
+              </div>
+              ${s.comentario_rechazo ? `
+                <div style="grid-column:1/-1;background:var(--danger-light, #ffebee);padding:10px;border-radius:6px;border-left:3px solid var(--danger)">
+                  <div style="font-size:10px;color:var(--danger);margin-bottom:4px;text-transform:uppercase;font-weight:600">💬 Motivo de rechazo</div>
+                  <div style="font-size:13px;color:var(--danger);font-style:italic">"${s.comentario_rechazo}"</div>
+                </div>
+              ` : ''}
+            </div>
+            
+            <!-- Estado y botones -->
+            <div style="min-width:160px;display:flex;flex-direction:column;gap:8px">
+              ${estadoHTML}
+              ${botonesHTML ? `<div style="display:flex;gap:8px">${botonesHTML}</div>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  function abrirModalSolicitudGasto() {
+    // Limpiar formulario
+    document.getElementById('solicitud-monto').value = '';
+    document.getElementById('solicitud-categoria').value = '';
+    document.getElementById('solicitud-descripcion').value = '';
+    document.getElementById('solicitud-empresa').value = '';
+    document.getElementById('solicitud-comprobante').value = '';
+    
+    Modal.open('modal-solicitud-gasto');
+  }
+  
+  async function crearSolicitudGasto() {
+    const monto = parseFloat(document.getElementById('solicitud-monto').value);
+    const categoria = document.getElementById('solicitud-categoria').value;
+    const descripcion = document.getElementById('solicitud-descripcion').value.trim();
+    const empresa = document.getElementById('solicitud-empresa').value.trim();
+    const numero_comprobante = document.getElementById('solicitud-comprobante').value.trim();
+    
+    // Validaciones
+    if (!monto || monto <= 0) {
+      Toast.warning('Ingresa un monto válido');
+      return;
+    }
+    if (!categoria) {
+      Toast.warning('Selecciona una categoría');
+      return;
+    }
+    if (!descripcion) {
+      Toast.warning('Ingresa una descripción');
+      return;
+    }
+    if (!empresa) {
+      Toast.warning('Ingresa el nombre de la empresa');
+      return;
+    }
+    if (!numero_comprobante) {
+      Toast.warning('Ingresa el número de comprobante');
+      return;
+    }
+    
+    const payload = {
+      monto,
+      categoria,
+      descripcion,
+      empresa,
+      numero_comprobante
+    };
+    
+    try {
+      const response = await API.post('/solicitudes-gastos', payload);
+      Toast.success('Solicitud enviada correctamente. Pendiente de aprobación.');
+      Modal.close('modal-solicitud-gasto');
+      await cargarSolicitudesGastos();
+    } catch (error) {
+      console.error('Error al crear solicitud:', error);
+      Toast.error(error.message || 'Error al crear la solicitud');
+    }
+  }
+  
+  async function abrirModalRevisarSolicitud(id) {
+    try {
+      const response = await API.get(`/solicitudes-gastos/${id}`);
+      const solicitud = response.data || response;
+      
+      solicitudActualId = id;
+      
+      const fecha = new Date(solicitud.fecha_solicitud);
+      const fechaStr = fecha.toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'long', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const detalleHTML = `
+        <div style="display:grid;gap:12px">
+          <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Solicitante</div>
+            <div style="font-size:15px;font-weight:600">${solicitud.trabajador_nombre}</div>
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-top:4px">${fechaStr}</div>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Monto</div>
+              <div style="font-size:20px;font-weight:700;color:var(--success)">${Fmt.moneda(solicitud.monto)}</div>
+            </div>
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Categoría</div>
+              <div style="font-size:15px;font-weight:600;text-transform:capitalize">${solicitud.categoria}</div>
+            </div>
+          </div>
+          
+          <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Descripción</div>
+            <div style="font-size:14px">${solicitud.descripcion}</div>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Empresa</div>
+              <div style="font-size:14px;font-weight:600">${solicitud.empresa}</div>
+            </div>
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">N° Comprobante</div>
+              <div style="font-size:14px;font-weight:600">${solicitud.numero_comprobante}</div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('detalle-solicitud-revisar').innerHTML = detalleHTML;
+      document.getElementById('grupo-comentario-rechazo').style.display = 'none';
+      document.getElementById('comentario-rechazo').value = '';
+      document.getElementById('btn-mostrar-rechazo').style.display = 'inline-block';
+      document.getElementById('btn-confirmar-rechazo').style.display = 'none';
+      document.getElementById('btn-aprobar').style.display = 'inline-block';
+      
+      Modal.open('modal-revisar-solicitud');
+    } catch (error) {
+      console.error('Error al cargar solicitud:', error);
+      Toast.error('No se pudo cargar la solicitud');
+    }
+  }
+  
+  function mostrarCampoRechazo() {
+    document.getElementById('grupo-comentario-rechazo').style.display = 'block';
+    document.getElementById('btn-mostrar-rechazo').style.display = 'none';
+    document.getElementById('btn-confirmar-rechazo').style.display = 'inline-block';
+    document.getElementById('btn-aprobar').style.display = 'none';
+  }
+  
+  async function aprobarSolicitud() {
+    if (!solicitudActualId) return;
+    
+    try {
+      const response = await API.put(`/solicitudes-gastos/${solicitudActualId}/aprobar`);
+      Toast.success('Solicitud aprobada correctamente. Gasto registrado.');
+      Modal.close('modal-revisar-solicitud');
+      await cargarSolicitudesGastos();
+      await cargarCaja(); // Recargar para actualizar gastos
+    } catch (error) {
+      console.error('Error al aprobar solicitud:', error);
+      Toast.error(error.message || 'Error al aprobar la solicitud');
+    }
+  }
+  
+  async function rechazarSolicitud() {
+    if (!solicitudActualId) return;
+    
+    const comentario = document.getElementById('comentario-rechazo').value.trim();
+    
+    if (!comentario) {
+      Toast.warning('Debes ingresar un comentario para rechazar');
+      return;
+    }
+    
+    try {
+      const response = await API.put(`/solicitudes-gastos/${solicitudActualId}/rechazar`, { comentario });
+      Toast.success('Solicitud rechazada correctamente.');
+      Modal.close('modal-revisar-solicitud');
+      await cargarSolicitudesGastos();
+    } catch (error) {
+      console.error('Error al rechazar solicitud:', error);
+      Toast.error(error.message || 'Error al rechazar la solicitud');
+    }
+  }
 
   cargarCaja();
 </script>
