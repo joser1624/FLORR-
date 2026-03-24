@@ -10,7 +10,7 @@
       /* Ocultar elementos no necesarios en PDF */
       .sidebar, .sidebar-overlay, .topbar, 
       .btn, button, .modal-overlay,
-      #estado-caja {
+      #estado-caja, #seccion-quiebres {
         display: none !important;
       }
       
@@ -63,6 +63,22 @@
         color: #666;
       }
     }
+    
+    /* Animación para nuevos quiebres */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    #lista-quiebres > .card {
+      animation: slideIn 0.3s ease-out;
+    }
   </style>
 </head>
 <body>
@@ -80,6 +96,7 @@
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" onclick="exportarPDF()" id="btn-imprimir">📄 Exportar PDF</button>
+          <button class="btn btn-warning" onclick="abrirModalQuiebre()" id="btn-quiebre" style="display:none">📊 Quiebre</button>
           <button class="btn btn-primary" onclick="Modal.open('modal-apertura')" id="btn-abrir">Abrir caja</button>
           <button class="btn btn-danger" onclick="confirmarCierre()" id="btn-cerrar" style="display:none">Cerrar caja</button>
         </div>
@@ -125,6 +142,15 @@
 
       </div>
 
+      <!-- Quiebres del día -->
+      <div id="seccion-quiebres" style="margin-bottom:1.5rem;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <div style="font-weight:600;font-size:15px">📊 Quiebres del día</div>
+          <span id="count-quiebres" class="badge badge-primary" style="font-size:12px">0 cortes</span>
+        </div>
+        <div id="lista-quiebres" style="display:grid;gap:12px"></div>
+      </div>
+
       <!-- Transacciones del día -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
         <div style="font-weight:600;font-size:15px">Transacciones del día</div>
@@ -157,6 +183,110 @@
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-apertura')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="abrirCaja()">Confirmar apertura</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Quiebre de Caja -->
+<div class="modal-overlay" id="modal-quiebre">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--rosa-500) 0%, var(--rosa-600) 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem">
+      <div>
+        <h3 style="margin:0;color:white;font-size:1.5rem">📊 Quiebre de Caja</h3>
+        <p style="margin:0.25rem 0 0 0;font-size:13px;opacity:0.9">Corte parcial del día</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-quiebre')" style="color:white;opacity:0.9">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div class="form-stack">
+        <!-- Efectivo esperado destacado -->
+        <div style="background:linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);padding:1.5rem;border-radius:12px;margin-bottom:1.5rem;text-align:center;border:2px solid var(--rosa-200);box-shadow:0 4px 12px rgba(204,56,112,0.1)">
+          <div style="font-size:13px;color:var(--gris-600);margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">💵 Efectivo esperado en caja</div>
+          <div style="font-size:42px;font-weight:800;color:var(--rosa-600);font-family:var(--font-display);line-height:1" id="quiebre-efectivo-esperado">S/ 0.00</div>
+          <div style="font-size:11px;color:var(--gris-500);margin-top:8px">Apertura + Ventas efectivo - Gastos</div>
+        </div>
+        
+        <!-- Desglose en grid -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem">
+          <div style="background:var(--success-light,#e8f5e9);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Apertura</div>
+            <div style="font-size:16px;font-weight:700;color:var(--success)" id="quiebre-apertura">S/ 0.00</div>
+          </div>
+          <div style="background:var(--success-light,#e8f5e9);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Ventas efectivo</div>
+            <div style="font-size:16px;font-weight:700;color:var(--success)" id="quiebre-ventas-efectivo">S/ 0.00</div>
+          </div>
+          <div style="background:var(--danger-light,#ffebee);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Gastos</div>
+            <div style="font-size:16px;font-weight:700;color:var(--danger)" id="quiebre-gastos">S/ 0.00</div>
+          </div>
+        </div>
+        
+        <!-- Otros métodos de pago (colapsable) -->
+        <details style="margin-bottom:1.5rem;border:1px solid var(--gris-200);border-radius:8px;padding:12px">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--gris-700);user-select:none">
+            📱 Otros métodos de pago (ver desglose)
+          </summary>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--gris-100)">
+            <div style="display:flex;justify-content:space-between;font-size:12px">
+              <span style="color:var(--gris-600)">Digital (Yape/Plin):</span>
+              <span style="font-weight:600" id="quiebre-digital">S/ 0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px">
+              <span style="color:var(--gris-600)">Tarjeta/Transf.:</span>
+              <span style="font-weight:600" id="quiebre-tarjeta">S/ 0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;grid-column:1/-1;padding-top:8px;border-top:1px solid var(--gris-100)">
+              <span style="color:var(--gris-700);font-weight:600">Total ventas:</span>
+              <span style="font-weight:700;color:var(--rosa-600)" id="quiebre-total-ventas">S/ 0.00</span>
+            </div>
+          </div>
+        </details>
+        
+        <!-- Monto físico -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px">
+            <span style="font-size:20px">💰</span>
+            Monto físico contado (opcional)
+          </label>
+          <input 
+            class="form-control" 
+            type="number" 
+            id="quiebre-monto-fisico" 
+            step="0.50" 
+            min="0" 
+            placeholder="Ej: 1250.00"
+            style="font-size:18px;font-weight:600;padding:14px;text-align:center;border:2px solid var(--gris-300)"
+          />
+          <div style="font-size:11px;color:var(--gris-500);margin-top:6px;text-align:center">
+            💡 Ingresa el efectivo que tienes físicamente para calcular la diferencia
+          </div>
+        </div>
+        
+        <!-- Diferencia (se muestra si hay monto físico) -->
+        <div id="quiebre-diferencia-container" style="display:none;padding:1.25rem;border-radius:10px;margin-bottom:1rem;text-align:center;border:2px solid;transition:all 0.3s ease">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Resultado del cuadre</div>
+          <div style="font-size:32px;font-weight:800;font-family:var(--font-display)" id="quiebre-diferencia">S/ 0.00</div>
+        </div>
+        
+        <!-- Observaciones -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight:600;font-size:13px">📝 Observaciones (opcional)</label>
+          <textarea 
+            class="form-control" 
+            id="quiebre-observaciones" 
+            rows="2" 
+            placeholder="Ej: Corte a las 2pm, caja verificada, turno de mañana"
+            style="resize:vertical"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:1rem 1.5rem;background:var(--gris-50)">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-quiebre')">Cancelar</button>
+      <button class="btn btn-warning btn-sm" onclick="generarQuiebre()" style="padding:10px 24px;font-weight:600">
+        📊 Generar Quiebre
+      </button>
     </div>
   </div>
 </div>
@@ -266,12 +396,18 @@
       const data = response.data || response;
       renderCaja(data);
       actualizarBotones(data.estado);
+      
+      // Cargar quiebres del día
+      await cargarQuiebres();
     } catch (error) {
       // Error esperado: no hay caja abierta para hoy
       if (error.message && error.message.includes('No hay caja abierta')) {
         console.log('No hay caja abierta para hoy - mostrando vista inicial');
         renderCajaSinAbrir();
         actualizarBotones('sin_abrir');
+        
+        // Ocultar sección de quiebres
+        document.getElementById('seccion-quiebres').style.display = 'none';
       } else {
         // Error inesperado
         console.error('Error al cargar caja:', error);
@@ -286,6 +422,7 @@
     const btnAbrir = document.getElementById('btn-abrir');
     const btnCerrar = document.getElementById('btn-cerrar');
     const btnImprimir = document.getElementById('btn-imprimir');
+    const btnQuiebre = document.getElementById('btn-quiebre');
     const estadoCaja = document.getElementById('estado-caja');
 
     console.log('Actualizando botones con estado:', estado);
@@ -296,9 +433,10 @@
     }
 
     if (estado === 'abierta') {
-      // Caja abierta: mostrar solo botón de cerrar
+      // Caja abierta: mostrar botones de quiebre y cerrar
       btnAbrir.style.display = 'none';
       btnCerrar.style.display = 'inline-block';
+      btnQuiebre.style.display = 'inline-block';
       btnImprimir.disabled = false;
       estadoCaja.innerHTML = '<span class="badge badge-success" style="font-size:12px">✓ Caja abierta</span>';
     } else {
@@ -306,6 +444,7 @@
       // Esto permite abrir una nueva caja para el día siguiente
       btnAbrir.style.display = 'inline-block';
       btnCerrar.style.display = 'none';
+      btnQuiebre.style.display = 'none';
       
       if (estado === 'cerrada') {
         btnImprimir.disabled = false;
@@ -319,6 +458,7 @@
 
     console.log('Botón abrir display:', btnAbrir.style.display);
     console.log('Botón cerrar display:', btnCerrar.style.display);
+    console.log('Botón quiebre display:', btnQuiebre ? btnQuiebre.style.display : 'N/A');
   }
 
   function renderCaja(d) {
@@ -539,6 +679,276 @@
     } catch (error) {
       console.error('Error al cerrar caja:', error);
       Toast.error(error.message || 'Error al cerrar la caja');
+    }
+  }
+
+  // =====================
+  // QUIEBRE DE CAJA
+  // =====================
+  
+  let datosQuiebreActual = null;
+  
+  async function cargarQuiebres() {
+    try {
+      const response = await API.get('/caja/quiebres');
+      const quiebres = response.data || [];
+      
+      console.log('📊 Quiebres cargados:', quiebres.length);
+      
+      if (quiebres.length > 0) {
+        renderQuiebres(quiebres);
+        document.getElementById('seccion-quiebres').style.display = 'block';
+      } else {
+        document.getElementById('seccion-quiebres').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error al cargar quiebres:', error);
+      document.getElementById('seccion-quiebres').style.display = 'none';
+    }
+  }
+  
+  function renderQuiebres(quiebres) {
+    const container = document.getElementById('lista-quiebres');
+    const countEl = document.getElementById('count-quiebres');
+    
+    countEl.textContent = `${quiebres.length} ${quiebres.length === 1 ? 'corte' : 'cortes'}`;
+    
+    container.innerHTML = quiebres.map(q => {
+      const hora = new Date(q.created_at).toLocaleTimeString('es-PE', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      const montoEsperado = parseFloat(q.monto_esperado || 0);
+      const montoFisico = q.monto_fisico !== null ? parseFloat(q.monto_fisico) : null;
+      const diferencia = parseFloat(q.diferencia || 0);
+      
+      // Determinar color y estado
+      let estadoHTML = '';
+      let cardClass = '';
+      let iconoDiferencia = '';
+      
+      if (montoFisico === null) {
+        // Sin conteo físico
+        estadoHTML = `
+          <div style="background:var(--gris-100);padding:8px 12px;border-radius:6px;text-align:center">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:2px">Sin conteo físico</div>
+            <div style="font-size:13px;font-weight:600;color:var(--gris-700)">📊 Solo registro</div>
+          </div>
+        `;
+        cardClass = 'border-left:4px solid var(--gris-400)';
+      } else if (diferencia === 0) {
+        // Cuadrado
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);padding:8px 12px;border-radius:6px;text-align:center">
+            <div style="font-size:11px;color:var(--success);margin-bottom:2px">Diferencia</div>
+            <div style="font-size:18px;font-weight:700;color:var(--success)">✅ S/ 0.00</div>
+            <div style="font-size:11px;color:var(--success);margin-top:2px;font-weight:600">¡Cuadrado!</div>
+          </div>
+        `;
+        cardClass = 'border-left:4px solid var(--success)';
+        iconoDiferencia = '✅';
+      } else if (diferencia < 0) {
+        // Faltante
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);padding:8px 12px;border-radius:6px;text-align:center">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:2px">Diferencia</div>
+            <div style="font-size:18px;font-weight:700;color:var(--danger)">⚠️ -${Fmt.moneda(Math.abs(diferencia))}</div>
+            <div style="font-size:11px;color:var(--danger);margin-top:2px;font-weight:600">Faltante</div>
+          </div>
+        `;
+        cardClass = 'border-left:4px solid var(--danger)';
+        iconoDiferencia = '⚠️';
+      } else {
+        // Sobrante
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);padding:8px 12px;border-radius:6px;text-align:center">
+            <div style="font-size:11px;color:var(--warning);margin-bottom:2px">Diferencia</div>
+            <div style="font-size:18px;font-weight:700;color:var(--warning)">📈 +${Fmt.moneda(diferencia)}</div>
+            <div style="font-size:11px;color:var(--warning);margin-top:2px;font-weight:600">Sobrante</div>
+          </div>
+        `;
+        cardClass = 'border-left:4px solid var(--warning)';
+        iconoDiferencia = '📈';
+      }
+      
+      return `
+        <div class="card" style="padding:1rem;${cardClass}">
+          <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center">
+            <!-- Hora y trabajador -->
+            <div style="text-align:center;min-width:80px">
+              <div style="font-size:20px;font-weight:700;color:var(--rosa-600)">${hora}</div>
+              <div style="font-size:11px;color:var(--gris-500);margin-top:2px">${q.trabajador_nombre || 'N/A'}</div>
+            </div>
+            
+            <!-- Detalles -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+              <div>
+                <div style="font-size:11px;color:var(--gris-500);margin-bottom:2px">Efectivo esperado</div>
+                <div style="font-size:14px;font-weight:600">${Fmt.moneda(montoEsperado)}</div>
+              </div>
+              ${montoFisico !== null ? `
+                <div>
+                  <div style="font-size:11px;color:var(--gris-500);margin-bottom:2px">Monto físico</div>
+                  <div style="font-size:14px;font-weight:600">${Fmt.moneda(montoFisico)}</div>
+                </div>
+              ` : '<div></div>'}
+              ${q.observaciones ? `
+                <div style="grid-column:1/-1">
+                  <div style="font-size:11px;color:var(--gris-500);margin-bottom:2px">📝 Observaciones</div>
+                  <div style="font-size:12px;color:var(--gris-700);font-style:italic">"${q.observaciones}"</div>
+                </div>
+              ` : ''}
+            </div>
+            
+            <!-- Estado -->
+            <div style="min-width:140px">
+              ${estadoHTML}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  function abrirModalQuiebre() {
+    // Obtener datos de los elementos correctos
+    datosQuiebreActual = {
+      monto_apertura: parseFloat(document.getElementById('apertura-monto')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_efectivo: parseFloat(document.getElementById('caja-efectivo')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_digital: parseFloat(document.getElementById('caja-digital')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_tarjeta: parseFloat(document.getElementById('caja-tarjeta')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_ventas: parseFloat(document.getElementById('caja-total')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+    };
+    
+    // Obtener gastos del día
+    const gastosEl = document.getElementById('gastos-hoy-caja');
+    const totalGastos = gastosEl ? parseFloat(gastosEl.textContent?.replace(/[^\d.-]/g, '') || 0) : 0;
+    
+    // Calcular efectivo esperado
+    const efectivoEsperado = datosQuiebreActual.monto_apertura + datosQuiebreActual.total_efectivo - totalGastos;
+    
+    console.log('=== DATOS QUIEBRE ===');
+    console.log('Apertura:', datosQuiebreActual.monto_apertura);
+    console.log('Efectivo:', datosQuiebreActual.total_efectivo);
+    console.log('Gastos:', totalGastos);
+    console.log('Efectivo esperado:', efectivoEsperado);
+    
+    // Llenar datos del modal
+    document.getElementById('quiebre-apertura').textContent = Fmt.moneda(datosQuiebreActual.monto_apertura);
+    document.getElementById('quiebre-ventas-efectivo').textContent = Fmt.moneda(datosQuiebreActual.total_efectivo);
+    document.getElementById('quiebre-gastos').textContent = Fmt.moneda(totalGastos);
+    document.getElementById('quiebre-digital').textContent = Fmt.moneda(datosQuiebreActual.total_digital);
+    document.getElementById('quiebre-tarjeta').textContent = Fmt.moneda(datosQuiebreActual.total_tarjeta);
+    document.getElementById('quiebre-total-ventas').textContent = Fmt.moneda(datosQuiebreActual.total_ventas);
+    document.getElementById('quiebre-efectivo-esperado').textContent = Fmt.moneda(efectivoEsperado);
+    
+    // Guardar efectivo esperado para cálculos posteriores
+    datosQuiebreActual.efectivo_esperado = efectivoEsperado;
+    datosQuiebreActual.total_gastos = totalGastos;
+    
+    // Limpiar campos
+    document.getElementById('quiebre-monto-fisico').value = '';
+    document.getElementById('quiebre-observaciones').value = '';
+    document.getElementById('quiebre-diferencia-container').style.display = 'none';
+    
+    Modal.open('modal-quiebre');
+  }
+  
+  // Actualizar preview de diferencia cuando se ingresa monto físico
+  document.getElementById('modal-quiebre')?.addEventListener('input', function(e) {
+    if (e.target.id === 'quiebre-monto-fisico') {
+      const montoFisico = parseFloat(e.target.value) || 0;
+      const efectivoEsperado = datosQuiebreActual ? datosQuiebreActual.efectivo_esperado : 0;
+      const diferencia = montoFisico - efectivoEsperado;
+      
+      const container = document.getElementById('quiebre-diferencia-container');
+      const diferenciaEl = document.getElementById('quiebre-diferencia');
+      
+      if (montoFisico > 0) {
+        container.style.display = 'block';
+        
+        if (diferencia === 0) {
+          // Cuadrado - Verde
+          container.style.background = 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)';
+          container.style.borderColor = 'var(--success)';
+          diferenciaEl.style.color = 'var(--success)';
+          diferenciaEl.innerHTML = '✅<br>S/ 0.00<br><span style="font-size:14px;font-weight:600;margin-top:4px;display:block">¡Caja cuadrada!</span>';
+        } else if (diferencia < 0) {
+          // Faltante - Rojo
+          container.style.background = 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)';
+          container.style.borderColor = 'var(--danger)';
+          diferenciaEl.style.color = 'var(--danger)';
+          diferenciaEl.innerHTML = `⚠️ Faltante<br>-${Fmt.moneda(Math.abs(diferencia))}<br><span style="font-size:13px;font-weight:500;margin-top:4px;display:block">Falta efectivo en caja</span>`;
+        } else {
+          // Sobrante - Amarillo
+          container.style.background = 'linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%)';
+          container.style.borderColor = 'var(--warning)';
+          diferenciaEl.style.color = 'var(--warning)';
+          diferenciaEl.innerHTML = `📈 Sobrante<br>+${Fmt.moneda(diferencia)}<br><span style="font-size:13px;font-weight:500;margin-top:4px;display:block">Hay más efectivo del esperado</span>`;
+        }
+      } else {
+        container.style.display = 'none';
+      }
+    }
+  });
+  
+  async function generarQuiebre() {
+    console.log('🔄 Iniciando generación de quiebre...');
+    
+    const montoFisico = document.getElementById('quiebre-monto-fisico').value;
+    const observaciones = document.getElementById('quiebre-observaciones').value;
+    
+    console.log('📝 Datos del formulario:', { montoFisico, observaciones });
+    
+    const payload = {};
+    if (montoFisico && parseFloat(montoFisico) >= 0) {
+      payload.monto_fisico = parseFloat(montoFisico);
+    }
+    if (observaciones && observaciones.trim()) {
+      payload.observaciones = observaciones.trim();
+    }
+    
+    console.log('📦 Payload a enviar:', payload);
+    
+    try {
+      console.log('🚀 Enviando petición a /caja/quiebre...');
+      const response = await API.post('/caja/quiebre', payload);
+      console.log('✅ Respuesta recibida:', response);
+      
+      const data = response.data || response;
+      
+      Toast.success('Quiebre de caja generado correctamente');
+      Modal.close('modal-quiebre');
+      
+      // Mostrar resultado del quiebre
+      if (data && data.resumen) {
+        const resumen = data.resumen;
+        console.log('📊 Resumen del quiebre:', resumen);
+        
+        let mensaje = `Efectivo esperado: ${Fmt.moneda(resumen.efectivo_esperado)}`;
+        if (resumen.monto_fisico !== null && resumen.monto_fisico !== undefined) {
+          mensaje += `\n${resumen.mensaje}`;
+        }
+        
+        // Mostrar toast con el resultado
+        setTimeout(() => {
+          Toast.info(mensaje, 5000);
+        }, 500);
+      }
+      
+      // Recargar datos de caja
+      console.log('🔄 Recargando datos de caja...');
+      await cargarCaja();
+      
+      // Recargar quiebres
+      await cargarQuiebres();
+      
+      console.log('✅ Quiebre generado exitosamente');
+    } catch (error) {
+      console.error('❌ Error al generar quiebre:', error);
+      console.error('Error completo:', error);
+      Toast.error(error.message || 'Error al generar el quiebre de caja');
     }
   }
 

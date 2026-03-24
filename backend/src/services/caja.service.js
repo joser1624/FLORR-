@@ -281,6 +281,123 @@ class CajaService {
     const result = await this.getHistorial(1, limit);
     return result.data;
   }
+
+  /**
+   * Generate cash register intermediate cut (quiebre de caja)
+   * Returns current totals without closing the box
+   */
+  async generarQuiebre(trabajadorId, montoFisico = null, observaciones = null) {
+    // Verificar que hay caja abierta
+    const cajaResult = await query(
+      "SELECT * FROM caja WHERE fecha = CURRENT_DATE AND estado = 'abierta'",
+      []
+    );
+
+    if (cajaResult.rows.length === 0) {
+      const error = new Error('No hay caja abierta para generar quiebre');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const cajaActual = cajaResult.rows[0];
+    const montoApertura = parseFloat(cajaActual.monto_apertura);
+
+    // Calcular totales actuales por método de pago
+    const totalsResult = await query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN metodo_pago = 'Efectivo' THEN total ELSE 0 END), 0) AS total_efectivo,
+         COALESCE(SUM(CASE WHEN metodo_pago IN ('Yape', 'Plin') THEN total ELSE 0 END), 0) AS total_digital,
+         COALESCE(SUM(CASE WHEN metodo_pago IN ('Tarjeta', 'Transferencia bancaria') THEN total ELSE 0 END), 0) AS total_tarjeta,
+         COALESCE(SUM(total), 0) AS total_ventas
+       FROM ventas
+       WHERE DATE(fecha) = CURRENT_DATE`,
+      []
+    );
+
+    const totals = totalsResult.rows[0];
+
+    // Calcular gastos del día
+    const gastosResult = await query(
+      'SELECT COALESCE(SUM(monto), 0) AS total_gastos FROM gastos WHERE fecha = CURRENT_DATE',
+      []
+    );
+
+    const totalEfectivo = parseFloat(totals.total_efectivo);
+    const totalDigital = parseFloat(totals.total_digital);
+    const totalTarjeta = parseFloat(totals.total_tarjeta);
+    const totalVentas = parseFloat(totals.total_ventas);
+    const totalGastos = parseFloat(gastosResult.rows[0].total_gastos);
+
+    // Calcular efectivo esperado (monto apertura + ventas efectivo - gastos)
+    const efectivoEsperado = montoApertura + totalEfectivo - totalGastos;
+
+    // Calcular diferencia
+    let diferencia = 0;
+    if (montoFisico !== null && montoFisico !== undefined) {
+      diferencia = parseFloat(montoFisico) - efectivoEsperado;
+    }
+
+    // Guardar quiebre en la base de datos
+    const quiebreResult = await query(
+      `INSERT INTO caja_quiebre 
+        (caja_id, trabajador_id, monto_esperado, monto_fisico, diferencia, 
+         total_efectivo_hasta_ahora, total_ventas_hasta_ahora, total_gastos_hasta_ahora, observaciones)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [cajaActual.id, trabajadorId, efectivoEsperado, montoFisico, diferencia,
+       totalEfectivo, totalVentas, totalGastos, observaciones]
+    );
+
+    return {
+      quiebre: {
+        ...quiebreResult.rows[0],
+        monto_esperado: parseFloat(quiebreResult.rows[0].monto_esperado),
+        monto_fisico: quiebreResult.rows[0].monto_fisico !== null ? parseFloat(quiebreResult.rows[0].monto_fisico) : null,
+        diferencia: parseFloat(quiebreResult.rows[0].diferencia),
+        total_efectivo_hasta_ahora: parseFloat(quiebreResult.rows[0].total_efectivo_hasta_ahora),
+        total_ventas_hasta_ahora: parseFloat(quiebreResult.rows[0].total_ventas_hasta_ahora),
+        total_gastos_hasta_ahora: parseFloat(quiebreResult.rows[0].total_gastos_hasta_ahora),
+      },
+      resumen: {
+        monto_apertura: montoApertura,
+        total_efectivo: totalEfectivo,
+        total_digital: totalDigital,
+        total_tarjeta: totalTarjeta,
+        total_ventas: totalVentas,
+        total_gastos: totalGastos,
+        efectivo_esperado: efectivoEsperado,
+        monto_fisico: montoFisico !== null ? parseFloat(montoFisico) : null,
+        diferencia: diferencia,
+        mensaje: montoFisico !== null 
+          ? (diferencia === 0 ? '✅ Cuadrado' : (diferencia < 0 ? `⚠️ Faltante: S/ ${Math.abs(diferencia).toFixed(2)}` : `⚠️ Sobrante: S/ ${diferencia.toFixed(2)}`))
+          : '📊 Sin conteo físico'
+      }
+    };
+  }
+
+  /**
+   * Get quiebres history for today
+   */
+  async getQuiebresHoy() {
+    const result = await query(
+      `SELECT q.*, u.nombre AS trabajador_nombre
+       FROM caja_quiebre q
+       LEFT JOIN usuarios u ON q.trabajador_id = u.id
+       WHERE DATE(q.created_at) = CURRENT_DATE
+       ORDER BY q.created_at DESC`,
+      []
+    );
+
+    return result.rows.map(q => ({
+      ...q,
+      monto_esperado: parseFloat(q.monto_esperado),
+      monto_fisico: q.monto_fisico !== null ? parseFloat(q.monto_fisico) : null,
+      diferencia: parseFloat(q.diferencia),
+      total_efectivo_hasta_ahora: parseFloat(q.total_efectivo_hasta_ahora),
+      total_ventas_hasta_ahora: parseFloat(q.total_ventas_hasta_ahora),
+      total_gastos_hasta_ahora: parseFloat(q.total_gastos_hasta_ahora),
+    }));
+  }
 }
 
 module.exports = new CajaService();

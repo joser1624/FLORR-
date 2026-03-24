@@ -86,6 +86,49 @@ class CajaController {
   async openCaja(req, res, next) { return this.apertura(req, res, next); }
   async closeCaja(req, res, next) { return this.cierre(req, res, next); }
   async getHistory(req, res, next) { return this.getHistorial(req, res, next); }
+
+  /**
+   * POST /api/caja/quiebre
+   * Genera un quiebre de caja (corte intermedio sin cerrar)
+   */
+  async generarQuiebre(req, res, next) {
+    try {
+      const trabajadorId = req.user.id;
+      const { monto_fisico, observaciones } = req.body;
+
+      // Validar monto_fisico si se proporciona
+      if (monto_fisico !== undefined && monto_fisico !== null) {
+        const montoNum = parseFloat(monto_fisico);
+        if (isNaN(montoNum) || montoNum < 0) {
+          return res.status(400).json({ 
+            error: true, 
+            mensaje: 'El monto físico debe ser un número mayor o igual a 0' 
+          });
+        }
+      }
+
+      const resultado = await cajaService.generarQuiebre(trabajadorId, monto_fisico, observaciones);
+      res.status(201).json({ success: true, data: resultado });
+    } catch (error) {
+      if (error.statusCode === 404) {
+        return res.status(404).json({ error: true, mensaje: error.message });
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/caja/quiebres
+   * Obtiene el historial de quiebres del día
+   */
+  async getQuiebres(req, res, next) {
+    try {
+      const quiebres = await cajaService.getQuiebresHoy();
+      res.json({ success: true, data: quiebres });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new CajaController();

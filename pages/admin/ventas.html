@@ -556,18 +556,37 @@
     
     const clienteId = document.getElementById('venta-cliente').value;
     
+    // Asegurar que todos los valores sean del tipo correcto
     const payload = {
-      productos: itemsVenta.map(i => ({ 
-        producto_id: parseInt(i.id), 
-        cantidad: parseInt(i.cantidad), 
-        precio_unitario: parseFloat(i.precio) 
-      })),
+      productos: itemsVenta.map(i => {
+        const producto = {
+          producto_id: parseInt(i.id, 10),
+          cantidad: parseInt(i.cantidad, 10),
+          precio_unitario: parseFloat(i.precio)
+        };
+        
+        // Validar que los valores sean válidos
+        if (isNaN(producto.producto_id) || producto.producto_id <= 0) {
+          throw new Error(`ID de producto inválido: ${i.id}`);
+        }
+        if (isNaN(producto.cantidad) || producto.cantidad <= 0) {
+          throw new Error(`Cantidad inválida para producto ${i.nombre}: ${i.cantidad}`);
+        }
+        if (isNaN(producto.precio_unitario) || producto.precio_unitario < 0) {
+          throw new Error(`Precio inválido para producto ${i.nombre}: ${i.precio}`);
+        }
+        
+        return producto;
+      }),
       metodo_pago: document.getElementById('metodo-pago').value
     };
     
     // Solo incluir cliente_id si tiene un valor seleccionado
-    if (clienteId) {
-      payload.cliente_id = parseInt(clienteId);
+    if (clienteId && clienteId !== '') {
+      const clienteIdNum = parseInt(clienteId, 10);
+      if (!isNaN(clienteIdNum) && clienteIdNum > 0) {
+        payload.cliente_id = clienteIdNum;
+      }
     }
     
     console.log('Payload a enviar:', JSON.stringify(payload, null, 2));

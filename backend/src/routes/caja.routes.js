@@ -68,4 +68,26 @@ router.get('/historial',
   cajaController.getHistorial.bind(cajaController)
 );
 
+/**
+ * POST /api/caja/quiebre
+ * Generate intermediate cash register cut (corte sin cerrar caja)
+ * Requirement 2.5: Empleado and admin roles can generate cuts
+ */
+router.post('/quiebre',
+  verifyToken,
+  requireRole(['admin', 'empleado']),
+  cajaController.generarQuiebre.bind(cajaController)
+);
+
+/**
+ * GET /api/caja/quiebres
+ * Get today's quiebres (intermediate cuts)
+ * Requirement 2.5: Empleado and admin roles can view
+ */
+router.get('/quiebres',
+  verifyToken,
+  requireRole(['admin', 'empleado']),
+  cajaController.getQuiebres.bind(cajaController)
+);
+
 module.exports = router;
