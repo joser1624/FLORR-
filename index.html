@@ -39,10 +39,9 @@
 <nav class="navbar-pub" id="navbar">
  <div class="navbar-brand">
   <img src="icon/logo.png" alt="logo">
-
    <div class="brand-text">
-    Detalles y Regalos Encantos Eternos
-      <span>Florería · Sicuani, Cusco — Perú</span>
+    <span class="brand-name">Detalles y Regalos Encantos Eternos</span>
+    <span class="brand-subtitle">Florería · Sicuani, Cusco — Perú</span>
    </div>
  </div>
   <ul class="navbar-links">
@@ -53,8 +52,8 @@
   </ul>
   <div class="navbar-actions">
     <button class="btn-dark-toggle" id="btn-dark" onclick="toggleDark()" title="Modo oscuro" aria-label="Cambiar tema">🌙</button>
-    <a href="pages/cliente/mis-pedidos.html" class="btn btn-ghost btn-sm">Mis pedidos</a>
-    <a href="pages/admin/login.html" class="btn btn-outline btn-sm">Panel</a>
+    <a href="pages/cliente/mis-pedidos.html" class="btn btn-ghost btn-sm hide-on-small">Mis pedidos</a>
+    <a href="pages/admin/login.html" class="btn btn-outline btn-sm hide-on-small">Panel</a>
     <button class="btn-menu-mob" onclick="toggleMobileNav()" id="btn-menu" aria-label="Menú">☰</button>
   </div>
 </nav>
@@ -64,7 +63,8 @@
   <a href="#" onclick="event.preventDefault();closeMobileNav();abrirLaboratorioModal()">🌸 Crea tu arreglo</a>
   <a href="#promociones" onclick="closeMobileNav()">🎁 Promociones</a>
   <a href="#contacto"    onclick="closeMobileNav()">📍 Contacto</a>
-  <a href="pages/admin/login.html">Iniciar sesión →</a>
+  <a href="pages/cliente/mis-pedidos.html" onclick="closeMobileNav()">📦 Mis pedidos</a>
+  <a href="pages/admin/login.html">🔐 Iniciar sesión →</a>
 </div>
 
 <!-- ░░ HERO ░░ -->
@@ -319,8 +319,9 @@
 <div class="modal-overlay" id="laboratorioModal">
   <div class="modal-laboratorio">
     <div class="modal-lab-header">
+      <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:var(--pub-line-mid);border-radius:999px;display:none" class="modal-drag-indicator"></div>
       <h3>🌸 Laboratorio de Flores</h3>
-      <button class="btn-close-lab" onclick="cerrarLaboratorioModal()">×</button>
+      <button class="btn-close-lab" onclick="cerrarLaboratorioModal()" aria-label="Cerrar modal">×</button>
     </div>
     
     <div class="modal-lab-body">
@@ -874,6 +875,7 @@ function prevPage(){
   /* ── MODAL LABORATORIO ── */
   function abrirLaboratorioModal() {
     const modal = document.getElementById('laboratorioModal');
+    modal.classList.remove('closing');
     modal.classList.add('active');
     
     // Cargar inventario si no está cargado
@@ -887,10 +889,15 @@ function prevPage(){
 
   function cerrarLaboratorioModal() {
     const modal = document.getElementById('laboratorioModal');
-    modal.classList.remove('active');
     
-    // Restaurar scroll del body
-    document.body.style.overflow = '';
+    // Agregar clase de cierre para animación
+    modal.classList.add('closing');
+    
+    // Esperar a que termine la animación antes de ocultar
+    setTimeout(() => {
+      modal.classList.remove('active', 'closing');
+      document.body.style.overflow = '';
+    }, 250);
   }
 
   // Cerrar modal al hacer click fuera
@@ -910,6 +917,37 @@ function prevPage(){
       }
     }
   });
+
+  // Cerrar modal con gesto de swipe down en móvil
+  let touchStartY = 0;
+  let touchEndY = 0;
+  
+  document.addEventListener('touchstart', (e) => {
+    const modal = document.getElementById('laboratorioModal');
+    if (modal && modal.classList.contains('active')) {
+      const modalContent = modal.querySelector('.modal-laboratorio');
+      if (modalContent && modalContent.contains(e.target)) {
+        touchStartY = e.touches[0].clientY;
+      }
+    }
+  }, { passive: true });
+  
+  document.addEventListener('touchend', (e) => {
+    const modal = document.getElementById('laboratorioModal');
+    if (modal && modal.classList.contains('active')) {
+      touchEndY = e.changedTouches[0].clientY;
+      const swipeDistance = touchEndY - touchStartY;
+      
+      // Si el swipe es hacia abajo y mayor a 100px, cerrar modal
+      if (swipeDistance > 100 && window.innerWidth <= 767) {
+        const modalBody = modal.querySelector('.modal-lab-body');
+        // Solo cerrar si el scroll está en el top
+        if (modalBody && modalBody.scrollTop === 0) {
+          cerrarLaboratorioModal();
+        }
+      }
+    }
+  }, { passive: true });
 
   /* ── NAVBAR ── */
   function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('open');}
