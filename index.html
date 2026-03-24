@@ -47,7 +47,7 @@
  </div>
   <ul class="navbar-links">
     <li><a href="#catalogo">Catálogo</a></li>
-    <li><a href="#laboratorio">Crea tu arreglo</a></li>
+    <li><a href="#" onclick="event.preventDefault();abrirLaboratorioModal()">Crea tu arreglo</a></li>
     <li><a href="#promociones">Promociones</a></li>
     <li><a href="#contacto">Contacto</a></li>
   </ul>
@@ -61,7 +61,7 @@
 
 <div class="mobile-nav" id="mobile-nav">
   <a href="#catalogo"    onclick="closeMobileNav()">🌹 Catálogo</a>
-  <a href="#laboratorio" onclick="closeMobileNav()">🌸 Crea tu arreglo</a>
+  <a href="#" onclick="event.preventDefault();closeMobileNav();abrirLaboratorioModal()">🌸 Crea tu arreglo</a>
   <a href="#promociones" onclick="closeMobileNav()">🎁 Promociones</a>
   <a href="#contacto"    onclick="closeMobileNav()">📍 Contacto</a>
   <a href="pages/admin/login.html">Iniciar sesión →</a>
@@ -86,7 +86,7 @@
 
       <div class="hero-btns">
         <a href="#catalogo"    class="btn btn-primary btn-lg">🌷 Ver catálogo</a>
-        <a href="#laboratorio" class="btn btn-outline btn-lg">✨ Diseña tu arreglo</a>
+        <button onclick="abrirLaboratorioModal()" class="btn btn-outline btn-lg">✨ Diseña tu arreglo</button>
       </div>
 
       <div class="hero-stats">
@@ -114,9 +114,9 @@
         <div style="font-size:12px;color:#b8a8c8;margin-top:5px;font-family:'Poppins',sans-serif">
           Rosas + papel dorado + cinta
         </div>
-        <a href="#laboratorio" class="btn btn-primary" style="width:100%;margin-top:1.5rem">
+        <button onclick="abrirLaboratorioModal()" class="btn btn-primary" style="width:100%;margin-top:1.5rem">
           ✨ Personalizar
-        </a>
+        </button>
       </div>
     </div>
 
@@ -184,68 +184,7 @@
   </div>
 </section>
 
-<!-- ░░ LABORATORIO ░░ -->
-<section class="section section-alt" id="laboratorio">
-  <div class="container">
-    <div class="section-header">
-      <span class="section-eyebrow">Diseña tu arreglo</span>
-      <h2>Laboratorio de flores</h2>
-      <p>Elige las flores y materiales que quieres. Te mostramos el precio al instante y te conectamos por WhatsApp.</p>
-    </div>
 
-    <div class="lab-layout">
-      <div>
-        <!-- Filtros por categoría -->
-        <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;justify-content:center">
-          <button class="lab-filter-btn active" onclick="filtrarLabCategoria('destacados')" id="filter-destacados">
-            ⭐ Destacados
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('flores')" id="filter-flores">
-            🌹 Flores
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('materiales')" id="filter-materiales">
-            📦 Materiales
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('accesorios')" id="filter-accesorios">
-            🎀 Accesorios
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('todos')" id="filter-todos">
-            🌸 Ver todos
-          </button>
-        </div>
-
-        <div class="lab-section-title" id="lab-categoria-titulo">⭐ Destacados</div>
-        <div class="lab-flores-grid" id="lab-flores-grid"></div>
-      </div>
-
-      <div class="lab-resumen">
-        <div class="lab-resumen-title">🌸 Tu arreglo</div>
-
-        <div id="lab-items-list">
-          <div style="color:#b8a8c8;font-size:13px;text-align:center;padding:2.5rem 0;line-height:1.8;font-family:'Poppins',sans-serif">
-            Selecciona flores para<br>comenzar tu arreglo
-          </div>
-        </div>
-
-        <div style="border-top:1px solid #f0e8f5;padding-top:16px;margin-top:6px">
-          <div class="lab-total">
-            <span>Precio estimado:</span>
-            <span class="lab-precio-total" id="lab-precio-pub">S/ 0.00</span>
-          </div>
-          <div style="font-size:11px;color:#b8a8c8;margin-bottom:1.35rem;margin-top:5px;font-family:'Poppins',sans-serif">
-            * Precio orientativo, incluye margen estándar
-          </div>
-          <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="pedirPorWhatsApp()">
-            📱 Pedir por WhatsApp
-          </button>
-          <button class="btn btn-ghost" style="width:100%" onclick="limpiarLabPub()">
-            Limpiar selección
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ░░ EVENTOS ░░ -->
 <section class="section" id="eventos">
@@ -352,7 +291,7 @@
         <li><a href="#catalogo">Arreglos florales</a></li>
         <li><a href="#catalogo">Cajas sorpresa</a></li>
         <li><a href="#catalogo">Peluches</a></li>
-        <li><a href="#laboratorio">Arreglos personalizados</a></li>
+        <li><a href="#" onclick="event.preventDefault();abrirLaboratorioModal()">Arreglos personalizados</a></li>
       </ul>
     </div>
     <div>
@@ -375,6 +314,71 @@
 
 <!-- Botón flotante WhatsApp -->
 <a href="https://wa.me/51972542802" target="_blank" class="wa-float" title="Escríbenos por WhatsApp"><img src="/FLORR-/icon/wasap2.png" alt=""></a>
+
+<!-- ░░ MODAL LABORATORIO ░░ -->
+<div class="modal-overlay" id="laboratorioModal">
+  <div class="modal-laboratorio">
+    <div class="modal-lab-header">
+      <h3>🌸 Laboratorio de Flores</h3>
+      <button class="btn-close-lab" onclick="cerrarLaboratorioModal()">×</button>
+    </div>
+    
+    <div class="modal-lab-body">
+      <p class="lab-modal-intro">Crea tu arreglo personalizado seleccionando las flores y materiales disponibles</p>
+      
+      <!-- Filtros por categoría -->
+      <div class="lab-modal-filters">
+        <button class="lab-filter-btn active" onclick="filtrarLabCategoria('destacados')" id="filter-destacados-modal">
+          ⭐ Destacados
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('flores')" id="filter-flores-modal">
+          🌹 Flores
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('materiales')" id="filter-materiales-modal">
+          📦 Materiales
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('accesorios')" id="filter-accesorios-modal">
+          🎀 Accesorios
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('todos')" id="filter-todos-modal">
+          🌸 Ver todos
+        </button>
+      </div>
+
+      <div class="lab-section-title" id="lab-categoria-titulo">⭐ Destacados</div>
+      
+      <div class="lab-modal-content">
+        <div class="lab-flores-grid" id="lab-flores-grid"></div>
+        
+        <div class="lab-resumen-modal">
+          <div class="lab-resumen-title">🌸 Tu arreglo</div>
+
+          <div id="lab-items-list">
+            <div style="color:#b8a8c8;font-size:13px;text-align:center;padding:2.5rem 0;line-height:1.8;font-family:'Poppins',sans-serif">
+              Selecciona flores para<br>comenzar tu arreglo
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #f0e8f5;padding-top:16px;margin-top:6px">
+            <div class="lab-total">
+              <span>Precio estimado:</span>
+              <span class="lab-precio-total" id="lab-precio-pub">S/ 0.00</span>
+            </div>
+            <div style="font-size:11px;color:#b8a8c8;margin-bottom:1.35rem;margin-top:5px;font-family:'Poppins',sans-serif">
+              * Precio orientativo, incluye margen estándar
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="pedirPorWhatsApp()">
+              📱 Pedir por WhatsApp
+            </button>
+            <button class="btn btn-ghost" style="width:100%" onclick="limpiarLabPub()">
+              Limpiar selección
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ░░ SCRIPTS ░░ -->
 <script src="js/main.js"></script>
@@ -586,7 +590,10 @@ function prevPage(){
     
     // Actualizar botones activos
     document.querySelectorAll('.lab-filter-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('filter-' + categoria).classList.add('active');
+    const btnFiltro = document.getElementById('filter-' + categoria + '-modal');
+    if (btnFiltro) {
+      btnFiltro.classList.add('active');
+    }
     
     // Actualizar título
     const titulos = {
@@ -596,7 +603,10 @@ function prevPage(){
       'accesorios': '🎀 Accesorios',
       'todos': '🌸 Todos los productos'
     };
-    document.getElementById('lab-categoria-titulo').textContent = titulos[categoria] || '🌸 Productos';
+    const tituloEl = document.getElementById('lab-categoria-titulo');
+    if (tituloEl) {
+      tituloEl.textContent = titulos[categoria] || '🌸 Productos';
+    }
     
     renderLabPub();
   }
@@ -860,6 +870,46 @@ function prevPage(){
     
     window.open(`https://wa.me/51972542802?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
+
+  /* ── MODAL LABORATORIO ── */
+  function abrirLaboratorioModal() {
+    const modal = document.getElementById('laboratorioModal');
+    modal.classList.add('active');
+    
+    // Cargar inventario si no está cargado
+    if (!inventarioPub || inventarioPub.length === 0) {
+      cargarInventarioPub();
+    }
+    
+    // Prevenir scroll del body
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarLaboratorioModal() {
+    const modal = document.getElementById('laboratorioModal');
+    modal.classList.remove('active');
+    
+    // Restaurar scroll del body
+    document.body.style.overflow = '';
+  }
+
+  // Cerrar modal al hacer click fuera
+  document.addEventListener('click', (e) => {
+    const modal = document.getElementById('laboratorioModal');
+    if (e.target === modal) {
+      cerrarLaboratorioModal();
+    }
+  });
+
+  // Cerrar modal con tecla ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('laboratorioModal');
+      if (modal && modal.classList.contains('active')) {
+        cerrarLaboratorioModal();
+      }
+    }
+  });
 
   /* ── NAVBAR ── */
   function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('open');}

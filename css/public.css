@@ -771,3 +771,336 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
   display: flex;
   align-items: center;
 }
+
+/* ══════════════════════════════════════════════
+   LABORATORIO CTA CARD
+══════════════════════════════════════════════ */
+.lab-cta-card {
+  background: var(--pub-card);
+  border-radius: var(--r-xl);
+  padding: 3.5rem 2.5rem;
+  text-align: center;
+  border: 2px solid var(--pub-line);
+  box-shadow: var(--s-lg);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--ease);
+}
+
+.lab-cta-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--g-brand);
+}
+
+.lab-cta-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--s-xl);
+  border-color: var(--pink-mid);
+}
+
+.lab-cta-icon {
+  font-size: 72px;
+  display: block;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 10px 20px rgba(236,72,153,.3));
+  animation: floatCard 4s ease-in-out infinite;
+}
+
+.lab-cta-title {
+  font-family: var(--display);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 700;
+  color: var(--ink-900);
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.lab-cta-desc {
+  font-size: 15px;
+  color: var(--ink-500);
+  line-height: 1.85;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+.lab-cta-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lab-cta-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--pink-soft);
+  padding: 1rem 1.25rem;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--pink-mid);
+  transition: all var(--ease);
+}
+
+.lab-cta-feature:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--s-sm);
+}
+
+.lab-cta-feature-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.lab-cta-feature span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-700);
+  text-align: left;
+}
+
+body.dark-mode .lab-cta-feature {
+  background: rgba(236,72,153,.12);
+  border-color: rgba(236,72,153,.25);
+}
+
+/* ══════════════════════════════════════════════
+   MODAL LABORATORIO
+══════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 10, 20, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-laboratorio {
+  background: var(--pub-card);
+  border-radius: var(--r-xl);
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: fadeUp 0.4s ease;
+  border: 2px solid var(--pub-line);
+}
+
+.modal-lab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.75rem 2rem;
+  border-bottom: 2px solid var(--pub-line);
+  background: linear-gradient(135deg, var(--pink-soft) 0%, var(--purple-soft) 100%);
+  position: relative;
+}
+
+.modal-lab-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--g-brand);
+}
+
+.modal-lab-header h3 {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin: 0;
+}
+
+.btn-close-lab {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--pub-line);
+  background: var(--pub-card);
+  color: var(--ink-700);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--ease);
+  line-height: 1;
+  padding: 0;
+}
+
+.btn-close-lab:hover {
+  background: var(--pink);
+  color: #fff;
+  border-color: var(--pink);
+  transform: rotate(90deg) scale(1.1);
+}
+
+.modal-lab-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.lab-modal-intro {
+  font-size: 14px;
+  color: var(--ink-500);
+  text-align: center;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+.lab-modal-filters {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.lab-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--pub-line-mid);
+  background: var(--pub-card);
+  color: var(--ink-500);
+  cursor: pointer;
+  transition: all var(--ease);
+}
+
+.lab-filter-btn:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+  background: var(--pink-soft);
+  transform: translateY(-2px);
+}
+
+.lab-filter-btn.active {
+  background: var(--g-brand);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--s-pink);
+}
+
+.lab-modal-content {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.lab-resumen-modal {
+  background: var(--pub-card);
+  border: 2px solid var(--pub-line);
+  border-radius: var(--r-xl);
+  padding: 1.75rem 1.5rem;
+  position: sticky;
+  top: 0;
+  box-shadow: var(--s-lg);
+  overflow: hidden;
+}
+
+.lab-resumen-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--g-brand);
+}
+
+/* Responsive modal */
+@media (max-width: 1024px) {
+  .modal-lab-body {
+    padding: 1.5rem;
+  }
+  
+  .lab-modal-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .lab-resumen-modal {
+    position: static;
+  }
+}
+
+@media (max-width: 767px) {
+  .modal-laboratorio {
+    max-height: 95vh;
+    border-radius: var(--r-lg);
+  }
+  
+  .modal-lab-header {
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .modal-lab-header h3 {
+    font-size: 20px;
+  }
+  
+  .modal-lab-body {
+    padding: 1.25rem;
+  }
+  
+  .lab-modal-filters {
+    gap: 8px;
+  }
+  
+  .lab-filter-btn {
+    font-size: 12px;
+    padding: 8px 16px;
+  }
+  
+  .lab-cta-features {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+  
+  .modal-lab-header h3 {
+    font-size: 18px;
+  }
+  
+  .btn-close-lab {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+}
