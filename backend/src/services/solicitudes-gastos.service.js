@@ -173,17 +173,26 @@ class SolicitudesGastosService {
       [adminId, id]
     );
 
+    console.log('✅ Solicitud aprobada, creando gasto...');
+    console.log('Datos del gasto:', {
+      descripcion: `${solicitud.descripcion} (${solicitud.empresa} - ${solicitud.numero_comprobante})`,
+      categoria: solicitud.categoria,
+      monto: solicitud.monto
+    });
+
     // Crear gasto real en la tabla gastos
-    await query(
+    const gastoResult = await query(
       `INSERT INTO gastos (descripcion, categoria, monto, fecha)
-       VALUES ($1, $2, $3, DATE($4))`,
+       VALUES ($1, $2, $3, CURRENT_DATE)
+       RETURNING *`,
       [
         `${solicitud.descripcion} (${solicitud.empresa} - ${solicitud.numero_comprobante})`,
         solicitud.categoria,
-        solicitud.monto,
-        solicitud.fecha_solicitud
+        solicitud.monto
       ]
     );
+
+    console.log('✅ Gasto creado:', gastoResult.rows[0]);
 
     return {
       ...updateResult.rows[0],

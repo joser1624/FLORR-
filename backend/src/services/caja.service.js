@@ -192,6 +192,15 @@ class CajaService {
       'SELECT COALESCE(SUM(monto), 0) as total FROM gastos WHERE fecha = CURRENT_DATE',
       []
     );
+    
+    // Obtener lista de gastos del día
+    const gastosListaResult = await query(
+      `SELECT id, descripcion, categoria, monto, fecha, created_at
+       FROM gastos
+       WHERE fecha = CURRENT_DATE
+       ORDER BY created_at DESC`,
+      []
+    );
 
     return {
       ...caja,
@@ -210,6 +219,14 @@ class CajaService {
         metodo_pago: v.metodo_pago,
         trabajador_id: v.trabajador_id,
         productos: v.productos || []
+      })),
+      gastos: gastosListaResult.rows.map(g => ({
+        id: g.id,
+        descripcion: g.descripcion,
+        categoria: g.categoria,
+        monto: parseFloat(g.monto),
+        fecha: g.fecha,
+        created_at: g.created_at
       })),
       gastos_total: parseFloat(gastosResult.rows[0].total)
     };

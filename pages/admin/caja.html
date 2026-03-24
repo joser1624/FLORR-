@@ -754,20 +754,56 @@
           </div>`).join('')
       : '<div style="color:var(--gris-400);font-size:13px;text-align:center">Sin ventas registradas</div>';
 
-    // Renderizar tabla de transacciones
+    // Renderizar tabla de transacciones (ventas + gastos)
     const tbody = document.getElementById('tbody-transacciones');
-    tbody.innerHTML = ventas.length
-      ? ventas.map(v => {
-          const productosNombres = (v.productos || []).map(p => p.nombre).join(', ') || 'Venta';
-          const hora = new Date(v.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-          return `<tr>
-            <td style="font-size:12px">${hora}</td>
-            <td style="font-size:13px">${productosNombres}</td>
-            <td><span class="badge badge-success">Venta</span></td>
-            <td style="font-size:12px">${v.metodo}</td>
-            <td style="font-weight:600;color:var(--success)">+${Fmt.moneda(v.total)}</td>
-          </tr>`;
-        }).join('')
+    const gastos = d.gastos || [];
+    
+    // Combinar ventas y gastos en una sola lista de transacciones
+    const transacciones = [];
+    
+    // Agregar ventas
+    ventas.forEach(v => {
+      const productosNombres = (v.productos || []).map(p => p.nombre).join(', ') || 'Venta';
+      const hora = new Date(v.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      transacciones.push({
+        fecha: new Date(v.fecha),
+        html: `<tr>
+          <td style="font-size:12px">${hora}</td>
+          <td style="font-size:13px">${productosNombres}</td>
+          <td><span class="badge badge-success">Venta</span></td>
+          <td style="font-size:12px">${v.metodo}</td>
+          <td style="font-weight:600;color:var(--success)">+${Fmt.moneda(v.total)}</td>
+        </tr>`
+      });
+    });
+    
+    // Agregar gastos
+    gastos.forEach(g => {
+      const hora = new Date(g.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const categoriaEmoji = {
+        flores: '🌸',
+        transporte: '🚗',
+        materiales: '📦',
+        mantenimiento: '🔧',
+        otros: '📝'
+      };
+      transacciones.push({
+        fecha: new Date(g.created_at),
+        html: `<tr>
+          <td style="font-size:12px">${hora}</td>
+          <td style="font-size:13px">${g.descripcion}</td>
+          <td><span class="badge badge-danger">Gasto</span></td>
+          <td style="font-size:12px">${categoriaEmoji[g.categoria] || '📝'} ${g.categoria}</td>
+          <td style="font-weight:600;color:var(--danger)">-${Fmt.moneda(g.monto)}</td>
+        </tr>`
+      });
+    });
+    
+    // Ordenar por fecha (más reciente primero)
+    transacciones.sort((a, b) => b.fecha - a.fecha);
+    
+    tbody.innerHTML = transacciones.length
+      ? transacciones.map(t => t.html).join('')
       : '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin transacciones hoy</td></tr>';
   }
 
