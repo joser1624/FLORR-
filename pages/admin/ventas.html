@@ -236,19 +236,13 @@
         max-width: 100%;
       }
       
+      /* Ocultar tabla y mostrar cards en móvil */
       .table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        display: none;
       }
       
-      .data-table {
-        min-width: 600px;
-        font-size: 12px;
-      }
-      
-      .data-table th,
-      .data-table td {
-        padding: 8px 6px;
+      #ventas-cards-mobile {
+        display: block !important;
       }
       
       /* Modal responsive */
@@ -275,6 +269,91 @@
         font-size: 12px;
         padding: 6px 10px;
       }
+    }
+    
+    /* Estilos para cards móviles */
+    #ventas-cards-mobile {
+      display: none;
+    }
+    
+    .venta-card-mobile {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid var(--rosa-500);
+    }
+    
+    .venta-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gris-100);
+    }
+    
+    .venta-card-id {
+      font-size: 12px;
+      color: var(--gris-500);
+      font-weight: 600;
+    }
+    
+    .venta-card-total {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--rosa-600);
+    }
+    
+    .venta-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .venta-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    
+    .venta-card-label {
+      color: var(--gris-600);
+      font-weight: 500;
+    }
+    
+    .venta-card-value {
+      color: var(--gris-900);
+      font-weight: 600;
+      text-align: right;
+    }
+    
+    .venta-card-productos {
+      background: var(--gris-50);
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--gris-700);
+      margin: 8px 0;
+    }
+    
+    .venta-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--gris-100);
+    }
+    
+    .venta-card-actions button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
     }
     
     /* Móviles pequeños */
@@ -357,6 +436,9 @@
           <tbody id="tbody-ventas"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando ventas...</td></tr></tbody>
         </table>
       </div>
+      
+      <!-- Vista de cards para móvil -->
+      <div id="ventas-cards-mobile"></div>
       
       <!-- Paginación -->
       <div id="paginacion-ventas" style="display:flex;justify-content:center;gap:8px;margin-top:1rem"></div>
@@ -533,13 +615,17 @@
         break;
     }
     
+    // Renderizar tabla (desktop)
     const tbody = document.getElementById('tbody-ventas');
     if (!lista.length) { 
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">No hay ventas para este filtro</td></tr>'; 
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">No hay ventas para este filtro</td></tr>';
+      document.getElementById('ventas-cards-mobile').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No hay ventas para este filtro</div>';
       return; 
     }
     
     const metodoIcon = { Efectivo:'💵', Yape:'📱', Plin:'📱', Tarjeta:'💳', 'Transferencia bancaria':'🏦' };
+    
+    // Renderizar tabla
     tbody.innerHTML = lista.map(v => {
       const metodo = v.metodo_pago || v.metodo || 'Efectivo';
       const productos = v.productos || [];
@@ -559,6 +645,54 @@
           <button class="btn-tbl btn-tbl-edit" onclick="generarRecibo(${v.id})" title="Imprimir recibo" style="margin-left:4px">🖨️</button>
         </td>
       </tr>`;
+    }).join('');
+    
+    // Renderizar cards móviles
+    const cardsContainer = document.getElementById('ventas-cards-mobile');
+    cardsContainer.innerHTML = lista.map(v => {
+      const metodo = v.metodo_pago || v.metodo || 'Efectivo';
+      const productos = v.productos || [];
+      const productosTexto = productos.length > 0 
+        ? productos.map(p => `${p.producto_nombre || p.nombre} x${p.cantidad}`).join(', ')
+        : 'Sin productos';
+      const fecha = new Date(v.fecha || v.created_at);
+      const fechaStr = fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+      const horaStr = fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      
+      return `
+        <div class="venta-card-mobile">
+          <div class="venta-card-header">
+            <span class="venta-card-id">#${v.id}</span>
+            <span class="venta-card-total">${Fmt.moneda(v.total)}</span>
+          </div>
+          <div class="venta-card-body">
+            <div class="venta-card-row">
+              <span class="venta-card-label">📅 Fecha:</span>
+              <span class="venta-card-value">${fechaStr}</span>
+            </div>
+            <div class="venta-card-row">
+              <span class="venta-card-label">🕐 Hora:</span>
+              <span class="venta-card-value">${horaStr}</span>
+            </div>
+            <div class="venta-card-row">
+              <span class="venta-card-label">💳 Método:</span>
+              <span class="venta-card-value">${metodoIcon[metodo]||''} ${metodo}</span>
+            </div>
+            <div class="venta-card-row">
+              <span class="venta-card-label">👤 Trabajador:</span>
+              <span class="venta-card-value">${v.trabajador_nombre || v.trabajador || '—'}</span>
+            </div>
+            <div class="venta-card-productos">
+              <strong>🛒 Productos:</strong><br>
+              ${productosTexto}
+            </div>
+          </div>
+          <div class="venta-card-actions">
+            <button class="btn btn-outline btn-sm" onclick="verDetalleVenta(${v.id})">👁️ Ver detalle</button>
+            <button class="btn btn-primary btn-sm" onclick="generarRecibo(${v.id})">🖨️ Recibo</button>
+          </div>
+        </div>
+      `;
     }).join('');
 
     // Resumen
