@@ -276,8 +276,198 @@ body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color
 }
 
 /* ── Promos / Eventos ── */
-.promo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
+.promo-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
+  gap: 2rem; 
+}
 
+/* Tarjeta de promoción moderna */
+.promo-card-modern {
+  background: var(--pub-card);
+  border-radius: 20px;
+  border: 2px solid var(--pub-line);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.promo-card-modern:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(204, 56, 112, 0.15);
+  border-color: var(--pink-mid);
+}
+
+.promo-card-modern::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ff3d8a, #ff6b9d, #ffa8c5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.promo-card-modern:hover::before {
+  opacity: 1;
+}
+
+/* Badge de descuento en esquina */
+.promo-badge-corner {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #ff3d8a, #ff6b9d);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 18px;
+  box-shadow: 0 4px 16px rgba(255, 61, 138, 0.4);
+  z-index: 10;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Ícono de promoción */
+.promo-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, rgba(255, 61, 138, 0.1), rgba(255, 107, 157, 0.1));
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin-bottom: 0.5rem;
+}
+
+/* Título moderno */
+.promo-title-modern {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink-900);
+  line-height: 1.3;
+  margin: 0;
+}
+
+/* Descripción */
+.promo-desc-modern {
+  font-size: 14px;
+  color: var(--ink-500);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Badge de descuento grande */
+.promo-discount-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(255, 61, 138, 0.08), rgba(255, 107, 157, 0.08));
+  border: 2px solid var(--pink-mid);
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  width: fit-content;
+}
+
+.discount-number {
+  font-family: var(--display);
+  font-size: 42px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ff3d8a, #ff6b9d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.discount-text {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--pink);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Validez de la promoción */
+.promo-validity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-600);
+  background: rgba(204, 56, 112, 0.06);
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(204, 56, 112, 0.15);
+}
+
+.promo-validity.urgent {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #92400e;
+  animation: urgent-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes urgent-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* Botón CTA moderno */
+.btn-promo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #cc3870, #ff3d8a);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(204, 56, 112, 0.3);
+  margin-top: auto;
+}
+
+.btn-promo-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(204, 56, 112, 0.4);
+  background: linear-gradient(135deg, #ff3d8a, #ff6b9d);
+}
+
+.btn-promo-cta:active {
+  transform: translateY(0);
+}
+
+.btn-promo-cta svg {
+  transition: transform 0.3s ease;
+}
+
+.btn-promo-cta:hover svg {
+  transform: translateX(4px);
+}
+
+/* Estilos antiguos para compatibilidad */
 .promo-card { 
   background: var(--pub-card); 
   border-radius: 16px; 

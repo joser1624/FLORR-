@@ -642,26 +642,87 @@ function prevPage(){
 
   /* ── PROMOCIONES ── */
   async function cargarPromos(){
-    try{const d=await API.get('/promociones?activa=true');renderPromos(d.data||d.promociones||d||[]);}
-    catch{renderPromos([
-      {titulo:'20% en ramos de rosas',descripcion:'Válido para ramos de 12 rosas en adelante',descuento:20,hasta:'2026-03-31'},
-      {titulo:'Día de la Madre — precio especial',descripcion:'Arreglos con cinta dorada gratis',descuento:0,hasta:'2026-05-11',tipo_clase:'dorada'},
-    ]);}
+    try {
+      console.log('🔄 Cargando promociones desde /promociones...');
+      const d = await API.get('/promociones?activa=true');
+      console.log('✅ Respuesta de promociones:', d);
+      const promos = d.data || d.promociones || d || [];
+      console.log('📊 Promociones cargadas:', promos.length);
+      renderPromos(promos);
+    } catch(error) {
+      console.error('❌ Error cargando promociones:', error);
+      // Mostrar datos mock solo si falla
+      renderPromos([
+        {titulo:'20% en ramos de rosas',descripcion:'Válido para ramos de 12 rosas en adelante',descuento:20,fecha_hasta:'2026-03-31'},
+        {titulo:'Día de la Madre — precio especial',descripcion:'Arreglos con cinta dorada gratis',descuento:0,fecha_hasta:'2026-05-11',tipo_clase:'dorada'},
+      ]);
+    }
   }
 
   function renderPromos(promos){
     const grid=document.getElementById('promo-grid');
-    if(!promos.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#b8a8c8">No hay promociones activas actualmente</div>';return;}
-    grid.innerHTML=promos.map(p=>`<div class="promo-card ${p.tipo_clase||''}">
-      <div class="promo-tag">✦ Promoción</div>
-      <div class="promo-title">${p.titulo}</div>
-      <div class="promo-desc">${p.descripcion||''}</div>
-      ${p.descuento?`<div class="promo-descuento">${p.descuento}% OFF</div>`:''}
-      ${p.hasta?`<div class="promo-vigencia">📅 Válido hasta ${new Date(p.hasta).toLocaleDateString('es-PE',{day:'2-digit',month:'long'})}</div>`:''}
-      <div style="margin-top:1.35rem">
-        <a href="https://wa.me/51972542802?text=${encodeURIComponent('¡Hola! Me interesa la promoción: '+p.titulo)}" target="_blank" class="btn btn-primary btn-sm">Aprovechar →</a>
+    if(!promos.length){
+      grid.innerHTML='<div style="text-align:center;padding:3rem 1rem;color:#b8a8c8;font-size:15px"><div style="font-size:48px;margin-bottom:1rem">🎁</div>No hay promociones activas actualmente</div>';
+      return;
+    }
+    
+    grid.innerHTML=promos.map(p=>{
+      const fechaHasta = p.fecha_hasta ? new Date(p.fecha_hasta) : null;
+      const hoy = new Date();
+      const diasRestantes = fechaHasta ? Math.ceil((fechaHasta - hoy) / (1000 * 60 * 60 * 24)) : null;
+      
+      return `
+      <div class="promo-card-modern">
+        ${p.descuento > 0 ? `
+          <div class="promo-badge-corner">
+            <span>-${p.descuento}%</span>
+          </div>
+        ` : ''}
+        
+        <div class="promo-icon">
+          ${p.tipo === '2x1' ? '🎉' : p.tipo === 'regalo' ? '🎁' : p.tipo === 'precio_fijo' ? '💰' : '✨'}
+        </div>
+        
+        <h3 class="promo-title-modern">${p.titulo}</h3>
+        
+        ${p.descripcion ? `
+          <p class="promo-desc-modern">${p.descripcion}</p>
+        ` : ''}
+        
+        ${p.descuento > 0 ? `
+          <div class="promo-discount-badge">
+            <span class="discount-number">${p.descuento}%</span>
+            <span class="discount-text">DESCUENTO</span>
+          </div>
+        ` : ''}
+        
+        ${diasRestantes !== null ? `
+          <div class="promo-validity ${diasRestantes <= 3 ? 'urgent' : ''}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            ${diasRestantes === 0 ? '¡Último día!' : 
+              diasRestantes === 1 ? '¡Termina mañana!' : 
+              diasRestantes <= 3 ? `¡Solo ${diasRestantes} días!` :
+              `Válido hasta ${fechaHasta.toLocaleDateString('es-PE',{day:'numeric',month:'long'})}`}
+          </div>
+        ` : ''}
+        
+        <button class="btn-promo-cta" onclick="solicitarPromo('${p.titulo.replace(/'/g, "\\'")}')">
+          <span>Aprovechar oferta</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
       </div>
-    </div>`).join('');
+    `;
+    }).join('');
+  }
+  
+  function solicitarPromo(titulo) {
+    const mensaje = `¡Hola! 🌸 Me interesa la promoción: *${titulo}*`;
+    WhatsApp.send(mensaje);
   }
 
   /* ── EVENTOS ── */
