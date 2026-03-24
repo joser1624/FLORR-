@@ -333,7 +333,7 @@
         <input type="checkbox" 
                value="${producto.id}" 
                ${isSelected ? 'checked' : ''}
-               onchange="toggleProducto(${producto.id}, '${producto.nombre.replace(/'/g, "\\'")}', ${precio}, '${producto.categoria}')"
+               onchange="toggleProducto('${producto.id}', '${producto.nombre.replace(/'/g, "\\'")}', ${precio}, '${producto.categoria}')"
                style="width:18px;height:18px;cursor:pointer" />
         <div style="flex:1">
           <div style="font-size:13px;font-weight:500">${producto.nombre}</div>
@@ -498,13 +498,13 @@
       fecha: datos.fecha,
       color: 'rosa', // Color por defecto
       activo: true,
-      // Datos adicionales que el backend no usa pero guardamos en descripción JSON
-      metadata: JSON.stringify({
+      // PostgreSQL JSONB acepta objetos directamente
+      metadata: {
         imagen: datos.imagen,
         precioOriginal: datos.precioOriginal,
         precioFinal: datos.precioFinal,
         productos: datos.productos
-      })
+      }
     };
 
     try {
@@ -538,12 +538,20 @@
 
       eventoEditando = id;
 
-      // Parsear metadata si existe
+      // Parsear metadata si existe - PostgreSQL devuelve JSONB como objeto
       let metadata = {};
-      try {
-        metadata = evento.metadata ? JSON.parse(evento.metadata) : {};
-      } catch (e) {
-        console.warn('No se pudo parsear metadata:', e);
+      if (evento.metadata) {
+        // Si ya es un objeto, usarlo directamente
+        if (typeof evento.metadata === 'object') {
+          metadata = evento.metadata;
+        } else {
+          // Si es string, parsearlo
+          try {
+            metadata = JSON.parse(evento.metadata);
+          } catch (e) {
+            console.warn('No se pudo parsear metadata:', e);
+          }
+        }
       }
 
       // Mostrar formulario

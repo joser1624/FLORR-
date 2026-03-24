@@ -665,27 +665,28 @@ function prevPage(){
   }
 
   /* ── EVENTOS ── */
-  function cargarEventos(){
-    // Cargar eventos desde localStorage
-    const eventosGuardados = localStorage.getItem('ee_eventos');
+  async function cargarEventos(){
     let eventos = [];
     
-    if (eventosGuardados) {
-      try {
-        const todosEventos = JSON.parse(eventosGuardados);
-        // Filtrar solo eventos futuros
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
+    try {
+      // Cargar eventos desde el backend
+      const response = await API.get('/eventos?activo=true');
+      const todosEventos = response.data || [];
+      
+      // Filtrar solo eventos futuros
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      eventos = todosEventos
+        .filter(e => {
+          const fechaEvento = new Date(e.fecha);
+          return fechaEvento >= hoy;
+        })
+        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
         
-        eventos = todosEventos
-          .filter(e => {
-            const fechaEvento = new Date(e.fecha);
-            return fechaEvento >= hoy;
-          })
-          .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-      } catch (error) {
-        console.error('Error al cargar eventos:', error);
-      }
+      console.log('✅ Eventos cargados desde backend:', eventos.length);
+    } catch (error) {
+      console.error('❌ Error al cargar eventos:', error);
     }
     
     // Si no hay eventos, mostrar mock
@@ -707,8 +708,19 @@ function prevPage(){
     }
     
     grid.innerHTML=eventos.map(e=>{
-      const descuento = e.precioOriginal && e.precioFinal ? 
-        Math.round(((e.precioOriginal - e.precioFinal) / e.precioOriginal) * 100) : 0;
+      // Extraer metadata si existe
+      let metadata = {};
+      if (e.metadata) {
+        metadata = typeof e.metadata === 'object' ? e.metadata : {};
+      }
+      
+      const imagen = metadata.imagen || e.imagen || '';
+      const precioOriginal = metadata.precioOriginal || e.precioOriginal || 0;
+      const precioFinal = metadata.precioFinal || e.precioFinal || 0;
+      const productos = metadata.productos || e.productos || [];
+      
+      const descuento = precioOriginal && precioFinal ? 
+        Math.round(((precioOriginal - precioFinal) / precioOriginal) * 100) : 0;
       
       const fechaEvento = new Date(e.fecha + 'T00:00:00');
       const hoy = new Date();
@@ -726,12 +738,12 @@ function prevPage(){
       // Capitalizar primera letra
       const fechaCapitalizada = fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1);
 
-      return `<div class="promo-card" onclick="pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${e.precioFinal || 0})">
+      return `<div class="promo-card" onclick="pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${precioFinal || 0})">
         ${descuento > 0 ? `<div class="promo-tag">-${descuento}% OFF</div>` : ''}
         
-        ${e.imagen ? `
+        ${imagen ? `
           <div class="promo-img">
-            <img src="${e.imagen}" 
+            <img src="${imagen}" 
                  alt="${e.nombre}"
                  style="width:100%;height:100%;object-fit:cover"
                  onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:72px;background:linear-gradient(135deg, #f0e8f5, #fce7f3)\\'>${e.emoji||'🌸'}</div>'" />
@@ -755,24 +767,24 @@ function prevPage(){
             </div>
           ` : ''}
 
-          ${e.productos && e.productos.length > 0 ? `
+          ${productos && productos.length > 0 ? `
             <div style="background:rgba(204,56,112,0.04);padding:12px;border-radius:10px;margin:12px 0">
               <div style="font-size:11px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">✨ Incluye:</div>
               <div style="font-size:12px;color:var(--ink-600);line-height:1.7">
-                ${e.productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
-                ${e.productos.length > 3 ? `<br>• Y ${e.productos.length - 3} producto${e.productos.length - 3 > 1 ? 's' : ''} más` : ''}
+                ${productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
+                ${productos.length > 3 ? `<br>• Y ${productos.length - 3} producto${productos.length - 3 > 1 ? 's' : ''} más` : ''}
               </div>
             </div>
           ` : ''}
 
-          ${e.precioOriginal && e.precioFinal ? `
+          ${precioOriginal && precioFinal ? `
             <div class="promo-price">
-              <span class="promo-price-old">S/ ${parseFloat(e.precioOriginal).toFixed(2)}</span>
-              <span class="promo-price-new">S/ ${parseFloat(e.precioFinal).toFixed(2)}</span>
+              <span class="promo-price-old">S/ ${parseFloat(precioOriginal).toFixed(2)}</span>
+              <span class="promo-price-new">S/ ${parseFloat(precioFinal).toFixed(2)}</span>
             </div>
           ` : ''}
 
-          <button class="btn btn-primary" style="width:100%;margin-top:16px;font-weight:600" onclick="event.stopPropagation();pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${e.precioFinal || 0})">
+          <button class="btn btn-primary" style="width:100%;margin-top:16px;font-weight:600" onclick="event.stopPropagation();pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${precioFinal || 0})">
             📱 Pedir por WhatsApp
           </button>
         </div>

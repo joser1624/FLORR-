@@ -28,12 +28,18 @@ const UIEventos = {
    * Crear card de evento para panel admin
    */
   crearCardAdmin(evento) {
-    // Parsear metadata si existe
+    // Parsear metadata si existe - PostgreSQL devuelve JSONB como objeto
     let metadata = {};
-    try {
-      metadata = evento.metadata ? (typeof evento.metadata === 'string' ? JSON.parse(evento.metadata) : evento.metadata) : {};
-    } catch (e) {
-      console.warn('No se pudo parsear metadata:', e);
+    if (evento.metadata) {
+      if (typeof evento.metadata === 'object') {
+        metadata = evento.metadata;
+      } else {
+        try {
+          metadata = JSON.parse(evento.metadata);
+        } catch (e) {
+          console.warn('No se pudo parsear metadata:', e);
+        }
+      }
     }
 
     const precioOriginal = metadata.precioOriginal || 0;
@@ -124,12 +130,18 @@ const UIEventos = {
    * Crear card de evento para página pública
    */
   crearCardPublico(evento) {
-    // Parsear metadata si existe
+    // Parsear metadata si existe - PostgreSQL devuelve JSONB como objeto
     let metadata = {};
-    try {
-      metadata = evento.metadata ? (typeof evento.metadata === 'string' ? JSON.parse(evento.metadata) : evento.metadata) : {};
-    } catch (e) {
-      console.warn('No se pudo parsear metadata:', e);
+    if (evento.metadata) {
+      if (typeof evento.metadata === 'object') {
+        metadata = evento.metadata;
+      } else {
+        try {
+          metadata = JSON.parse(evento.metadata);
+        } catch (e) {
+          console.warn('No se pudo parsear metadata:', e);
+        }
+      }
     }
 
     const precioOriginal = metadata.precioOriginal || 0;
