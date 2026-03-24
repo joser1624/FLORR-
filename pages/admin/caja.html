@@ -79,6 +79,134 @@
     #lista-quiebres > .card {
       animation: slideIn 0.3s ease-out;
     }
+    
+    /* ═══════════════════════════════════════
+       RESPONSIVE DESIGN
+    ═══════════════════════════════════════ */
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+    
+    /* Móviles */
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .page-header > div:last-child {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .page-header button {
+        width: 100%;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Desglose y resumen en columna */
+      div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .data-table {
+        min-width: 600px;
+        font-size: 12px;
+      }
+      
+      .data-table th,
+      .data-table td {
+        padding: 8px 6px;
+      }
+      
+      /* Modal responsive */
+      .modal {
+        max-width: 95% !important;
+        margin: 10px;
+      }
+      
+      .modal-body {
+        padding: 1rem;
+      }
+      
+      .form-grid-2 {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+      .stat-card {
+        padding: 12px;
+      }
+      
+      .stat-value {
+        font-size: 20px;
+      }
+      
+      .stat-label {
+        font-size: 11px;
+      }
+      
+      .data-table {
+        font-size: 11px;
+      }
+      
+      .btn {
+        font-size: 13px;
+        padding: 8px 12px;
+      }
+      
+      .modal {
+        max-width: 100% !important;
+        margin: 0;
+        border-radius: 0;
+      }
+      
+      .modal-header h3 {
+        font-size: 18px;
+      }
+    }
+    
+    /* Mejoras para cards de quiebre */
+    #lista-quiebres .card {
+      background: var(--card-bg, white);
+      border: 2px solid var(--border-color, var(--gris-200));
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      margin-bottom: 16px;
+    }
+    
+    #lista-quiebres .card:hover {
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+    
+    /* Modo oscuro para cards de quiebre */
+    .dark-mode #lista-quiebres .card {
+      background: var(--card-bg);
+      border-color: var(--border-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .dark-mode #lista-quiebres .card:hover {
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
   </style>
 </head>
 <body>
@@ -725,84 +853,85 @@
       
       // Determinar color y estado
       let estadoHTML = '';
-      let cardClass = '';
-      let iconoDiferencia = '';
+      let cardBorderColor = '';
+      let cardBgGradient = '';
       
       if (montoFisico === null) {
         // Sin conteo físico
         estadoHTML = `
-          <div style="background:var(--gris-100);padding:8px 12px;border-radius:6px;text-align:center">
-            <div style="font-size:11px;color:var(--gris-600);margin-bottom:2px">Sin conteo físico</div>
-            <div style="font-size:13px;font-weight:600;color:var(--gris-700)">📊 Solo registro</div>
+          <div style="background:var(--bg-secondary, var(--gris-100));padding:12px;border-radius:8px;text-align:center;border:2px solid var(--border-color, var(--gris-300))">
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-600));margin-bottom:4px;font-weight:600">Sin conteo físico</div>
+            <div style="font-size:16px;font-weight:700;color:var(--text-primary, var(--gris-700))">📊 Solo registro</div>
           </div>
         `;
-        cardClass = 'border-left:4px solid var(--gris-400)';
+        cardBorderColor = 'var(--gris-400)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(156,163,175,0.05) 0%, rgba(156,163,175,0.1) 100%)';
       } else if (diferencia === 0) {
         // Cuadrado
         estadoHTML = `
-          <div style="background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);padding:8px 12px;border-radius:6px;text-align:center">
-            <div style="font-size:11px;color:var(--success);margin-bottom:2px">Diferencia</div>
-            <div style="font-size:18px;font-weight:700;color:var(--success)">✅ S/ 0.00</div>
-            <div style="font-size:11px;color:var(--success);margin-top:2px;font-weight:600">¡Cuadrado!</div>
+          <div style="background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--success)">
+            <div style="font-size:11px;color:var(--success);margin-bottom:4px;font-weight:600">Diferencia</div>
+            <div style="font-size:20px;font-weight:800;color:var(--success)">✅ S/ 0.00</div>
+            <div style="font-size:12px;color:var(--success);margin-top:4px;font-weight:700">¡Cuadrado!</div>
           </div>
         `;
-        cardClass = 'border-left:4px solid var(--success)';
-        iconoDiferencia = '✅';
+        cardBorderColor = 'var(--success)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(45,140,78,0.05) 0%, rgba(45,140,78,0.1) 100%)';
       } else if (diferencia < 0) {
         // Faltante
         estadoHTML = `
-          <div style="background:linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);padding:8px 12px;border-radius:6px;text-align:center">
-            <div style="font-size:11px;color:var(--danger);margin-bottom:2px">Diferencia</div>
-            <div style="font-size:18px;font-weight:700;color:var(--danger)">⚠️ -${Fmt.moneda(Math.abs(diferencia))}</div>
-            <div style="font-size:11px;color:var(--danger);margin-top:2px;font-weight:600">Faltante</div>
+          <div style="background:linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--danger)">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;font-weight:600">Diferencia</div>
+            <div style="font-size:20px;font-weight:800;color:var(--danger)">⚠️ -${Fmt.moneda(Math.abs(diferencia))}</div>
+            <div style="font-size:12px;color:var(--danger);margin-top:4px;font-weight:700">Faltante</div>
           </div>
         `;
-        cardClass = 'border-left:4px solid var(--danger)';
-        iconoDiferencia = '⚠️';
+        cardBorderColor = 'var(--danger)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(196,50,50,0.05) 0%, rgba(196,50,50,0.1) 100%)';
       } else {
         // Sobrante
         estadoHTML = `
-          <div style="background:linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);padding:8px 12px;border-radius:6px;text-align:center">
-            <div style="font-size:11px;color:var(--warning);margin-bottom:2px">Diferencia</div>
-            <div style="font-size:18px;font-weight:700;color:var(--warning)">📈 +${Fmt.moneda(diferencia)}</div>
-            <div style="font-size:11px;color:var(--warning);margin-top:2px;font-weight:600">Sobrante</div>
+          <div style="background:linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--warning)">
+            <div style="font-size:11px;color:var(--warning);margin-bottom:4px;font-weight:600">Diferencia</div>
+            <div style="font-size:20px;font-weight:800;color:var(--warning)">📈 +${Fmt.moneda(diferencia)}</div>
+            <div style="font-size:12px;color:var(--warning);margin-top:4px;font-weight:700">Sobrante</div>
           </div>
         `;
-        cardClass = 'border-left:4px solid var(--warning)';
-        iconoDiferencia = '📈';
+        cardBorderColor = 'var(--warning)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(200,123,26,0.05) 0%, rgba(200,123,26,0.1) 100%)';
       }
       
       return `
-        <div class="card" style="padding:1rem;${cardClass}">
-          <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center">
+        <div class="card" style="padding:1.25rem;border-left:6px solid ${cardBorderColor};background:${cardBgGradient}">
+          <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1.25rem;align-items:center">
             <!-- Hora y trabajador -->
-            <div style="text-align:center;min-width:80px">
-              <div style="font-size:20px;font-weight:700;color:var(--rosa-600)">${hora}</div>
-              <div style="font-size:11px;color:var(--gris-500);margin-top:2px">${q.trabajador_nombre || 'N/A'}</div>
+            <div style="text-align:center;min-width:90px;background:var(--card-bg, white);padding:12px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
+              <div style="font-size:24px;font-weight:800;color:var(--rosa-600);line-height:1">${hora}</div>
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-top:6px;font-weight:600">${q.trabajador_nombre || 'N/A'}</div>
             </div>
             
             <!-- Detalles -->
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-              <div>
-                <div style="font-size:11px;color:var(--gris-500);margin-bottom:2px">Efectivo esperado</div>
-                <div style="font-size:14px;font-weight:600">${Fmt.moneda(montoEsperado)}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">
+              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">Efectivo esperado</div>
+                <div style="font-size:16px;font-weight:700;color:var(--text-primary, var(--gris-900))">${Fmt.moneda(montoEsperado)}</div>
               </div>
               ${montoFisico !== null ? `
-                <div>
-                  <div style="font-size:11px;color:var(--gris-500);margin-bottom:2px">Monto físico</div>
-                  <div style="font-size:14px;font-weight:600">${Fmt.moneda(montoFisico)}</div>
+                <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                  <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">Monto físico</div>
+                  <div style="font-size:16px;font-weight:700;color:var(--text-primary, var(--gris-900))">${Fmt.moneda(montoFisico)}</div>
                 </div>
-              ` : '<div></div>'}
+              ` : ''}
               ${q.observaciones ? `
-                <div style="grid-column:1/-1">
-                  <div style="font-size:11px;color:var(--gris-500);margin-bottom:2px">📝 Observaciones</div>
-                  <div style="font-size:12px;color:var(--gris-700);font-style:italic">"${q.observaciones}"</div>
+                <div style="grid-column:1/-1;background:var(--bg-secondary, var(--gris-50));padding:10px;border-radius:6px;border-left:3px solid var(--rosa-500)">
+                  <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📝 Observaciones</div>
+                  <div style="font-size:13px;color:var(--text-primary, var(--gris-700));font-style:italic">"${q.observaciones}"</div>
                 </div>
               ` : ''}
             </div>
             
             <!-- Estado -->
-            <div style="min-width:140px">
+            <div style="min-width:160px">
               ${estadoHTML}
             </div>
           </div>
