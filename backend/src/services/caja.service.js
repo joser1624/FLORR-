@@ -44,7 +44,7 @@ class CajaService {
    * Close cash register for today
    * Requirements: 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13
    */
-  async cierre(trabajadorId) {
+  async cierre(trabajadorId, montoCierre = null) {
     // Validate that a register is open for today
     const cajaResult = await query(
       "SELECT * FROM caja WHERE fecha = CURRENT_DATE AND estado = 'abierta'",
@@ -56,6 +56,9 @@ class CajaService {
       error.statusCode = 404;
       throw error;
     }
+
+    const cajaActual = cajaResult.rows[0];
+    const montoApertura = parseFloat(cajaActual.monto_apertura);
 
     // Calculate totals by payment method from today's sales
     const totalsResult = await query(
@@ -71,7 +74,7 @@ class CajaService {
 
     const totals = totalsResult.rows[0];
 
-    // Calculate total expenses for today
+    // Calculate total expenses for today (solo efectivo para el cuadre)
     const gastosResult = await query(
       'SELECT COALESCE(SUM(monto), 0) AS total_gastos FROM gastos WHERE fecha = CURRENT_DATE',
       []
@@ -83,6 +86,30 @@ class CajaService {
     const totalVentas = parseFloat(totals.total_ventas);
     const totalGastos = parseFloat(gastosResult.rows[0].total_gastos);
 
+    // Calcular efectivo esperado (monto apertura + ventas efectivo - gastos)
+    const efectivoEsperado = montoApertura + totalEfectivo - totalGastos;
+
+    // Calcular diferencia y estado de cuadre
+    let diferencia = 0;
+    let estadoCuadre = 'sin_cuadre';
+    let mensaje = 'Caja cerrada sin cuadre de efectivo';
+
+    if (montoCierre !== null && montoCierre !== undefined) {
+      const montoCierreNum = parseFloat(montoCierre);
+      diferencia = montoCierreNum - efectivoEsperado;
+      
+      if (diferencia === 0) {
+        estadoCuadre = 'cuadrado';
+        mensaje = 'Caja cuadrada correctamente';
+      } else if (diferencia < 0) {
+        estadoCuadre = 'faltante';
+        mensaje = `Faltante de S/ ${Math.abs(diferencia).toFixed(2)}`;
+      } else {
+        estadoCuadre = 'sobrante';
+        mensaje = `Sobrante de S/ ${diferencia.toFixed(2)}`;
+      }
+    }
+
     // Update caja: set estado to "cerrada" and record trabajador_cierre_id
     const result = await query(
       `UPDATE caja
@@ -92,11 +119,12 @@ class CajaService {
            total_ventas = $4,
            total_gastos = $5,
            trabajador_cierre_id = $6,
+           monto_cierre = $7,
            estado = 'cerrada',
            updated_at = NOW()
        WHERE fecha = CURRENT_DATE AND estado = 'abierta'
        RETURNING *`,
-      [totalEfectivo, totalDigital, totalTarjeta, totalVentas, totalGastos, trabajadorId]
+      [totalEfectivo, totalDigital, totalTarjeta, totalVentas, totalGastos, trabajadorId, montoCierre]
     );
 
     const caja = result.rows[0];
@@ -108,7 +136,11 @@ class CajaService {
       total_digital: parseFloat(caja.total_digital),
       total_tarjeta: parseFloat(caja.total_tarjeta),
       total_ventas: parseFloat(caja.total_ventas),
-      total_gastos: parseFloat(caja.total_gastos)
+      total_gastos: parseFloat(caja.total_gastos),
+      efectivo_esperado: efectivoEsperado,
+      diferencia: diferencia,
+      estado_cuadre: estadoCuadre,
+      mensaje: mensaje
     };
   }
 
@@ -175,6 +207,7 @@ class CajaService {
         fecha: v.fecha,
         total: parseFloat(v.total),
         metodo: v.metodo_pago,
+        metodo_pago: v.metodo_pago,
         trabajador_id: v.trabajador_id,
         productos: v.productos || []
       })),

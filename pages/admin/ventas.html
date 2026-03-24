@@ -482,6 +482,40 @@
   cargarProductosSelect();
   cargarClientesSelect();
   cargarTrabajadoresSelect();
+  verificarCajaAbierta();
+
+  // Verificar si la caja está abierta
+  async function verificarCajaAbierta() {
+    try {
+      await API.get('/caja/hoy');
+      // Caja abierta, todo bien
+    } catch (error) {
+      if (error.message && error.message.includes('No hay caja abierta')) {
+        // Mostrar alerta permanente
+        const alertaDiv = document.createElement('div');
+        alertaDiv.className = 'alert alert-warning';
+        alertaDiv.style.cssText = 'margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between';
+        alertaDiv.innerHTML = `
+          <div>
+            <strong>⚠️ Caja no abierta</strong>
+            <p style="margin:4px 0 0 0;font-size:13px">No se pueden registrar ventas hasta que se abra la caja del día.</p>
+          </div>
+          <a href="caja.html" class="btn btn-warning btn-sm">Ir a Caja</a>
+        `;
+        
+        const content = document.querySelector('.admin-content');
+        const pageHeader = content.querySelector('.page-header');
+        content.insertBefore(alertaDiv, pageHeader.nextSibling);
+        
+        // Deshabilitar botón de nueva venta
+        const btnNuevaVenta = document.querySelector('.btn-primary');
+        if (btnNuevaVenta) {
+          btnNuevaVenta.disabled = true;
+          btnNuevaVenta.title = 'Debes abrir la caja primero';
+        }
+      }
+    }
+  }
 </script>
 </body>
 </html>

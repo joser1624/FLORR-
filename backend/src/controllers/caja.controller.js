@@ -43,9 +43,21 @@ class CajaController {
   async cierre(req, res, next) {
     try {
       const trabajadorId = req.user.id;
+      const { monto_cierre } = req.body;
 
-      const caja = await cajaService.cierre(trabajadorId);
-      res.json({ success: true, data: caja, mensaje: 'Caja cerrada correctamente' });
+      // Validar monto_cierre si se proporciona
+      if (monto_cierre !== undefined && monto_cierre !== null) {
+        const montoNum = parseFloat(monto_cierre);
+        if (isNaN(montoNum) || montoNum < 0) {
+          return res.status(400).json({ 
+            error: true, 
+            mensaje: 'El monto de cierre debe ser un número mayor o igual a 0' 
+          });
+        }
+      }
+
+      const caja = await cajaService.cierre(trabajadorId, monto_cierre);
+      res.json({ success: true, data: caja, mensaje: caja.mensaje || 'Caja cerrada correctamente' });
     } catch (error) {
       if (error.statusCode === 404) {
         return res.status(404).json({ error: true, mensaje: error.message });
@@ -63,7 +75,7 @@ class CajaController {
       const limit = parseInt(req.query.limit) || 50;
 
       const result = await cajaService.getHistorial(page, limit);
-      res.json({ success: true, ...result });
+      res.json({ success: true, data: result.data, pagination: result.pagination });
     } catch (error) {
       next(error);
     }

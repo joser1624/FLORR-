@@ -88,6 +88,18 @@ class VentasService {
       throw new Error(`Método de pago inválido. Debe ser uno de: ${metodosPermitidos.join(', ')}`);
     }
 
+    // Verificar que la caja esté abierta
+    const cajaResult = await query(
+      "SELECT id FROM caja WHERE fecha = CURRENT_DATE AND estado = 'abierta'",
+      []
+    );
+
+    if (cajaResult.rows.length === 0) {
+      const error = new Error('No se puede realizar la venta. La caja no está abierta. Por favor, abre la caja antes de registrar ventas.');
+      error.statusCode = 400;
+      throw error;
+    }
+
     const client = await getClient();
     try {
       await client.query('BEGIN');
