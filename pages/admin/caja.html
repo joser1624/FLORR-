@@ -747,6 +747,7 @@
           <button class="btn btn-outline" onclick="exportarPDF()" id="btn-imprimir">📄 Exportar PDF</button>
           <button class="btn btn-success" onclick="abrirModalSolicitudGasto()" id="btn-solicitar-gasto" style="display:none">💰 Solicitar Gasto</button>
           <button class="btn btn-warning" onclick="abrirModalQuiebre()" id="btn-quiebre" style="display:none">📊 Quiebre</button>
+          <button class="btn btn-danger" onclick="abrirModalAnularCierre()" id="btn-anular-cierre" style="display:none">🔓 Anular Cierre</button>
           <button class="btn btn-primary" onclick="Modal.open('modal-apertura')" id="btn-abrir">Abrir caja</button>
           <button class="btn btn-danger" onclick="confirmarCierre()" id="btn-cerrar" style="display:none">Cerrar caja</button>
         </div>
@@ -1049,6 +1050,44 @@
   </div>
 </div>
 
+<!-- Modal Anular Cierre -->
+<div class="modal-overlay" id="modal-anular-cierre">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem">
+      <div>
+        <h3 style="margin:0;color:white;font-size:1.5rem">🔓 Anular Cierre de Caja</h3>
+        <p style="margin:0.25rem 0 0 0;font-size:13px;opacity:0.9">Esta acción quedará registrada en auditoría</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-anular-cierre')" style="color:white;opacity:0.9">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div class="alert alert-warning" style="margin-bottom:1rem">
+        <strong>⚠️ Advertencia:</strong> Al anular el cierre, la caja volverá a estado "abierta" y podrás continuar registrando operaciones. Esta acción quedará registrada permanentemente en el sistema de auditoría.
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Motivo de anulación <span class="req">*</span></label>
+        <textarea 
+          id="anular-motivo" 
+          class="form-control" 
+          rows="4" 
+          placeholder="Ej: Error en el conteo de efectivo, venta registrada después del cierre, etc."
+          required
+        ></textarea>
+        <small style="color:var(--gris-500);font-size:11px;margin-top:4px;display:block">
+          Explica claramente por qué necesitas anular este cierre
+        </small>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:1rem 1.5rem;background:var(--gris-50)">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-anular-cierre')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmarAnularCierre()" style="padding:10px 24px;font-weight:600">
+        🔓 Anular Cierre
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Solicitud de Gasto -->
 <div class="modal-overlay" id="modal-solicitud-gasto">
   <div class="modal" style="max-width:580px">
@@ -1177,6 +1216,7 @@
     const btnImprimir = document.getElementById('btn-imprimir');
     const btnQuiebre = document.getElementById('btn-quiebre');
     const btnSolicitarGasto = document.getElementById('btn-solicitar-gasto');
+    const btnAnularCierre = document.getElementById('btn-anular-cierre');
     const estadoCaja = document.getElementById('estado-caja');
     const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
 
@@ -1193,6 +1233,11 @@
       btnCerrar.style.display = 'inline-block';
       btnQuiebre.style.display = 'inline-block';
       btnImprimir.disabled = false;
+      
+      // Ocultar botón de anular cierre
+      if (btnAnularCierre) {
+        btnAnularCierre.style.display = 'none';
+      }
       
       // Mostrar botón de solicitar gasto para todos los roles
       if (btnSolicitarGasto) {
@@ -1218,10 +1263,20 @@
       if (estado === 'cerrada') {
         btnImprimir.disabled = false;
         estadoCaja.innerHTML = '<span class="badge badge-gray" style="font-size:12px">🔒 Caja cerrada - Puedes abrir nueva caja</span>';
+        
+        // Mostrar botón de anular cierre solo para admin/dueña
+        if (btnAnularCierre && (user.rol === 'admin' || user.rol === 'duena')) {
+          btnAnularCierre.style.display = 'inline-block';
+        }
       } else {
         // Estado 'sin_abrir' o cualquier otro
         btnImprimir.disabled = true;
         estadoCaja.innerHTML = '<span class="badge badge-warning" style="font-size:12px">⚠ Caja no abierta</span>';
+        
+        // Ocultar botón de anular cierre
+        if (btnAnularCierre) {
+          btnAnularCierre.style.display = 'none';
+        }
       }
       
       // Ocultar sección de solicitudes
@@ -1232,6 +1287,7 @@
     console.log('Botón cerrar display:', btnCerrar.style.display);
     console.log('Botón quiebre display:', btnQuiebre ? btnQuiebre.style.display : 'N/A');
     console.log('Botón solicitar gasto display:', btnSolicitarGasto ? btnSolicitarGasto.style.display : 'N/A');
+    console.log('Botón anular cierre display:', btnAnularCierre ? btnAnularCierre.style.display : 'N/A');
   }
 
   function renderCaja(d) {
@@ -1488,6 +1544,42 @@
     } catch (error) {
       console.error('Error al cerrar caja:', error);
       Toast.error(error.message || 'Error al cerrar la caja');
+    }
+  }
+
+  // =====================
+  // ANULAR CIERRE
+  // =====================
+  
+  function abrirModalAnularCierre() {
+    // Limpiar campo de motivo
+    document.getElementById('anular-motivo').value = '';
+    Modal.open('modal-anular-cierre');
+  }
+  
+  async function confirmarAnularCierre() {
+    const motivo = document.getElementById('anular-motivo').value.trim();
+    
+    if (!motivo || motivo.length < 10) {
+      Toast.warning('Debes proporcionar un motivo detallado (mínimo 10 caracteres)');
+      return;
+    }
+    
+    // Confirmación adicional
+    if (!confirm('¿Estás seguro de anular el cierre de caja? Esta acción quedará registrada en auditoría.')) {
+      return;
+    }
+    
+    try {
+      const response = await API.post('/caja/anular-cierre', { motivo });
+      const data = response.data || response;
+      
+      Toast.success(data.mensaje || 'Cierre anulado correctamente');
+      Modal.close('modal-anular-cierre');
+      await cargarCaja();
+    } catch (error) {
+      console.error('Error al anular cierre:', error);
+      Toast.error(error.message || 'Error al anular el cierre');
     }
   }
 

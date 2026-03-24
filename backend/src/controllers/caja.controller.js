@@ -129,6 +129,66 @@ class CajaController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/caja/anular-cierre
+   * Anula el cierre de caja del día (solo admin)
+   */
+  async anularCierre(req, res, next) {
+    try {
+      const adminId = req.user.id;
+      const { motivo } = req.body;
+
+      // Validar que el usuario es admin o dueña
+      if (req.user.rol !== 'admin' && req.user.rol !== 'duena') {
+        return res.status(403).json({ 
+          error: true, 
+          mensaje: 'Solo administradores pueden anular cierres de caja' 
+        });
+      }
+
+      if (!motivo || motivo.trim().length === 0) {
+        return res.status(400).json({ 
+          error: true, 
+          mensaje: 'Debe proporcionar un motivo para anular el cierre' 
+        });
+      }
+
+      const resultado = await cajaService.anularCierre(adminId, motivo);
+      res.json({ 
+        success: true, 
+        data: resultado.caja, 
+        mensaje: resultado.mensaje 
+      });
+    } catch (error) {
+      if (error.statusCode === 404 || error.statusCode === 400) {
+        return res.status(error.statusCode).json({ error: true, mensaje: error.message });
+      }
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/caja/anulaciones
+   * Obtiene historial de anulaciones (auditoría)
+   */
+  async getAnulaciones(req, res, next) {
+    try {
+      // Solo admin puede ver anulaciones
+      if (req.user.rol !== 'admin' && req.user.rol !== 'duena') {
+        return res.status(403).json({ 
+          error: true, 
+          mensaje: 'No tiene permisos para ver el historial de anulaciones' 
+        });
+      }
+
+      const limit = parseInt(req.query.limit) || 50;
+      const anulaciones = await cajaService.getAnulaciones(limit);
+      res.json({ success: true, data: anulaciones });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new CajaController();

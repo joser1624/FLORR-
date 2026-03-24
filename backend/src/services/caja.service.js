@@ -415,6 +415,112 @@ class CajaService {
       total_gastos_hasta_ahora: parseFloat(q.total_gastos_hasta_ahora),
     }));
   }
+
+  /**
+   * Anular cierre de caja (solo admin, solo mismo día)
+   * Registra la anulación en tabla de auditoría y reabre la caja
+   */
+  async anularCierre(adminId, motivoAnulacion) {
+    // Validar que hay motivo
+    if (!motivoAnulacion || motivoAnulacion.trim().length === 0) {
+      const error = new Error('Debe proporcionar un motivo para anular el cierre');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Verificar que existe una caja cerrada HOY
+    const cajaResult = await query(
+      `SELECT * FROM caja 
+       WHERE fecha = CURRENT_DATE AND estado = 'cerrada'`,
+      []
+    );
+
+    if (cajaResult.rows.length === 0) {
+      const error = new Error('No hay caja cerrada hoy para anular');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const caja = cajaResult.rows[0];
+
+    // Guardar snapshot del cierre en tabla de auditoría
+    await query(
+      `INSERT INTO caja_cierre_anulado 
+        (caja_id, fecha_cierre, trabajador_cierre_id, monto_cierre,
+         total_efectivo, total_digital, total_tarjeta, total_ventas, total_gastos,
+         anulado_por_id, motivo_anulacion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        caja.id,
+        caja.updated_at || caja.created_at,
+        caja.trabajador_cierre_id,
+        caja.monto_cierre,
+        caja.total_efectivo,
+        caja.total_digital,
+        caja.total_tarjeta,
+        caja.total_ventas,
+        caja.total_gastos,
+        adminId,
+        motivoAnulacion.trim()
+      ]
+    );
+
+    // Reabrir la caja: cambiar estado a 'abierta' y limpiar datos de cierre
+    const result = await query(
+      `UPDATE caja
+       SET estado = 'abierta',
+           trabajador_cierre_id = NULL,
+           monto_cierre = NULL,
+           total_efectivo = NULL,
+           total_digital = NULL,
+           total_tarjeta = NULL,
+           total_ventas = NULL,
+           total_gastos = NULL,
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [caja.id]
+    );
+
+    return {
+      caja: result.rows[0],
+      mensaje: 'Cierre anulado correctamente. La caja ha sido reabierta.',
+      anulacion: {
+        motivo: motivoAnulacion.trim(),
+        anulado_por_id: adminId,
+        fecha_anulacion: new Date()
+      }
+    };
+  }
+
+  /**
+   * Obtener historial de anulaciones (auditoría)
+   */
+  async getAnulaciones(limit = 50) {
+    const result = await query(
+      `SELECT a.*,
+              u1.nombre AS anulado_por_nombre,
+              u2.nombre AS trabajador_cierre_nombre,
+              c.fecha AS fecha_caja
+       FROM caja_cierre_anulado a
+       LEFT JOIN usuarios u1 ON a.anulado_por_id = u1.id
+       LEFT JOIN usuarios u2 ON a.trabajador_cierre_id = u2.id
+       LEFT JOIN caja c ON a.caja_id = c.id
+       ORDER BY a.fecha_anulacion DESC
+       LIMIT $1`,
+      [limit]
+    );
+
+    return result.rows.map(a => ({
+      ...a,
+      monto_cierre: a.monto_cierre !== null ? parseFloat(a.monto_cierre) : null,
+      total_efectivo: a.total_efectivo !== null ? parseFloat(a.total_efectivo) : null,
+      total_digital: a.total_digital !== null ? parseFloat(a.total_digital) : null,
+      total_tarjeta: a.total_tarjeta !== null ? parseFloat(a.total_tarjeta) : null,
+      total_ventas: a.total_ventas !== null ? parseFloat(a.total_ventas) : null,
+      total_gastos: a.total_gastos !== null ? parseFloat(a.total_gastos) : null,
+    }));
+  }
 }
 
 module.exports = new CajaService();

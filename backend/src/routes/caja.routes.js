@@ -90,4 +90,26 @@ router.get('/quiebres',
   cajaController.getQuiebres.bind(cajaController)
 );
 
+/**
+ * POST /api/caja/anular-cierre
+ * Anula el cierre de caja del día (solo admin/dueña)
+ * Registra la anulación en tabla de auditoría
+ */
+router.post('/anular-cierre',
+  verifyToken,
+  requireRole(['admin', 'duena']),
+  cajaController.anularCierre.bind(cajaController)
+);
+
+/**
+ * GET /api/caja/anulaciones
+ * Obtiene historial de anulaciones (auditoría)
+ * Solo admin/dueña pueden ver
+ */
+router.get('/anulaciones',
+  verifyToken,
+  requireRole(['admin', 'duena']),
+  cajaController.getAnulaciones.bind(cajaController)
+);
+
 module.exports = router;
