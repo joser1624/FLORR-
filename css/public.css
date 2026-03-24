@@ -177,12 +177,159 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
 .btn-menu-mob { display: none; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-700); padding: 5px; border-radius: var(--r-sm); transition: background var(--ease); line-height: 1; }
 .btn-menu-mob:hover { background: var(--pink-soft); }
 
-.mobile-nav { display: none; position: fixed; top: var(--nav-h); left: 0; right: 0; background: var(--pub-card); border-bottom: 1px solid var(--pub-line); padding: 0.75rem 1.25rem 1.25rem; z-index: 99; flex-direction: column; box-shadow: var(--s-lg); animation: slideDown .22s ease; max-height: calc(100vh - var(--nav-h)); overflow-y: auto; }
-.mobile-nav.open { display: flex; }
-.mobile-nav a { font-size: 15px; font-weight: 500; color: var(--ink-700); padding: 14px 12px; border-bottom: 1px solid var(--pub-line); transition: all .15s; display: flex; align-items: center; gap: 10px; border-radius: var(--r-sm); margin-bottom: 4px; }
-.mobile-nav a:hover { color: var(--pink); background: var(--pink-soft); padding-left: 16px; }
-.mobile-nav a:last-child { border-bottom: none; color: var(--pink); font-weight: 600; background: var(--pink-soft); margin-top: 8px; }
-.mobile-nav a:last-child:hover { background: var(--pink); color: #fff; }
+/* Mobile nav - desliza desde la derecha */
+.mobile-nav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 10, 20, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 98;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-nav-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-nav { 
+  position: fixed; 
+  top: 0; 
+  right: -100%; 
+  width: 280px; 
+  max-width: 85vw;
+  height: 100vh;
+  background: var(--pub-card); 
+  border-left: 1px solid var(--pub-line); 
+  padding: 1.5rem 1.25rem; 
+  z-index: 99; 
+  display: flex;
+  flex-direction: column; 
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15); 
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+
+.mobile-nav.open { 
+  right: 0;
+}
+
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--pub-line);
+}
+
+.mobile-nav-title {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  background: var(--g-brand);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mobile-nav-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--pink-mid);
+  background: var(--pub-card);
+  color: var(--pink);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.mobile-nav-close:hover {
+  background: var(--pink);
+  color: #fff;
+  border-color: var(--pink);
+  transform: rotate(90deg);
+}
+
+.mobile-nav a { 
+  font-size: 15px; 
+  font-weight: 500; 
+  color: var(--ink-700); 
+  padding: 14px 12px; 
+  border-bottom: 1px solid var(--pub-line); 
+  transition: all .2s ease; 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  border-radius: var(--r-sm); 
+  margin-bottom: 4px; 
+}
+
+.mobile-nav a:hover { 
+  color: var(--pink); 
+  background: var(--pink-soft); 
+  padding-left: 16px; 
+  border-color: transparent;
+}
+
+.mobile-nav a:last-child { 
+  border-bottom: none; 
+  color: var(--pink); 
+  font-weight: 600; 
+  background: var(--pink-soft); 
+  margin-top: 8px; 
+}
+
+.mobile-nav a:last-child:hover { 
+  background: var(--pink); 
+  color: #fff; 
+}
+
+/* Dark mode para mobile nav */
+body.dark-mode .mobile-nav {
+  background: rgba(30, 20, 40, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .mobile-nav-overlay {
+  background: rgba(15, 10, 20, 0.8);
+}
+
+body.dark-mode .mobile-nav-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .mobile-nav a {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .mobile-nav a:hover {
+  background: rgba(236, 72, 153, 0.12);
+}
+
+body.dark-mode .mobile-nav a:last-child {
+  background: rgba(236, 72, 153, 0.12);
+}
+
+body.dark-mode .mobile-nav-close {
+  background: rgba(30, 20, 40, 0.8);
+  border-color: rgba(236, 72, 153, 0.3);
+}
 
 /* ── Hero ── */
 .hero { min-height: 92vh; display: flex; flex-direction: column; background: var(--g-hero); position: relative; overflow: hidden; }
@@ -792,6 +939,21 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
     padding: 7px 14px; 
   }
   
+  /* Mobile nav ajustes */
+  .mobile-nav {
+    width: 300px;
+    max-width: 80vw;
+  }
+  
+  .mobile-nav-header {
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .mobile-nav-title {
+    font-size: 18px;
+  }
+  
   /* Hero */
   .hero { 
     min-height: auto; 
@@ -1020,6 +1182,28 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
     width: 100%; 
     max-width: 100%; 
     justify-content: center; 
+  }
+  
+  /* Mobile nav más estrecho en pantallas pequeñas */
+  .mobile-nav {
+    width: 260px;
+    max-width: 85vw;
+    padding: 1.25rem 1rem;
+  }
+  
+  .mobile-nav-title {
+    font-size: 16px;
+  }
+  
+  .mobile-nav-close {
+    width: 34px;
+    height: 34px;
+    font-size: 22px;
+  }
+  
+  .mobile-nav a {
+    font-size: 14px;
+    padding: 12px 10px;
   }
   
   .products-grid { 

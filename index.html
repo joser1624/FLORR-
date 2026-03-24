@@ -58,7 +58,14 @@
   </div>
 </nav>
 
+<!-- Overlay del menú móvil -->
+<div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+
 <div class="mobile-nav" id="mobile-nav">
+  <div class="mobile-nav-header">
+    <span class="mobile-nav-title">Menú</span>
+    <button class="mobile-nav-close" onclick="closeMobileNav()" aria-label="Cerrar menú">×</button>
+  </div>
   <a href="#catalogo"    onclick="closeMobileNav()">🌹 Catálogo</a>
   <a href="#" onclick="event.preventDefault();closeMobileNav();abrirLaboratorioModal()">🌸 Crea tu arreglo</a>
   <a href="#promociones" onclick="closeMobileNav()">🎁 Promociones</a>
@@ -950,8 +957,38 @@ function prevPage(){
   }, { passive: true });
 
   /* ── NAVBAR ── */
-  function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('open');}
-  function closeMobileNav(){document.getElementById('mobile-nav').classList.remove('open');}
+  function toggleMobileNav(){
+    const nav = document.getElementById('mobile-nav');
+    const overlay = document.getElementById('mobile-nav-overlay');
+    const isOpen = nav.classList.contains('open');
+    
+    if (isOpen) {
+      closeMobileNav();
+    } else {
+      nav.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  
+  function closeMobileNav(){
+    const nav = document.getElementById('mobile-nav');
+    const overlay = document.getElementById('mobile-nav-overlay');
+    nav.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  
+  // Cerrar menú móvil con tecla ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const nav = document.getElementById('mobile-nav');
+      if (nav && nav.classList.contains('open')) {
+        closeMobileNav();
+      }
+    }
+  });
+  
   window.addEventListener('scroll',()=>{
     document.getElementById('navbar').style.boxShadow=window.scrollY>10?'0 4px 20px rgba(168,85,247,.10)':'none';
   });
