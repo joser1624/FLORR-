@@ -88,14 +88,14 @@
               <div class="form-group">
                 <label class="form-label">Precio original (S/) *</label>
                 <input type="number" id="evento-precio-original" class="form-control" 
-                       step="0.50" min="0.01" placeholder="150.00" required 
+                       step="0.01" min="0.01" placeholder="150.00" required 
                        oninput="calcularDescuentoPreview()" />
               </div>
 
               <div class="form-group">
                 <label class="form-label">Precio con descuento (S/) *</label>
                 <input type="number" id="evento-precio-final" class="form-control" 
-                       step="0.50" min="0.01" placeholder="120.00" required 
+                       step="0.01" min="0.01" placeholder="120.00" required 
                        oninput="calcularDescuentoPreview()" />
               </div>
 
@@ -409,13 +409,19 @@
   // EVENTOS
   // ============================================
 
-  function cargarEventos() {
-    const eventos = Storage.obtenerEventos();
-    const contenedor = document.getElementById('lista-eventos');
-    const contador = document.getElementById('contador-eventos');
+  async function cargarEventos() {
+    try {
+      const response = await API.get('/eventos');
+      const eventos = response.data || [];
+      const contenedor = document.getElementById('lista-eventos');
+      const contador = document.getElementById('contador-eventos');
 
-    contador.textContent = `${eventos.length} evento${eventos.length !== 1 ? 's' : ''}`;
-    UIEventos.renderizarListaAdmin(eventos, contenedor);
+      contador.textContent = `${eventos.length} evento${eventos.length !== 1 ? 's' : ''}`;
+      UIEventos.renderizarListaAdmin(eventos, contenedor);
+    } catch (error) {
+      console.error('Error al cargar eventos:', error);
+      Toast.error('Error al cargar eventos del servidor');
+    }
   }
 
   function toggleFormulario() {
@@ -463,7 +469,7 @@
     }
   }
 
-  function guardarEvento(event) {
+  async function guardarEvento(event) {
     event.preventDefault();
 
     const datos = {
@@ -483,78 +489,120 @@
       return;
     }
 
-    // Verificar duplicados (excepto si estamos editando)
-    const eventoId = document.getElementById('evento-id').value;
-    if (Storage.existeEventoEnFecha(datos.fecha, eventoId)) {
-      UIEventos.mostrarAdvertencia('Ya existe un evento en esta fecha');
-      return;
+    // Preparar datos para el backend
+    const payload = {
+      nombre: datos.nombre.trim(),
+      descripcion: datos.descripcion ? datos.descripcion.trim() : null,
+      emoji: Eventos.obtenerEmoji(datos.nombre),
+      fecha: datos.fecha,
+      color: 'rosa', // Color por defecto
+      activo: true,
+      // Datos adicionales que el backend no usa pero guardamos en descripción JSON
+      metadata: JSON.stringify({
+        imagen: datos.imagen,
+        precioOriginal: datos.precioOriginal,
+        precioFinal: datos.precioFinal,
+        productos: datos.productos
+      })
+    };
+
+    try {
+      const eventoId = document.getElementById('evento-id').value;
+      
+      if (eventoId) {
+        // Actualizar evento existente
+        await API.put(`/eventos/${eventoId}`, payload);
+        UIEventos.mostrarExito('Evento actualizado correctamente');
+      } else {
+        // Crear nuevo evento
+        await API.post('/eventos', payload);
+        UIEventos.mostrarExito('Evento creado correctamente');
+      }
+
+      // Recargar y limpiar
+      await cargarEventos();
+      cancelarFormulario();
+    } catch (error) {
+      console.error('Error al guardar evento:', error);
+      UIEventos.mostrarError(error.message || 'Error al guardar el evento');
     }
-
-    // Preparar datos
-    const datosPreparados = Eventos.prepararDatos(datos);
-
-    // Guardar o actualizar
-    if (eventoId) {
-      Storage.actualizarEvento(eventoId, datosPreparados);
-      UIEventos.mostrarExito('Evento actualizado correctamente');
-    } else {
-      Storage.crearEvento(datosPreparados);
-      UIEventos.mostrarExito('Evento creado correctamente');
-    }
-
-    // Recargar y limpiar
-    cargarEventos();
-    cancelarFormulario();
   }
 
-  function editarEvento(id) {
-    const evento = Storage.obtenerEventoPorId(id);
-    if (!evento) return;
+  async function editarEvento(id) {
+    try {
+      const response = await API.get(`/eventos/${id}`);
+      const evento = response.data || response;
+      
+      if (!evento) return;
 
-    eventoEditando = id;
+      eventoEditando = id;
 
-    // Mostrar formulario
-    document.getElementById('formulario-evento').style.display = 'block';
-    document.getElementById('btn-toggle-text').textContent = '✕ Cerrar';
-    document.getElementById('form-titulo').textContent = 'Editar evento';
-    document.getElementById('btn-guardar-text').textContent = 'Actualizar evento';
+      // Parsear metadata si existe
+      let metadata = {};
+      try {
+        metadata = evento.metadata ? JSON.parse(evento.metadata) : {};
+      } catch (e) {
+        console.warn('No se pudo parsear metadata:', e);
+      }
 
-    // Llenar formulario
-    document.getElementById('evento-id').value = evento.id;
-    document.getElementById('evento-fecha').value = evento.fecha;
-    document.getElementById('evento-nombre').value = evento.nombre;
-    document.getElementById('evento-imagen').value = evento.imagen;
-    document.getElementById('evento-descripcion').value = evento.descripcion || '';
-    document.getElementById('evento-precio-original').value = evento.precioOriginal;
-    document.getElementById('evento-precio-final').value = evento.precioFinal;
+      // Mostrar formulario
+      document.getElementById('formulario-evento').style.display = 'block';
+      document.getElementById('btn-toggle-text').textContent = '✕ Cerrar';
+      document.getElementById('form-titulo').textContent = 'Editar evento';
+      document.getElementById('btn-guardar-text').textContent = 'Actualizar evento';
 
-    // Preview de imagen
-    if (evento.imagen) {
-      document.getElementById('imagen-preview').style.display = 'block';
-      document.getElementById('imagen-preview-img').src = evento.imagen;
+      // Llenar formulario
+      document.getElementById('evento-id').value = evento.id;
+      document.getElementById('evento-fecha').value = evento.fecha;
+      document.getElementById('evento-nombre').value = evento.nombre;
+      document.getElementById('evento-imagen').value = metadata.imagen || '';
+      document.getElementById('evento-descripcion').value = evento.descripcion || '';
+      document.getElementById('evento-precio-original').value = metadata.precioOriginal || 0;
+      document.getElementById('evento-precio-final').value = metadata.precioFinal || 0;
+
+      // Preview de imagen
+      if (metadata.imagen) {
+        document.getElementById('imagen-preview').style.display = 'block';
+        document.getElementById('imagen-preview-img').src = metadata.imagen;
+      }
+
+      // Productos seleccionados
+      productosSeleccionados = metadata.productos || [];
+      productosSeleccionados.forEach(p => {
+        const checkbox = document.querySelector(`#productos-disponibles input[value="${p.id}"]`);
+        if (checkbox) checkbox.checked = true;
+      });
+      actualizarProductosSeleccionados();
+      calcularDescuentoPreview();
+
+      // Scroll al formulario
+      document.getElementById('formulario-evento').scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+      console.error('Error al cargar evento:', error);
+      Toast.error('Error al cargar el evento');
     }
-
-    // Productos seleccionados
-    productosSeleccionados = [...evento.productos];
-    evento.productos.forEach(p => {
-      const checkbox = document.querySelector(`#productos-disponibles input[value="${p.id}"]`);
-      if (checkbox) checkbox.checked = true;
-    });
-    actualizarProductosSeleccionados();
-    calcularDescuentoPreview();
-
-    // Scroll al formulario
-    document.getElementById('formulario-evento').scrollIntoView({ behavior: 'smooth' });
   }
 
-  function confirmarEliminarEvento(id) {
-    const evento = Storage.obtenerEventoPorId(id);
-    if (!evento) return;
+  async function confirmarEliminarEvento(id) {
+    try {
+      const response = await API.get(`/eventos/${id}`);
+      const evento = response.data || response;
+      
+      if (!evento) return;
 
-    if (confirm(`¿Estás segura de eliminar el evento "${evento.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
-      Storage.eliminarEvento(id);
-      UIEventos.mostrarExito('Evento eliminado correctamente');
-      cargarEventos();
+      Modal.confirm(`¿Estás segura de eliminar el evento "${evento.nombre}"?\n\nEsta acción no se puede deshacer.`, async () => {
+        try {
+          await API.delete(`/eventos/${id}`);
+          UIEventos.mostrarExito('Evento eliminado correctamente');
+          await cargarEventos();
+        } catch (error) {
+          console.error('Error al eliminar evento:', error);
+          UIEventos.mostrarError('Error al eliminar el evento');
+        }
+      });
+    } catch (error) {
+      console.error('Error al cargar evento:', error);
+      Toast.error('Error al cargar el evento');
     }
   }
 

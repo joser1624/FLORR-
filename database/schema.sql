@@ -264,6 +264,7 @@ CREATE TABLE eventos (
     fecha DATE,
     color VARCHAR(50) DEFAULT 'rosa', -- rosa, dorado, rojo, morado
     activo BOOLEAN DEFAULT true,
+    metadata JSONB, -- Información adicional: imagen, precios, productos
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

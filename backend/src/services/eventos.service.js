@@ -61,8 +61,8 @@ class EventosService {
     }
 
     const result = await query(
-      `INSERT INTO eventos (nombre, descripcion, emoji, fecha, color, activo)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO eventos (nombre, descripcion, emoji, fecha, color, activo, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         data.nombre.trim(),
@@ -70,7 +70,8 @@ class EventosService {
         data.emoji || null,
         data.fecha || null,
         data.color,
-        data.activo !== undefined ? data.activo : true
+        data.activo !== undefined ? data.activo : true,
+        data.metadata || null
       ]
     );
     return result.rows[0];
@@ -97,8 +98,9 @@ class EventosService {
            fecha = COALESCE($4, fecha),
            color = COALESCE($5, color),
            activo = COALESCE($6, activo),
+           metadata = COALESCE($7, metadata),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $8
        RETURNING *`,
       [
         data.nombre !== undefined ? data.nombre.trim() : null,
@@ -107,6 +109,7 @@ class EventosService {
         data.fecha !== undefined ? data.fecha : null,
         data.color !== undefined ? data.color : null,
         data.activo !== undefined ? data.activo : null,
+        data.metadata !== undefined ? data.metadata : null,
         id
       ]
     );
