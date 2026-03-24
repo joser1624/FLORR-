@@ -583,7 +583,10 @@
       document.getElementById('venta-cliente').value = '';
       
       Modal.close('modal-venta');
-      await cargarVentas(paginaActual); // Recargar la página actual
+      
+      // Recargar las ventas desde la primera página para asegurar ver la nueva venta
+      paginaActual = 1;
+      await cargarVentas(1);
     } catch (error) {
       console.error('Error al registrar venta:', error);
       console.error('Payload que causó el error:', payload);
