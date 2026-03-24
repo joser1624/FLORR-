@@ -822,7 +822,7 @@
       <!-- Transacciones del día -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
         <div style="font-weight:600;font-size:15px">Transacciones del día</div>
-        <button class="btn btn-outline btn-sm" onclick="Modal.open('modal-historial')">📋 Ver historial</button>
+        <button class="btn btn-outline btn-sm" onclick="abrirModalHistorial()">📋 Ver historial</button>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -1976,20 +1976,10 @@
   }
 
   // Cargar historial cuando se abre el modal
-  document.addEventListener('DOMContentLoaded', () => {
-    const modalHistorial = document.getElementById('modal-historial');
-    if (modalHistorial) {
-      modalHistorial.addEventListener('click', (e) => {
-        if (e.target === modalHistorial || e.target.closest('.btn-close')) {
-          return;
-        }
-        if (modalHistorial.classList.contains('active') && !modalHistorial.dataset.loaded) {
-          cargarHistorial(1);
-          modalHistorial.dataset.loaded = 'true';
-        }
-      });
-    }
-  });
+  function abrirModalHistorial() {
+    Modal.open('modal-historial');
+    cargarHistorial(1);
+  }
 
   // Exportar a PDF
   function exportarPDF() {
