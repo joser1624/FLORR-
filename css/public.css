@@ -184,10 +184,10 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 10, 20, 0.6);
+  background: rgba(15, 10, 20, 0.75);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 98;
+  z-index: 150;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -205,15 +205,17 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
   width: 280px; 
   max-width: 85vw;
   height: 100vh;
-  background: var(--pub-card); 
+  height: 100dvh; /* Altura dinámica para móviles */
+  background: #ffffff; 
   border-left: 1px solid var(--pub-line); 
   padding: 1.5rem 1.25rem; 
-  z-index: 99; 
+  z-index: 151; 
   display: flex;
   flex-direction: column; 
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15); 
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2); 
   transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .mobile-nav.open { 
@@ -227,6 +229,7 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
   padding-bottom: 1rem;
   margin-bottom: 1rem;
   border-bottom: 2px solid var(--pub-line);
+  background: transparent;
 }
 
 .mobile-nav-title {
@@ -300,14 +303,13 @@ body.dark-mode .navbar-pub { background: rgba(15,10,20,.92); border-bottom-color
 
 /* Dark mode para mobile nav */
 body.dark-mode .mobile-nav {
-  background: rgba(30, 20, 40, 0.98);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #1e1428;
   border-left-color: rgba(255, 255, 255, 0.1);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
 }
 
 body.dark-mode .mobile-nav-overlay {
-  background: rgba(15, 10, 20, 0.8);
+  background: rgba(15, 10, 20, 0.85);
 }
 
 body.dark-mode .mobile-nav-header {
@@ -327,7 +329,7 @@ body.dark-mode .mobile-nav a:last-child {
 }
 
 body.dark-mode .mobile-nav-close {
-  background: rgba(30, 20, 40, 0.8);
+  background: #1e1428;
   border-color: rgba(236, 72, 153, 0.3);
 }
 
@@ -816,37 +818,317 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
 .contact-card::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background:var(--g-brand); }
 
 /* ── Footer ── */
-.footer { background: #0f0a14; color: rgba(255,255,255,.45); padding: 4.5rem 2rem 2rem; position: relative; overflow: hidden; }
-.footer::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--g-brand); }
-.footer-grid { max-width:1140px; margin:0 auto 3.5rem; display:grid; grid-template-columns:2fr 1fr 1fr; gap:3rem; position:relative; z-index:1; }
-.footer-brand { font-family:var(--display); font-size:22px; font-style:italic; font-weight:700; background:var(--g-brand); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:1rem; }
-.footer-desc { font-size:13px; line-height:1.85; color:rgba(255,255,255,.35); }
-.footer h4 { font-family:var(--sans); font-size:10px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:rgba(255,255,255,.2); margin-bottom:1.25rem; }
-.footer-links { list-style:none; display:flex; flex-direction:column; gap:10px; }
-.footer-links a { font-size:13px; color:rgba(255,255,255,.38); transition:all var(--ease); }
-.footer-links a:hover { color:rgba(255,255,255,.88); padding-left:5px; }
-.footer-bottom { max-width:1140px; margin:0 auto; padding-top:2rem; border-top:1px solid rgba(255,255,255,.07); display:flex; justify-content:space-between; align-items:center; font-size:12px; flex-wrap:wrap; gap:8px; position:relative; z-index:1; }
-.footer-bottom {
-  display: flex;
-  justify-content: center; /* lo manda a la derecha */
-  align-items: center;
-  padding: 10px 20px;
+.footer { 
+  background: linear-gradient(180deg, #0f0a14 0%, #1a0f24 100%);
+  color: rgba(255,255,255,.65); 
+  padding: 0; 
+  position: relative; 
+  overflow: hidden; 
 }
 
-.footer-right {
+.footer::before { 
+  content:''; 
+  position:absolute; 
+  top:0; 
+  left:0; 
+  right:0; 
+  height:4px; 
+  background:var(--g-brand); 
+}
+
+/* Decoración floral en el footer */
+.footer::after {
+  content: '🌸 💐 🌹 🌺 🌷 🌻 🌼';
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 24px;
+  opacity: 0.15;
+  letter-spacing: 40px;
+  pointer-events: none;
+  animation: floatFlowers 20s ease-in-out infinite;
+}
+
+@keyframes floatFlowers {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4.5rem 2rem 0;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-grid { 
+  display: grid; 
+  grid-template-columns: 1.5fr 1fr 1fr 1fr; 
+  gap: 3rem; 
+  margin-bottom: 3rem;
+}
+
+/* Columna principal */
+.footer-col-main {
+  padding-right: 2rem;
+}
+
+.footer-brand { 
   display: flex;
   align-items: center;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.footer-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(236, 72, 153, 0.3));
+}
+
+.footer-brand-text {
+  font-family: var(--display); 
+  font-size: 20px; 
+  font-style: italic; 
+  font-weight: 700; 
+  background: var(--g-brand); 
+  -webkit-background-clip: text; 
+  -webkit-text-fill-color: transparent; 
+  background-clip: text; 
+  line-height: 1.3;
+}
+
+.footer-desc { 
+  font-size: 13px; 
+  line-height: 1.85; 
+  color: rgba(255,255,255,.45); 
+  margin-bottom: 1.5rem;
+}
+
+/* Botones de contacto */
+.footer-contact-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.footer-btn-whatsapp {
+  background: #25D366;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+}
+
+.footer-btn-whatsapp:hover {
+  background: #20ba5a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+}
+
+.footer-btn-phone {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.footer-btn-phone:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--pink);
+  transform: translateY(-2px);
+}
+
+/* Redes sociales */
+.footer-social {
+  display: flex;
   gap: 10px;
 }
 
-.footer-right img {
-  width: 35px;
-  height: auto;
+.footer-social-link {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
 }
 
-.footer-right span {
+.footer-social-link:hover {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: #fff;
+  transform: translateY(-3px) rotate(5deg);
+  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.4);
+}
+
+/* Títulos de columnas */
+.footer-title {
+  font-family: var(--sans); 
+  font-size: 11px; 
+  font-weight: 700; 
+  letter-spacing: .2em; 
+  text-transform: uppercase; 
+  color: rgba(255,255,255,.5); 
+  margin-bottom: 1.25rem;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.footer-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: var(--g-brand);
+  border-radius: 2px;
+}
+
+/* Links del footer */
+.footer-links { 
+  list-style: none; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+}
+
+.footer-links a { 
+  font-size: 13px; 
+  color: rgba(255,255,255,.5); 
+  transition: all 0.25s ease; 
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-links a:hover { 
+  color: rgba(255,255,255,.95); 
+  padding-left: 8px; 
+  text-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+}
+
+/* Horarios */
+.footer-schedule {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-schedule li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid var(--pink);
+}
+
+.schedule-day {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.schedule-time {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6); /* transparencia */
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.footer-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1.25rem;
+  padding: 12px;
+  background: rgba(236, 72, 153, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(236, 72, 153, 0.2);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footer-location svg {
+  color: var(--pink);
+  flex-shrink: 0;
+}
+
+/* Footer bottom */
+.footer-bottom { 
+  border-top: 1px solid rgba(255,255,255,.08); 
+  padding: 2rem 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.footer-bottom-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  flex-wrap: wrap; 
+  gap: 1.5rem;
+}
+
+.footer-copyright {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.footer-company-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  opacity: 0.7;
+}
+
+.footer-badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.footer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.03em;
 }
 /* ── WhatsApp float ── */
 .wa-float { position:fixed; bottom:28px; right:26px; z-index:150; width:58px; height:58px; border-radius:50%; background:#25D366; color:#fff; border:none; cursor:pointer; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 22px rgba(37,211,102,.5); transition:all var(--ease); text-decoration:none; animation:pulseRing 2.8s ease infinite; }
@@ -1117,6 +1399,65 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
   .lab-total { font-size: 14px; }
   .lab-precio-total { font-size: 24px; }
   
+  /* Footer */
+  .footer { padding: 3rem 1.25rem 0; }
+  .footer-content { padding: 3rem 1.25rem 0; }
+  .footer-grid { 
+    grid-template-columns: 1fr; 
+    gap: 2.5rem; 
+    margin-bottom: 2.5rem;
+  }
+  .footer-col-main { padding-right: 0; }
+  .footer-logo { width: 50px; height: 50px; }
+  .footer-brand-text { font-size: 18px; }
+  .footer-desc { font-size: 12px; margin-bottom: 1.25rem; }
+  .footer-contact-buttons { 
+    flex-direction: column;
+    gap: 8px;
+  }
+  .footer-btn { 
+    width: 100%;
+    justify-content: center;
+  }
+  .footer-social {
+    justify-content: center;
+  }
+  .footer-title { font-size: 10px; margin-bottom: 1rem; }
+  .footer-links a { font-size: 12px; }
+  .footer-schedule li { padding: 8px 10px; }
+  .schedule-day { font-size: 10px; }
+  .schedule-time { font-size: 12px; }
+  .footer-location { 
+    font-size: 11px;
+    padding: 10px;
+  }
+  .footer-bottom { padding: 1.5rem 0; }
+  .footer-bottom-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 1.25rem;
+    padding: 0 1.25rem;
+  }
+  .footer-copyright {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .footer-company-logo { width: 28px; height: 28px; }
+  .footer-badges {
+    justify-content: center;
+    gap: 8px;
+  }
+  .footer-badge {
+    font-size: 10px;
+    padding: 5px 12px;
+  }
+  .footer::after {
+    font-size: 18px;
+    letter-spacing: 30px;
+    top: 15px;
+  }
+  
   /* Pagos */
   .pago-grid { 
     gap: 0.85rem; 
@@ -1138,27 +1479,33 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
   .contact-card p { font-size: 12px; }
   
   /* Footer */
-  .footer { padding: 3rem 1.25rem 1.5rem; }
-  .footer-grid { 
-    grid-template-columns: 1fr; 
-    gap: 2rem; 
-    margin-bottom: 2.5rem;
+  .footer { padding: 2.5rem 1rem 0; }
+  .footer-content { padding: 2.5rem 1rem 0; }
+  .footer::after {
+    font-size: 16px;
+    letter-spacing: 25px;
   }
-  .footer-brand { font-size: 19px; }
-  .footer-desc { font-size: 12px; }
-  .footer h4 { font-size: 9px; }
-  .footer-links a { font-size: 12px; }
-  .footer-bottom { 
-    font-size: 11px; 
-    text-align: center; 
-    justify-content: center;
+  .footer-logo { width: 45px; height: 45px; }
+  .footer-brand-text { font-size: 16px; }
+  .footer-desc { font-size: 11px; }
+  .footer-btn {
+    font-size: 12px;
+    padding: 10px 18px;
   }
-  .footer-right { 
-    flex-direction: column; 
-    text-align: center; 
-    gap: 8px;
+  .footer-social-link {
+    width: 38px;
+    height: 38px;
   }
-  .footer-right img { width: 30px; }
+  .footer-title { font-size: 9px; }
+  .footer-links a { font-size: 11px; }
+  .footer-schedule li { padding: 7px 9px; }
+  .schedule-day { font-size: 9px; }
+  .schedule-time { font-size: 11px; }
+  .footer-location { font-size: 10px; padding: 9px; }
+  .footer-bottom { padding: 1.25rem 0; }
+  .footer-copyright { font-size: 10px; }
+  .footer-company-logo { width: 26px; height: 26px; }
+  .footer-badge { font-size: 9px; padding: 4px 10px; }
   
   /* WhatsApp */
   .wa-float { 
