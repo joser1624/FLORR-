@@ -12,24 +12,48 @@
     @media print {
       /* Ocultar todo excepto el recibo */
       body * {
-        visibility: hidden;
-      }
-      #recibo-print, #recibo-print * {
-        visibility: visible;
-      }
-      #recibo-print {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 80mm;
-        margin: 0;
-        padding: 0;
+        visibility: hidden !important;
+        display: none !important;
       }
       
-      /* Configuración de página */
+      /* Mostrar solo el contenedor de impresión */
+      #recibo-print {
+        visibility: visible !important;
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      #recibo-print * {
+        visibility: visible !important;
+        display: block !important;
+      }
+      
+      #recibo-print .recibo-row,
+      #recibo-print .recibo-producto-detalle,
+      #recibo-print .recibo-total-row {
+        display: flex !important;
+      }
+      
+      /* Configuración de página para impresora térmica */
       @page {
-        size: 80mm auto;
-        margin: 0;
+        size: 80mm 297mm;  /* Ancho 80mm, alto estándar para rollo */
+        margin: 0mm;       /* Sin márgenes */
+      }
+      
+      /* Forzar el tamaño del body */
+      body {
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      html {
+        width: 80mm !important;
       }
     }
 
@@ -45,6 +69,11 @@
       color: #000;
       padding: 10mm;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    /* Asegurar que el contenedor de impresión tenga los mismos estilos */
+    #recibo-print .recibo-container {
+      box-shadow: none;
     }
 
     .recibo-header {
@@ -155,6 +184,131 @@
       padding: 0;
       max-height: 70vh;
       overflow-y: auto;
+    }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE DESIGN
+    ═══════════════════════════════════════ */
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 1024px) {
+      .stats-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      
+      .filter-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .filter-bar > * {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 150px;
+      }
+    }
+    
+    /* Móviles */
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .page-header > div:last-child {
+        width: 100%;
+      }
+      
+      .page-header button {
+        width: 100%;
+      }
+      
+      .stats-grid-4 {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .filter-bar {
+        flex-direction: column;
+      }
+      
+      .filter-bar > * {
+        width: 100%;
+        max-width: 100%;
+      }
+      
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .data-table {
+        min-width: 600px;
+        font-size: 12px;
+      }
+      
+      .data-table th,
+      .data-table td {
+        padding: 8px 6px;
+      }
+      
+      /* Modal responsive */
+      .modal {
+        max-width: 95% !important;
+        margin: 10px;
+      }
+      
+      .modal-body {
+        padding: 1rem;
+      }
+      
+      .form-grid-2 {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Paginación responsive */
+      #paginacion-ventas {
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      
+      #paginacion-ventas button {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+      .stat-card {
+        padding: 12px;
+      }
+      
+      .stat-value {
+        font-size: 20px;
+      }
+      
+      .stat-label {
+        font-size: 11px;
+      }
+      
+      .data-table {
+        font-size: 11px;
+      }
+      
+      .btn {
+        font-size: 13px;
+        padding: 8px 12px;
+      }
+      
+      .modal {
+        max-width: 100% !important;
+        margin: 0;
+        border-radius: 0;
+      }
+      
+      .modal-header h3 {
+        font-size: 18px;
+      }
     }
   </style>
 </head>
@@ -730,6 +884,8 @@
    */
   async function generarRecibo(ventaId) {
     try {
+      console.log('🧾 Generando recibo para venta ID:', ventaId);
+      
       const response = await API.get('/ventas/' + ventaId);
       const venta = response.data?.venta || response.venta || response.data || response;
       
@@ -738,17 +894,34 @@
         return;
       }
 
+      console.log('✅ Datos de venta cargados:', venta);
+
       const reciboHTML = crearReciboHTML(venta);
       
+      console.log('📝 HTML del recibo generado (primeros 200 chars):', reciboHTML.substring(0, 200));
+      
       // Mostrar en modal de vista previa
-      document.getElementById('recibo-preview').innerHTML = reciboHTML;
+      const previewEl = document.getElementById('recibo-preview');
+      if (previewEl) {
+        previewEl.innerHTML = reciboHTML;
+        console.log('✅ Recibo insertado en preview');
+      } else {
+        console.error('❌ No se encontró #recibo-preview');
+      }
       
       // Copiar al contenedor de impresión
-      document.getElementById('recibo-print').innerHTML = reciboHTML;
+      const printEl = document.getElementById('recibo-print');
+      if (printEl) {
+        printEl.innerHTML = reciboHTML;
+        console.log('✅ Recibo insertado en contenedor de impresión');
+        console.log('Contenedor de impresión:', printEl);
+      } else {
+        console.error('❌ No se encontró #recibo-print');
+      }
       
       Modal.open('modal-recibo');
     } catch (error) {
-      console.error('Error al generar recibo:', error);
+      console.error('❌ Error al generar recibo:', error);
       Toast.error('No se pudo generar el recibo');
     }
   }
@@ -864,7 +1037,25 @@
    * Imprime el recibo
    */
   function imprimirRecibo() {
-    window.print();
+    // Verificar que hay contenido en el contenedor de impresión
+    const reciboContent = document.getElementById('recibo-print').innerHTML;
+    
+    if (!reciboContent || reciboContent.trim() === '') {
+      Toast.error('No hay recibo para imprimir');
+      console.error('El contenedor #recibo-print está vacío');
+      return;
+    }
+    
+    console.log('📄 Imprimiendo recibo...');
+    console.log('Contenido del recibo:', reciboContent.substring(0, 100) + '...');
+    
+    // Mostrar instrucciones al usuario
+    Toast.info('💡 En el diálogo de impresión, selecciona:\n- Tamaño: 80mm o Personalizado\n- Márgenes: Ninguno', 6000);
+    
+    // Dar tiempo para que el navegador procese el contenido
+    setTimeout(() => {
+      window.print();
+    }, 100);
   }
 </script>
 </body>
