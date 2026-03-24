@@ -175,14 +175,13 @@ class SolicitudesGastosService {
 
     // Crear gasto real en la tabla gastos
     await query(
-      `INSERT INTO gastos (descripcion, categoria, monto, fecha, trabajador_id)
-       VALUES ($1, $2, $3, DATE($4), $5)`,
+      `INSERT INTO gastos (descripcion, categoria, monto, fecha)
+       VALUES ($1, $2, $3, DATE($4))`,
       [
         `${solicitud.descripcion} (${solicitud.empresa} - ${solicitud.numero_comprobante})`,
         solicitud.categoria,
         solicitud.monto,
-        solicitud.fecha_solicitud,
-        solicitud.trabajador_id
+        solicitud.fecha_solicitud
       ]
     );
 
