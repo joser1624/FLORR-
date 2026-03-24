@@ -558,13 +558,19 @@
     
     const payload = {
       productos: itemsVenta.map(i => ({ 
-        producto_id: i.id, 
-        cantidad: i.cantidad, 
-        precio_unitario: i.precio 
+        producto_id: parseInt(i.id), 
+        cantidad: parseInt(i.cantidad), 
+        precio_unitario: parseFloat(i.precio) 
       })),
-      metodo_pago: document.getElementById('metodo-pago').value,
-      cliente_id: clienteId ? parseInt(clienteId) : null
+      metodo_pago: document.getElementById('metodo-pago').value
     };
+    
+    // Solo incluir cliente_id si tiene un valor seleccionado
+    if (clienteId) {
+      payload.cliente_id = parseInt(clienteId);
+    }
+    
+    console.log('Payload a enviar:', JSON.stringify(payload, null, 2));
     
     try {
       const response = await API.post('/ventas', payload);
@@ -580,6 +586,7 @@
       await cargarVentas(paginaActual); // Recargar la página actual
     } catch (error) {
       console.error('Error al registrar venta:', error);
+      console.error('Payload que causó el error:', payload);
       Toast.error(error.message || 'Error al registrar la venta');
     }
   }
