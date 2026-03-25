@@ -34,9 +34,6 @@
           <p>Registra los gastos del negocio para calcular la ganancia real</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-outline btn-sm" onclick="verificarAuth()" title="Verificar autenticación">🔐 Auth</button>
-          <button class="btn btn-outline btn-sm" onclick="verificarServidor()" title="Verificar estado del servidor">🔍 Servidor</button>
-          <button class="btn btn-outline btn-sm" onclick="probarMerma()" title="Probar categoría merma">🧪 Probar Merma</button>
           <button class="btn btn-primary" onclick="Modal.open('modal-gasto')">+ Registrar gasto</button>
         </div>
       </div>
@@ -111,7 +108,7 @@
         <!-- Campos de inventario (solo para flores, materiales y merma) -->
         <div id="inventario-fields" style="display:block">
           <div class="alert alert-info" id="inventario-alert" style="font-size:12px;padding:10px;margin-bottom:12px">
-            💡 Al registrar este gasto, el stock del ítem seleccionado se actualizará automáticamente
+            💡 Selecciona un ítem existente o crea uno nuevo. El stock se actualizará al guardar.
           </div>
           <div class="form-group">
             <label class="form-label" id="inventario-label">Ítem de inventario</label>
@@ -177,6 +174,19 @@
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-gasto')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="guardarGasto()">Guardar gasto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para ver detalle de gasto -->
+<div class="modal-overlay" id="modal-detalle-gasto">
+  <div class="modal">
+    <div class="modal-header"><h3>Detalle del gasto</h3><button class="btn-close" onclick="Modal.close('modal-detalle-gasto')">×</button></div>
+    <div class="modal-body">
+      <div id="detalle-gasto-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-detalle-gasto')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -412,7 +422,7 @@
       productosField.style.display = 'block';
       
       inventarioAlert.className = 'alert alert-warning';
-      inventarioAlert.innerHTML = '⚠️ Al registrar una merma/pérdida, el stock se <strong>REDUCIRÁ</strong> y se calculará el valor perdido automáticamente';
+      inventarioAlert.innerHTML = '⚠️ El stock se <strong>REDUCIRÁ</strong> según la cantidad perdida. El monto se calculará automáticamente.';
       
       inventarioLabel.textContent = 'Ítem de inventario (opcional)';
       cantidadLabel.innerHTML = 'Cantidad perdida <span class="req">*</span>';
@@ -440,7 +450,7 @@
       productosField.style.display = 'none';
       
       inventarioAlert.className = 'alert alert-info';
-      inventarioAlert.innerHTML = '💡 Al registrar este gasto, el stock del ítem seleccionado se <strong>AUMENTARÁ</strong> automáticamente';
+      inventarioAlert.innerHTML = '💡 El stock del ítem seleccionado <strong>AUMENTARÁ</strong> según la cantidad ingresada.';
       
       inventarioLabel.textContent = 'Ítem de inventario';
       cantidadLabel.innerHTML = 'Cantidad a agregar <span class="req">*</span>';
@@ -524,7 +534,10 @@
       <td style="font-weight:500">${g.descripcion}</td>
       <td><span class="badge ${CAT_BADGE[g.categoria]||'badge-gray'}">${CAT_LABELS[g.categoria]||g.categoria}</span></td>
       <td style="font-weight:600;color:var(--danger)">${Fmt.moneda(g.monto)}</td>
-      <td><button class="btn-tbl btn-tbl-delete" onclick="eliminarGasto(${g.id})">Eliminar</button></td>
+      <td>
+        <button class="btn-tbl btn-tbl-view" onclick="verDetalleGasto(${g.id})">Ver</button>
+        <button class="btn-tbl btn-tbl-delete" onclick="eliminarGasto(${g.id})">Eliminar</button>
+      </td>
     </tr>`).join('');
 
     cardsEl.innerHTML = lista.map(g => `
@@ -541,6 +554,7 @@
           <div class="prod-card-dato"><span class="prod-card-dato-label">Fecha</span><span class="prod-card-dato-val">${Fmt.fecha(g.fecha)}</span></div>
         </div>
         <div class="prod-card-actions">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="verDetalleGasto(${g.id})">👁️ Ver</button>
           <button class="btn btn-ghost btn-sm" style="color:var(--danger);flex:1" onclick="eliminarGasto(${g.id})">🗑️ Eliminar</button>
         </div>
       </div>`).join('');
@@ -841,118 +855,91 @@
     Modal.open('modal-gasto');
   }
 
-  // Función para verificar autenticación
-  async function verificarAuth() {
-    const token = Auth.getToken();
-    const user = Auth.getUser();
-    
-    console.log('Token presente:', !!token);
-    console.log('Usuario:', user);
-    
-    if (!token) {
-      Toast.warning('No estás logueado. Redirigiendo al login...');
-      setTimeout(() => {
-        window.location.href = '/pages/admin/login.html';
-      }, 2000);
+  function verDetalleGasto(id) {
+    const gasto = gastos.find(g => g.id === id);
+    if (!gasto) {
+      Toast.error('Gasto no encontrado');
       return;
     }
     
-    if (token) {
-      console.log('Token (primeros 30 chars):', token.substring(0, 30) + '...');
-      Toast.success(`Logueado como: ${user?.nombre || 'Usuario'} (${user?.rol || 'sin rol'})`);
+    const categoriaBadge = CAT_BADGE[gasto.categoria] || 'badge-gray';
+    const categoriaLabel = CAT_LABELS[gasto.categoria] || gasto.categoria;
+    
+    // Determinar el tipo y emoji según la categoría
+    let tipoInfo = '';
+    let emoji = '💸';
+    switch(gasto.categoria) {
+      case 'flores':
+        tipoInfo = 'Compra de flores para inventario';
+        emoji = '🌹';
+        break;
+      case 'materiales':
+        tipoInfo = 'Compra de materiales';
+        emoji = '📦';
+        break;
+      case 'transporte':
+        tipoInfo = 'Gasto de transporte';
+        emoji = '🚛';
+        break;
+      case 'mantenimiento':
+        tipoInfo = 'Gasto de mantenimiento';
+        emoji = '🔧';
+        break;
+      case 'merma':
+        tipoInfo = 'Pérdida o merma de productos';
+        emoji = '📉';
+        break;
+      default:
+        tipoInfo = 'Otro tipo de gasto';
+        emoji = '💰';
     }
     
-    // Probar una petición autenticada
-    try {
-      const response = await API.get('/gastos?limit=1');
-      console.log('Petición autenticada exitosa:', response);
-      Toast.success('Autenticación válida');
-    } catch (error) {
-      console.error('Error en petición autenticada:', error);
-      Toast.error('Token inválido o expirado');
-    }
-  }
-
-  // Función para verificar el estado del servidor
-  async function verificarServidor() {
-    try {
-      console.log('Verificando servidor en:', API_BASE);
-      
-      // Verificar token de autenticación
-      const token = Auth.getToken();
-      console.log('Token presente:', !!token);
-      if (token) {
-        console.log('Token (primeros 20 chars):', token.substring(0, 20) + '...');
-      } else {
-        Toast.warning('No hay token de autenticación. ¿Estás logueado?');
-        return;
-      }
-      
-      // Probar conexión básica usando la API con autenticación
-      console.log('Probando conexión autenticada...');
-      const response = await API.get('/gastos');
-      console.log('Respuesta exitosa del servidor:', response);
-      Toast.success('Servidor y autenticación OK');
-      
-      // Verificar categorías permitidas haciendo una petición inválida
-      try {
-        await API.post('/gastos', {
-          descripcion: '',
-          categoria: 'categoria_inexistente',
-          monto: 0,
-          fecha: ''
-        });
-      } catch (error) {
-        console.log('Error esperado para verificar validaciones:', error.response?.data);
-        if (error.response?.data?.detalles) {
-          console.log('Validaciones del servidor:', error.response.data.detalles);
-          // Mostrar cada validación específica
-          error.response.data.detalles.forEach((detalle, index) => {
-            console.log(`Validación ${index + 1}:`, detalle);
-          });
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error al verificar servidor:', error);
-      Toast.error('No se puede conectar al servidor');
-    }
-  }
-
-  // Función de prueba para verificar la API de gastos
-  async function probarMerma() {
-    try {
-      // Nota: 'merma' no es una categoría válida. Categorías válidas: flores, transporte, materiales, mantenimiento, otros
-      const payload = {
-        descripcion: 'Prueba de registro de gasto',
-        categoria: 'otros',  // Usar categoría válida para la prueba
-        monto: 10.00,
-        fecha: new Date().toISOString().split('T')[0]
-      };
-      
-      console.log('Probando payload:', JSON.stringify(payload, null, 2));
-      const response = await API.post('/gastos', payload);
-      console.log('Respuesta exitosa:', response);
-      Toast.success('Prueba de API de gastos exitosa');
-      await cargarGastos();
-    } catch (error) {
-      console.error('Error en prueba de merma:', error);
-      console.error('Error response:', error.response);
-      console.error('Error data:', error.response?.data);
-      
-      if (error.response?.data?.detalles) {
-        console.error('Detalles de validación:', error.response.data.detalles);
-        // Mostrar cada detalle específico
-        error.response.data.detalles.forEach((detalle, index) => {
-          console.error(`Error ${index + 1}:`, detalle);
-        });
-        Toast.error(`Errores de validación:\n${error.response.data.detalles.map(d => typeof d === 'string' ? d : JSON.stringify(d)).join('\n')}`);
-      } else if (error.response?.data?.mensaje) {
-        Toast.error('Error: ' + error.response.data.mensaje);
-      } else {
-        Toast.error('Error en prueba: ' + (error.message || 'Error desconocido'));
-      }
-    }
+    const content = `
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Encabezado con tipo de gasto -->
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+          <span style="font-size: 32px;">${emoji}</span>
+          <div>
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gris-500);">Tipo de gasto</div>
+            <div style="font-weight: 600; font-size: 15px;">${tipoInfo}</div>
+          </div>
+        </div>
+        
+        <!-- Descripción -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Descripción</label>
+          <p style="margin: 0; padding: 0.75rem; background: var(--bg-tertiary); border-radius: 6px; line-height: 1.5;">${gasto.descripcion}</p>
+        </div>
+        
+        <!-- Categoría y Monto -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Categoría</label>
+            <p style="margin: 0;"><span class="badge ${categoriaBadge}">${categoriaLabel}</span></p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Monto</label>
+            <p style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--danger);">${Fmt.moneda(gasto.monto)}</p>
+          </div>
+        </div>
+        
+        <!-- Fecha -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight: 600;">Fecha del gasto</label>
+          <p style="margin: 0;">${Fmt.fecha(gasto.fecha)}</p>
+        </div>
+        
+        ${gasto.created_at ? `
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" style="font-weight: 600;">Registrado el</label>
+          <p style="margin: 0; font-size: 13px; color: var(--gris-500);">${new Date(gasto.created_at).toLocaleString('es-PE')}</p>
+        </div>
+        ` : ''}
+      </div>
+    `;
+    
+    document.getElementById('detalle-gasto-content').innerHTML = content;
+    Modal.open('modal-detalle-gasto');
   }
 
   async function eliminarGasto(id) {
