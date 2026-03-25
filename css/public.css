@@ -623,8 +623,8 @@ body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color
 /* ── Promos / Eventos ── */
 .promo-grid { 
   display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); 
-  gap: 2rem; 
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+  gap: 1.5rem; 
 }
 
 /* Tarjeta de promoción moderna */
@@ -849,7 +849,7 @@ body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color
 
 .promo-img {
   width: 100%;
-  height: 220px;
+  height: 200px;
   overflow: hidden;
   border-radius: 12px 12px 0 0;
   background: linear-gradient(135deg, #f0e8f5, #fce7f3);
@@ -864,7 +864,7 @@ body.dark-mode .section-eyebrow { background: rgba(236,72,153,.12); border-color
 }
 
 .promo-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1327,6 +1327,7 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
 /* Mobile Large: 480px+ */
 @media (min-width: 480px) {
   .products-grid { grid-template-columns: repeat(2, 1fr); }
+  .promo-grid { grid-template-columns: repeat(2, 1fr); }
   .hero-btns { flex-direction: row; flex-wrap: wrap; }
   .hero-btns .btn { width: auto; }
   .petal-bar { display: block; }
@@ -1344,7 +1345,7 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
   .lab-layout { grid-template-columns: 1fr 360px; }
   .footer-grid { grid-template-columns: 2fr 1fr 1fr; }
   .products-grid { grid-template-columns: repeat(3, 1fr); }
-  .promo-grid { grid-template-columns: repeat(2, 1fr); }
+  .promo-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* Desktop: 1024px+ */
@@ -1352,7 +1353,7 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
   .section { padding: 6rem 2.5rem; }
   .navbar-pub { padding: 0 2.5rem; }
   .products-grid { grid-template-columns: repeat(4, 1fr); }
-  .promo-grid { grid-template-columns: repeat(3, 1fr); }
+  .promo-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* Large Desktop: 1280px+ */
