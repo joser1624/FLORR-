@@ -156,6 +156,27 @@ const Modal = {
       onConfirm(); m.remove();
     });
     m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  },
+  alert(title, content) {
+    const id = 'modal-alert-' + Date.now();
+    const m = document.createElement('div');
+    m.className = 'modal-overlay active';
+    m.id = id;
+    m.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+          <h3>${title}</h3>
+          <button class="btn-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body" style="padding:1.5rem">
+          ${content}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary btn-sm" onclick="this.closest('.modal-overlay').remove()">Entendido</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    m.addEventListener('click', e => { if (e.target === m) m.remove(); });
   }
 };
 

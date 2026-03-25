@@ -447,17 +447,47 @@
 
   async function eliminarItem(id) {
     const item = items.find(i => i.id === id);
-    Modal.confirm(`¿Eliminar "${item?.nombre}"?`, async () => {
-      try {
-        await API.delete('/inventario/' + id);
-        Toast.success('Ítem eliminado');
-        await cargarInventario(); // Recargar desde el backend
-      } catch (error) {
-        console.error('Error al eliminar ítem:', error);
-        // El mensaje de error ya viene del backend a través de main.js
-        Toast.error(error.message || 'Error al eliminar el ítem');
+    
+    if (!item) {
+      Toast.error('Ítem no encontrado');
+      return;
+    }
+    
+    // VALIDACIÓN: Bloquear eliminación si tiene stock
+    if (item.stock > 0) {
+      const valorTotal = item.costo ? (item.stock * item.costo).toFixed(2) : 'desconocido';
+      
+      Modal.alert(
+        '⚠️ No se puede eliminar',
+        `<div style="text-align: left; line-height: 1.6;">
+          <p><strong>${item.nombre}</strong> tiene <strong>${item.stock} ${item.unidad}(s)</strong> en stock.</p>
+          ${item.costo ? `<p>Valor en inventario: <strong style="color: var(--danger);">S/ ${valorTotal}</strong></p>` : ''}
+          <p style="margin-top: 1rem; padding: 12px; background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--warning); border-radius: 4px;">
+            💡 <strong>Para eliminar este ítem:</strong><br>
+            1. Ve a <strong>Gastos</strong><br>
+            2. Registra la merma/pérdida<br>
+            3. El stock quedará en 0<br>
+            4. Luego podrás eliminarlo
+          </p>
+        </div>`
+      );
+      return;
+    }
+    
+    // Si stock = 0, permitir eliminar
+    Modal.confirm(
+      `¿Eliminar "${item.nombre}"?`,
+      async () => {
+        try {
+          await API.delete('/inventario/' + id);
+          Toast.success('Ítem eliminado correctamente');
+          await cargarInventario(); // Recargar desde el backend
+        } catch (error) {
+          console.error('Error al eliminar ítem:', error);
+          Toast.error(error.message || 'Error al eliminar el ítem');
+        }
       }
-    });
+    );
   }
 
   async function guardarItem() {
