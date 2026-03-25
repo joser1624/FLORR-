@@ -599,23 +599,54 @@
   function eliminarProducto(id, nombre) {
     const p = todosProductos.find(x => x.id === id);
     
-    Modal.confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`, async () => {
-      try {
-        // Si es un arreglo, eliminar desde /api/arreglos
-        if (p && p.esArreglo) {
-          await API.delete('/arreglos/' + p.arregloId);
-          Toast.success('Arreglo eliminado');
-        } else {
-          // Si es un producto normal, eliminar desde /api/productos
-          await API.delete('/productos/' + id);
-          Toast.success('Producto eliminado');
+    if (!p) {
+      Toast.error('Producto no encontrado');
+      return;
+    }
+    
+    // VALIDACIÓN: Bloquear eliminación si tiene stock
+    if (p.stock > 0) {
+      const valorTotal = p.costo ? (p.stock * p.costo).toFixed(2) : 'desconocido';
+      const esArreglo = p.esArreglo ? ' (arreglo personalizado)' : '';
+      
+      Modal.alert(
+        '⚠️ No se puede eliminar',
+        `<div style="text-align: left; line-height: 1.6;">
+          <p><strong>${nombre}${esArreglo}</strong> tiene <strong>${p.stock} unidad(es)</strong> en stock.</p>
+          ${p.costo ? `<p>Valor en inventario: <strong style="color: var(--danger);">S/ ${valorTotal}</strong></p>` : ''}
+          <p style="margin-top: 1rem; padding: 12px; background: rgba(245, 158, 11, 0.1); border-left: 3px solid var(--warning); border-radius: 4px;">
+            💡 <strong>Para eliminar este producto:</strong><br>
+            ${p.esArreglo 
+              ? '1. Espera a que se vendan todos los arreglos<br>2. O ajusta el inventario de sus componentes<br>3. El stock quedará en 0<br>4. Luego podrás eliminarlo'
+              : '1. Espera a que se vendan todas las unidades<br>2. O registra una merma/pérdida en Gastos<br>3. El stock quedará en 0<br>4. Luego podrás eliminarlo'
+            }
+          </p>
+        </div>`
+      );
+      return;
+    }
+    
+    // Si stock = 0, permitir eliminar
+    Modal.confirm(
+      `¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`,
+      async () => {
+        try {
+          // Si es un arreglo, eliminar desde /api/arreglos
+          if (p && p.esArreglo) {
+            await API.delete('/arreglos/' + p.arregloId);
+            Toast.success('Arreglo eliminado correctamente');
+          } else {
+            // Si es un producto normal, eliminar desde /api/productos
+            await API.delete('/productos/' + id);
+            Toast.success('Producto eliminado correctamente');
+          }
+          await cargarProductos(); // Recargar desde el backend
+        } catch (error) {
+          console.error('Error al eliminar:', error);
+          Toast.error(error.message || 'Error al eliminar el producto');
         }
-        await cargarProductos(); // Recargar desde el backend
-      } catch (error) {
-        console.error('Error al eliminar:', error);
-        Toast.error('Error al eliminar el producto');
       }
-    });
+    );
   }
 
   cargarProductos();

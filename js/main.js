@@ -251,11 +251,13 @@ document.addEventListener('click', e => {
 window.addEventListener("load", function() {
   setTimeout(function() {
     const splash = document.getElementById("splash");
-    splash.style.opacity = "0";
-    splash.style.transition = "opacity 0.5s ease";
+    if (splash) {
+      splash.style.opacity = "0";
+      splash.style.transition = "opacity 0.5s ease";
 
-    setTimeout(function() {
-      splash.style.display = "none";
-    }, 500);
+      setTimeout(function() {
+        splash.style.display = "none";
+      }, 500);
+    }
   }, 1500);
 });

@@ -40,10 +40,11 @@
       <div class="alert alert-success" style="margin-bottom: 1.5rem; display: flex; align-items: start; gap: 12px;">
         <span style="font-size: 24px;">✨</span>
         <div style="flex: 1;">
-          <strong>Compras de inventario</strong>
+          <strong>Gestión de inventario y productos</strong>
           <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">
-            Al registrar gastos de <strong>"Compra de flores"</strong> o <strong>"Materiales"</strong>, 
-            puedes seleccionar un ítem existente o crear uno nuevo. El stock se actualizará automáticamente.
+            <strong>Compras:</strong> Al registrar gastos de <strong>"Compra de flores"</strong> o <strong>"Materiales"</strong>, 
+            puedes seleccionar un ítem existente o crear uno nuevo. El stock se <strong>aumentará</strong> automáticamente.<br>
+            <strong>Merma/Pérdida:</strong> Registra productos dañados o perdidos. El stock se <strong>reducirá</strong> y se calculará el valor perdido.
           </p>
         </div>
       </div>
@@ -62,6 +63,7 @@
           <span class="chip" onclick="filtrarCat(this,'transporte')">Transporte</span>
           <span class="chip" onclick="filtrarCat(this,'materiales')">Materiales</span>
           <span class="chip" onclick="filtrarCat(this,'mantenimiento')">Mantenimiento</span>
+          <span class="chip" onclick="filtrarCat(this,'merma')">Merma/Pérdida</span>
           <span class="chip" onclick="filtrarCat(this,'otros')">Otros</span>
         </div>
         <input class="form-control mes-control" type="month" id="mes-gasto" onchange="cargarGastos()" />
@@ -90,21 +92,24 @@
           <div class="form-group">
             <label class="form-label">Categoría</label>
             <select class="form-control" id="gasto-cat" onchange="toggleInventarioFields()">
-              <option value="flores">Compra de flores</option><option value="transporte">Transporte</option>
-              <option value="materiales">Materiales</option><option value="mantenimiento">Mantenimiento</option>
+              <option value="flores">Compra de flores</option>
+              <option value="transporte">Transporte</option>
+              <option value="materiales">Materiales</option>
+              <option value="mantenimiento">Mantenimiento</option>
+              <option value="merma">Merma/Pérdida</option>
               <option value="otros">Otros</option>
             </select>
           </div>
           <div class="form-group"><label class="form-label">Monto (S/) <span class="req">*</span></label><input class="form-control" type="number" id="gasto-monto" step="0.01" min="0" required /></div>
         </div>
         
-        <!-- Campos de inventario (solo para flores y materiales) -->
+        <!-- Campos de inventario (solo para flores, materiales y merma) -->
         <div id="inventario-fields" style="display:block">
-          <div class="alert alert-info" style="font-size:12px;padding:10px;margin-bottom:12px">
+          <div class="alert alert-info" id="inventario-alert" style="font-size:12px;padding:10px;margin-bottom:12px">
             💡 Al registrar este gasto, el stock del ítem seleccionado se actualizará automáticamente
           </div>
           <div class="form-group">
-            <label class="form-label">Ítem de inventario</label>
+            <label class="form-label" id="inventario-label">Ítem de inventario</label>
             <select class="form-control" id="gasto-inventario-id" onchange="toggleNuevoItem()">
               <option value="">-- No actualizar inventario --</option>
               <option value="nuevo">➕ Crear nuevo ítem</option>
@@ -138,11 +143,22 @@
             </div>
           </div>
           
-          <!-- Campo de cantidad (siempre visible cuando hay inventario) -->
+          <!-- Selector de productos (solo para merma) -->
+          <div id="productos-field" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Producto</label>
+              <select class="form-control" id="gasto-producto-id" onchange="onProductoSeleccionado()">
+                <option value="">-- Seleccionar producto --</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Campo de cantidad (siempre visible cuando hay inventario o producto) -->
           <div id="cantidad-field" style="display:none">
             <div class="form-group">
-              <label class="form-label">Cantidad a agregar <span class="req">*</span></label>
+              <label class="form-label" id="cantidad-label">Cantidad a agregar <span class="req">*</span></label>
               <input class="form-control" type="number" id="gasto-cantidad" min="1" placeholder="Ej: 50" />
+              <small id="stock-disponible-msg" style="display:none; color: var(--gris-500); font-size: 11px; margin-top: 4px;"></small>
             </div>
           </div>
         </div>
@@ -163,14 +179,14 @@
   initAdminLayout('gastos', 'Gastos', 'Negocio');
   let gastos = [];
   let catFiltro = '';
+  let inventarioItems = [];
+  let productosItems = [];
 
   const now = new Date();
   document.getElementById('mes-gasto').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
-  const CAT_LABELS = { flores:'Compra flores', transporte:'Transporte', materiales:'Materiales', mantenimiento:'Mantenimiento', otros:'Otros' };
-  const CAT_BADGE = { flores:'badge-rosa', transporte:'badge-info', materiales:'badge-dorado', mantenimiento:'badge-warning', otros:'badge-gray' };
-
-  let inventarioItems = [];
+  const CAT_LABELS = { flores:'Compra flores', transporte:'Transporte', materiales:'Materiales', mantenimiento:'Mantenimiento', merma:'Merma/Pérdida', otros:'Otros' };
+  const CAT_BADGE = { flores:'badge-rosa', transporte:'badge-info', materiales:'badge-dorado', mantenimiento:'badge-warning', merma:'badge-danger', otros:'badge-gray' };
 
   // Cargar ítems del inventario al iniciar
   async function cargarInventario() {
@@ -183,6 +199,54 @@
     } catch (error) {
       console.error('Error al cargar inventario:', error);
       inventarioItems = [];
+    }
+  }
+
+  // Cargar productos
+  async function cargarProductos() {
+    try {
+      const response = await API.get('/productos');
+      const result = response.data || response;
+      productosItems = result.data || result || [];
+      console.log('Productos cargados:', productosItems.length, 'productos');
+      renderProductosSelect();
+    } catch (error) {
+      console.error('Error al cargar productos:', error);
+      productosItems = [];
+    }
+  }
+
+  function renderProductosSelect() {
+    const select = document.getElementById('gasto-producto-id');
+    
+    // Filtrar solo productos con stock > 0
+    const productosConStock = productosItems.filter(p => p.stock > 0);
+    
+    select.innerHTML = '<option value="">-- Seleccionar producto --</option>' +
+      productosConStock.map(prod => 
+        `<option value="${prod.id}" data-stock="${prod.stock}" data-costo="${prod.costo || 0}">${prod.nombre} (Stock: ${prod.stock})</option>`
+      ).join('');
+  }
+
+  function onProductoSeleccionado() {
+    const select = document.getElementById('gasto-producto-id');
+    const productoId = select.value;
+    const cantidadField = document.getElementById('cantidad-field');
+    const stockMsg = document.getElementById('stock-disponible-msg');
+    
+    if (productoId) {
+      const option = select.options[select.selectedIndex];
+      const stockDisponible = option.getAttribute('data-stock');
+      
+      cantidadField.style.display = 'block';
+      stockMsg.style.display = 'block';
+      stockMsg.textContent = `📦 Stock disponible: ${stockDisponible} unidades`;
+      
+      // Establecer max en el input
+      document.getElementById('gasto-cantidad').setAttribute('max', stockDisponible);
+    } else {
+      cantidadField.style.display = 'none';
+      stockMsg.style.display = 'none';
     }
   }
 
@@ -206,28 +270,50 @@
   }
 
   function toggleNuevoItem() {
+    const categoria = document.getElementById('gasto-cat').value;
     const inventarioId = document.getElementById('gasto-inventario-id').value;
     const nuevoItemFields = document.getElementById('nuevo-item-fields');
     const cantidadField = document.getElementById('cantidad-field');
+    const stockMsg = document.getElementById('stock-disponible-msg');
+    const montoInput = document.getElementById('gasto-monto');
     
+    if (categoria === 'merma') {
+      // En modo merma, calcular valor automáticamente
+      if (inventarioId && inventarioId !== 'nuevo') {
+        const item = inventarioItems.find(i => i.id == inventarioId);
+        if (item) {
+          cantidadField.style.display = 'block';
+          stockMsg.style.display = 'block';
+          stockMsg.textContent = `📦 Stock disponible: ${item.stock} ${item.unidad}`;
+          
+          // Establecer max en el input
+          document.getElementById('gasto-cantidad').setAttribute('max', item.stock);
+          
+          // Calcular monto cuando cambie la cantidad
+          document.getElementById('gasto-cantidad').oninput = function() {
+            const cantidad = parseInt(this.value) || 0;
+            const valorPerdido = cantidad * (item.costo || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          };
+        }
+      } else {
+        cantidadField.style.display = 'none';
+        stockMsg.style.display = 'none';
+        montoInput.value = '0.00';
+      }
+      return;
+    }
+    
+    // Lógica original para compras
     if (inventarioId === 'nuevo') {
-      // Mostrar campos para crear nuevo ítem
       nuevoItemFields.style.display = 'block';
       cantidadField.style.display = 'block';
-      
-      // Pre-llenar el tipo según la categoría
-      const categoria = document.getElementById('gasto-cat').value;
-      // El tipo se asignará automáticamente según la categoría
     } else if (inventarioId) {
-      // Ítem existente seleccionado
       nuevoItemFields.style.display = 'none';
       cantidadField.style.display = 'block';
     } else {
-      // No actualizar inventario
       nuevoItemFields.style.display = 'none';
       cantidadField.style.display = 'none';
-      
-      // Limpiar campos
       document.getElementById('nuevo-item-nombre').value = '';
       document.getElementById('nuevo-item-costo').value = '';
       document.getElementById('gasto-cantidad').value = '';
@@ -237,18 +323,76 @@
   function toggleInventarioFields() {
     const categoria = document.getElementById('gasto-cat').value;
     const inventarioFields = document.getElementById('inventario-fields');
+    const productosField = document.getElementById('productos-field');
+    const inventarioAlert = document.getElementById('inventario-alert');
+    const inventarioLabel = document.getElementById('inventario-label');
+    const cantidadLabel = document.getElementById('cantidad-label');
+    const montoInput = document.getElementById('gasto-monto');
     
-    // Mostrar campos solo para flores y materiales
-    if (categoria === 'flores' || categoria === 'materiales') {
+    // Resetear campos
+    document.getElementById('gasto-inventario-id').value = '';
+    document.getElementById('gasto-producto-id').value = '';
+    document.getElementById('gasto-cantidad').value = '';
+    document.getElementById('nuevo-item-fields').style.display = 'none';
+    document.getElementById('cantidad-field').style.display = 'none';
+    
+    if (categoria === 'merma') {
+      // MERMA/PÉRDIDA: Mostrar ambos selectores
       inventarioFields.style.display = 'block';
+      productosField.style.display = 'block';
+      
+      inventarioAlert.className = 'alert alert-warning';
+      inventarioAlert.innerHTML = '⚠️ Al registrar una merma/pérdida, el stock se <strong>REDUCIRÁ</strong> y se calculará el valor perdido automáticamente';
+      
+      inventarioLabel.textContent = 'Ítem de inventario (opcional)';
+      cantidadLabel.innerHTML = 'Cantidad perdida <span class="req">*</span>';
+      
+      // Ocultar opción de crear nuevo
+      const selectInv = document.getElementById('gasto-inventario-id');
+      selectInv.innerHTML = '<option value="">-- No aplica --</option>' +
+        inventarioItems.filter(i => i.stock > 0).map(item => 
+          `<option value="${item.id}" data-costo="${item.costo}">${item.nombre} (Stock: ${item.stock} ${item.unidad})</option>`
+        ).join('');
+      
+      // Bloquear monto (se calculará automáticamente)
+      montoInput.setAttribute('readonly', 'true');
+      montoInput.style.backgroundColor = '#f5f5f5';
+      montoInput.value = '0.00';
+      montoInput.placeholder = 'Se calculará automáticamente';
+      
       renderInventarioSelect();
-      toggleNuevoItem(); // Actualizar visibilidad de campos internos
+      renderProductosSelect();
+      
+    } else if (categoria === 'flores' || categoria === 'materiales') {
+      // COMPRA: Mostrar solo inventario
+      inventarioFields.style.display = 'block';
+      productosField.style.display = 'none';
+      
+      inventarioAlert.className = 'alert alert-info';
+      inventarioAlert.innerHTML = '💡 Al registrar este gasto, el stock del ítem seleccionado se <strong>AUMENTARÁ</strong> automáticamente';
+      
+      inventarioLabel.textContent = 'Ítem de inventario';
+      cantidadLabel.innerHTML = 'Cantidad a agregar <span class="req">*</span>';
+      
+      // Habilitar monto
+      montoInput.removeAttribute('readonly');
+      montoInput.style.backgroundColor = '';
+      montoInput.value = '';
+      montoInput.placeholder = '';
+      
+      renderInventarioSelect();
+      toggleNuevoItem();
+      
     } else {
+      // OTRAS CATEGORÍAS: Ocultar todo
       inventarioFields.style.display = 'none';
-      document.getElementById('gasto-inventario-id').value = '';
-      document.getElementById('gasto-cantidad').value = '';
-      document.getElementById('nuevo-item-nombre').value = '';
-      document.getElementById('nuevo-item-costo').value = '';
+      productosField.style.display = 'none';
+      
+      // Habilitar monto
+      montoInput.removeAttribute('readonly');
+      montoInput.style.backgroundColor = '';
+      montoInput.value = '';
+      montoInput.placeholder = '';
     }
   }
 
@@ -337,9 +481,10 @@
   }
 
   async function guardarGasto() {
+    const categoria = document.getElementById('gasto-cat').value;
     const payload = {
       descripcion: document.getElementById('gasto-desc').value.trim(),
-      categoria: document.getElementById('gasto-cat').value,
+      categoria: categoria,
       monto: parseFloat(document.getElementById('gasto-monto').value) || 0,
       fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0]
     };
@@ -349,12 +494,95 @@
       Toast.warning('La descripción es obligatoria');
       return;
     }
+    
+    // === MANEJO DE MERMA/PÉRDIDA ===
+    if (categoria === 'merma') {
+      const inventarioId = document.getElementById('gasto-inventario-id').value;
+      const productoId = document.getElementById('gasto-producto-id').value;
+      const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
+      
+      if (!inventarioId && !productoId) {
+        Toast.warning('Selecciona un ítem de inventario o un producto');
+        return;
+      }
+      
+      if (!cantidad || cantidad <= 0) {
+        Toast.warning('Ingresa la cantidad perdida');
+        return;
+      }
+      
+      try {
+        if (inventarioId) {
+          // Merma de inventario
+          const item = inventarioItems.find(i => i.id == inventarioId);
+          if (!item) {
+            Toast.error('Ítem no encontrado');
+            return;
+          }
+          
+          if (cantidad > item.stock) {
+            Toast.error(`No puedes dar de baja ${cantidad} unidades. Stock disponible: ${item.stock}`);
+            return;
+          }
+          
+          // Actualizar stock (RESTAR)
+          const nuevoStock = item.stock - cantidad;
+          await API.put(`/inventario/${inventarioId}`, { stock: nuevoStock });
+          
+          // Calcular valor perdido
+          payload.monto = cantidad * (item.costo || 0);
+          payload.descripcion = payload.descripcion || `Merma/Pérdida: ${item.nombre} (${cantidad} ${item.unidad})`;
+          
+          Toast.success(`Stock reducido: ${item.nombre} -${cantidad} ${item.unidad}`);
+          
+        } else if (productoId) {
+          // Merma de producto
+          const producto = productosItems.find(p => p.id == productoId);
+          if (!producto) {
+            Toast.error('Producto no encontrado');
+            return;
+          }
+          
+          if (cantidad > producto.stock) {
+            Toast.error(`No puedes dar de baja ${cantidad} unidades. Stock disponible: ${producto.stock}`);
+            return;
+          }
+          
+          // Actualizar stock (RESTAR)
+          const nuevoStock = producto.stock - cantidad;
+          await API.put(`/productos/${productoId}`, { stock: nuevoStock });
+          
+          // Calcular valor perdido
+          payload.monto = cantidad * (producto.costo || 0);
+          payload.descripcion = payload.descripcion || `Merma/Pérdida: ${producto.nombre} (${cantidad} unidades)`;
+          
+          Toast.success(`Stock reducido: ${producto.nombre} -${cantidad} unidades`);
+        }
+        
+        // Registrar el gasto
+        await API.post('/gastos', payload);
+        Toast.success(`Merma registrada: S/ ${payload.monto.toFixed(2)}`);
+        
+        Modal.close('modal-gasto');
+        limpiarFormularioGasto();
+        await cargarGastos();
+        await cargarInventario();
+        await cargarProductos();
+        return;
+        
+      } catch (error) {
+        console.error('Error al registrar merma:', error);
+        Toast.error(error.message || 'Error al registrar la merma');
+        return;
+      }
+    }
+    
+    // === MANEJO DE COMPRAS (LÓGICA ORIGINAL) ===
     if (!payload.monto || payload.monto <= 0) {
       Toast.warning('El monto debe ser mayor a 0');
       return;
     }
     
-    // Manejar inventario
     const inventarioId = document.getElementById('gasto-inventario-id').value;
     const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
     
@@ -374,10 +602,8 @@
       }
       
       try {
-        // Determinar el tipo según la categoría
         const tipo = payload.categoria === 'flores' ? 'flores' : 'materiales';
         
-        // Crear el nuevo ítem en el inventario
         const nuevoItem = await API.post('/inventario', {
           nombre: nuevoItemNombre,
           tipo: tipo,
@@ -389,8 +615,6 @@
         
         console.log('✅ Nuevo ítem creado:', nuevoItem);
         Toast.success(`Ítem "${nuevoItemNombre}" creado con ${cantidad} ${nuevoItemUnidad}`);
-        
-        // Recargar inventario
         await cargarInventario();
         
       } catch (error) {
@@ -400,12 +624,11 @@
       }
       
     } else if (inventarioId && cantidad > 0) {
-      // Actualizar ítem existente
+      // Actualizar ítem existente (SUMAR stock)
       payload.inventario_id = parseInt(inventarioId);
       payload.cantidad = cantidad;
     }
     
-    // Validar que si se seleccionó un ítem existente, también se ingresó la cantidad
     if (inventarioId && inventarioId !== 'nuevo' && !cantidad) {
       Toast.warning('Ingresa la cantidad a agregar al inventario');
       return;
@@ -422,20 +645,25 @@
       }
       
       Modal.close('modal-gasto');
-      // Limpiar formulario
-      document.getElementById('gasto-desc').value = '';
-      document.getElementById('gasto-monto').value = '';
-      document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
-      document.getElementById('gasto-inventario-id').value = '';
-      document.getElementById('gasto-cantidad').value = '';
-      document.getElementById('nuevo-item-nombre').value = '';
-      document.getElementById('nuevo-item-costo').value = '';
-      toggleNuevoItem(); // Ocultar campos de nuevo ítem
-      await cargarGastos(); // Recargar desde el backend
+      limpiarFormularioGasto();
+      await cargarGastos();
     } catch (error) {
       console.error('Error al guardar gasto:', error);
       Toast.error(error.message || 'Error al guardar el gasto');
     }
+  }
+  
+  function limpiarFormularioGasto() {
+    document.getElementById('gasto-desc').value = '';
+    document.getElementById('gasto-monto').value = '';
+    document.getElementById('gasto-cat').value = 'flores';
+    document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('gasto-inventario-id').value = '';
+    document.getElementById('gasto-producto-id').value = '';
+    document.getElementById('gasto-cantidad').value = '';
+    document.getElementById('nuevo-item-nombre').value = '';
+    document.getElementById('nuevo-item-costo').value = '';
+    toggleInventarioFields();
   }
 
   async function eliminarGasto(id) {
@@ -455,6 +683,7 @@
   document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
   cargarGastos();
   cargarInventario();
+  cargarProductos();
   toggleInventarioFields();
 </script>
 </body>
