@@ -1371,7 +1371,7 @@ body.dark-mode .lab-flor-card.selected { background:rgba(236,72,153,.12); }
 }
 
 /* Mobile y menor */
-@media (max-width: 767px) {
+@media (max-width: 990px) {
   /* Navbar */
   .navbar-links { display: none; }
   .btn-menu-mob { display: flex; }
@@ -2368,8 +2368,8 @@ body.dark-mode .lab-cta-feature {
 /* Mejorar touch targets en móvil */
 @media (max-width: 767px) {
   button, .btn, a[role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 10px;
+    min-width: 10px;
   }
   
   /* Mejorar espaciado de chips en móvil */
