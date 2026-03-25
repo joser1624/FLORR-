@@ -29,8 +29,23 @@
     <div class="topbar" id="topbar"></div>
     <div class="admin-content">
       <div class="page-header">
-        <div><h2>Gastos</h2><p>Registra los gastos del negocio para calcular la ganancia real</p></div>
+        <div>
+          <h2>Gastos</h2>
+          <p>Registra los gastos del negocio para calcular la ganancia real</p>
+        </div>
         <button class="btn btn-primary" onclick="Modal.open('modal-gasto')">+ Registrar gasto</button>
+      </div>
+
+      <!-- Mensaje informativo sobre compras de inventario -->
+      <div class="alert alert-success" style="margin-bottom: 1.5rem; display: flex; align-items: start; gap: 12px;">
+        <span style="font-size: 24px;">✨</span>
+        <div style="flex: 1;">
+          <strong>Compras de inventario</strong>
+          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">
+            Al registrar gastos de <strong>"Compra de flores"</strong> o <strong>"Materiales"</strong>, 
+            puedes seleccionar un ítem existente o crear uno nuevo. El stock se actualizará automáticamente.
+          </p>
+        </div>
       </div>
 
       <!-- Resumen -->
