@@ -1,6 +1,6 @@
 const { query } = require('../config/database');
 
-const ALLOWED_CATEGORIAS = ['flores', 'transporte', 'materiales', 'mantenimiento', 'otros'];
+const ALLOWED_CATEGORIAS = ['flores', 'transporte', 'materiales', 'mantenimiento', 'merma', 'otros'];
 
 class GastosService {
   /**

@@ -33,7 +33,12 @@
           <h2>Gastos</h2>
           <p>Registra los gastos del negocio para calcular la ganancia real</p>
         </div>
-        <button class="btn btn-primary" onclick="Modal.open('modal-gasto')">+ Registrar gasto</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline btn-sm" onclick="verificarAuth()" title="Verificar autenticación">🔐 Auth</button>
+          <button class="btn btn-outline btn-sm" onclick="verificarServidor()" title="Verificar estado del servidor">🔍 Servidor</button>
+          <button class="btn btn-outline btn-sm" onclick="probarMerma()" title="Probar categoría merma">🧪 Probar Merma</button>
+          <button class="btn btn-primary" onclick="Modal.open('modal-gasto')">+ Registrar gasto</button>
+        </div>
       </div>
 
       <!-- Mensaje informativo sobre compras de inventario -->
@@ -150,6 +155,9 @@
               <select class="form-control" id="gasto-producto-id" onchange="onProductoSeleccionado()">
                 <option value="">-- Seleccionar producto --</option>
               </select>
+              <small style="color: var(--gris-500); font-size: 11px; margin-top: 4px;">
+                💡 Selecciona SOLO inventario O producto, no ambos
+              </small>
             </div>
           </div>
           
@@ -229,25 +237,9 @@
   }
 
   function onProductoSeleccionado() {
-    const select = document.getElementById('gasto-producto-id');
-    const productoId = select.value;
-    const cantidadField = document.getElementById('cantidad-field');
-    const stockMsg = document.getElementById('stock-disponible-msg');
-    
-    if (productoId) {
-      const option = select.options[select.selectedIndex];
-      const stockDisponible = option.getAttribute('data-stock');
-      
-      cantidadField.style.display = 'block';
-      stockMsg.style.display = 'block';
-      stockMsg.textContent = `📦 Stock disponible: ${stockDisponible} unidades`;
-      
-      // Establecer max en el input
-      document.getElementById('gasto-cantidad').setAttribute('max', stockDisponible);
-    } else {
-      cantidadField.style.display = 'none';
-      stockMsg.style.display = 'none';
-    }
+    // Esta función se llama cuando cambia el select de productos
+    // Reutilizamos la lógica de toggleNuevoItem para mantener consistencia
+    toggleNuevoItem();
   }
 
   function renderInventarioSelect() {
@@ -272,51 +264,128 @@
   function toggleNuevoItem() {
     const categoria = document.getElementById('gasto-cat').value;
     const inventarioId = document.getElementById('gasto-inventario-id').value;
+    const productoId = document.getElementById('gasto-producto-id').value;
     const nuevoItemFields = document.getElementById('nuevo-item-fields');
     const cantidadField = document.getElementById('cantidad-field');
     const stockMsg = document.getElementById('stock-disponible-msg');
     const montoInput = document.getElementById('gasto-monto');
+    const cantidadInput = document.getElementById('gasto-cantidad');
+    
+    // Resetear campos
+    cantidadField.style.display = 'none';
+    stockMsg.style.display = 'none';
+    nuevoItemFields.style.display = 'none';
+    cantidadInput.value = '';
+    cantidadInput.removeAttribute('max');
+    cantidadInput.removeAttribute('min');
+    cantidadInput.oninput = null;
     
     if (categoria === 'merma') {
-      // En modo merma, calcular valor automáticamente
-      if (inventarioId && inventarioId !== 'nuevo') {
+      // === LÓGICA PARA MERMA ===
+      
+      // Limpiar el otro selector cuando se selecciona uno
+      if (inventarioId && inventarioId !== '' && inventarioId !== 'nuevo') {
+        document.getElementById('gasto-producto-id').value = '';
+        
+        // Seleccionó un ítem de inventario
         const item = inventarioItems.find(i => i.id == inventarioId);
         if (item) {
           cantidadField.style.display = 'block';
           stockMsg.style.display = 'block';
           stockMsg.textContent = `📦 Stock disponible: ${item.stock} ${item.unidad}`;
+          stockMsg.style.color = '#f59e0b';
           
-          // Establecer max en el input
-          document.getElementById('gasto-cantidad').setAttribute('max', item.stock);
+          // Establecer límites
+          cantidadInput.setAttribute('max', item.stock);
+          cantidadInput.setAttribute('min', '1');
+          cantidadInput.setAttribute('step', '1');
           
-          // Calcular monto cuando cambie la cantidad
-          document.getElementById('gasto-cantidad').oninput = function() {
+          // Calcular monto automáticamente cuando cambie la cantidad
+          cantidadInput.oninput = function() {
             const cantidad = parseInt(this.value) || 0;
-            const valorPerdido = cantidad * (item.costo || 0);
+            if (cantidad > item.stock) {
+              this.value = item.stock;
+              Toast.warning(`Máximo disponible: ${item.stock} ${item.unidad}`);
+            }
+            const valorPerdido = (parseInt(this.value) || 0) * (parseFloat(item.costo) || 0);
             montoInput.value = valorPerdido.toFixed(2);
           };
+          
+          // Calcular monto inicial si ya hay cantidad
+          if (cantidadInput.value) {
+            const cantidad = parseInt(cantidadInput.value) || 0;
+            const valorPerdido = cantidad * (parseFloat(item.costo) || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          }
         }
+        
+      } else if (productoId && productoId !== '') {
+        document.getElementById('gasto-inventario-id').value = '';
+        
+        // Seleccionó un producto
+        const producto = productosItems.find(p => p.id == productoId);
+        if (producto) {
+          cantidadField.style.display = 'block';
+          stockMsg.style.display = 'block';
+          stockMsg.textContent = `📦 Stock disponible: ${producto.stock} unidades`;
+          stockMsg.style.color = '#f59e0b';
+          
+          // Establecer límites
+          cantidadInput.setAttribute('max', producto.stock);
+          cantidadInput.setAttribute('min', '1');
+          cantidadInput.setAttribute('step', '1');
+          
+          // Calcular monto automáticamente cuando cambie la cantidad
+          cantidadInput.oninput = function() {
+            const cantidad = parseInt(this.value) || 0;
+            if (cantidad > producto.stock) {
+              this.value = producto.stock;
+              Toast.warning(`Máximo disponible: ${producto.stock} unidades`);
+            }
+            const valorPerdido = (parseInt(this.value) || 0) * (parseFloat(producto.costo) || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          };
+          
+          // Calcular monto inicial si ya hay cantidad
+          if (cantidadInput.value) {
+            const cantidad = parseInt(cantidadInput.value) || 0;
+            const valorPerdido = cantidad * (parseFloat(producto.costo) || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          }
+        }
+        
       } else {
-        cantidadField.style.display = 'none';
-        stockMsg.style.display = 'none';
+        // No seleccionó nada
         montoInput.value = '0.00';
       }
-      return;
-    }
-    
-    // Lógica original para compras
-    if (inventarioId === 'nuevo') {
-      nuevoItemFields.style.display = 'block';
-      cantidadField.style.display = 'block';
-    } else if (inventarioId) {
-      nuevoItemFields.style.display = 'none';
-      cantidadField.style.display = 'block';
+      
     } else {
-      nuevoItemFields.style.display = 'none';
-      cantidadField.style.display = 'none';
-      document.getElementById('nuevo-item-nombre').value = '';
-      document.getElementById('nuevo-item-costo').value = '';
-      document.getElementById('gasto-cantidad').value = '';
+      // === LÓGICA PARA COMPRAS (original) ===
+      if (inventarioId === 'nuevo') {
+        nuevoItemFields.style.display = 'block';
+        cantidadField.style.display = 'block';
+        cantidadInput.setAttribute('min', '1');
+        cantidadInput.setAttribute('step', '1');
+        cantidadInput.removeAttribute('max');
+      } else if (inventarioId && inventarioId !== '') {
+        nuevoItemFields.style.display = 'none';
+        cantidadField.style.display = 'block';
+        cantidadInput.setAttribute('min', '1');
+        cantidadInput.setAttribute('step', '1');
+        cantidadInput.removeAttribute('max');
+        
+        // Mostrar stock actual para referencia
+        const item = inventarioItems.find(i => i.id == inventarioId);
+        if (item) {
+          stockMsg.style.display = 'block';
+          stockMsg.textContent = `📦 Stock actual: ${item.stock} ${item.unidad}`;
+          stockMsg.style.color = '#6b7280';
+        }
+      } else {
+        // Limpiar campos
+        document.getElementById('nuevo-item-nombre').value = '';
+        document.getElementById('nuevo-item-costo').value = '';
+      }
     }
   }
 
@@ -329,15 +398,16 @@
     const cantidadLabel = document.getElementById('cantidad-label');
     const montoInput = document.getElementById('gasto-monto');
     
-    // Resetear campos
+    // Resetear todos los campos
     document.getElementById('gasto-inventario-id').value = '';
     document.getElementById('gasto-producto-id').value = '';
     document.getElementById('gasto-cantidad').value = '';
     document.getElementById('nuevo-item-fields').style.display = 'none';
     document.getElementById('cantidad-field').style.display = 'none';
+    document.getElementById('stock-disponible-msg').style.display = 'none';
     
     if (categoria === 'merma') {
-      // MERMA/PÉRDIDA: Mostrar ambos selectores
+      // === MODO MERMA/PÉRDIDA ===
       inventarioFields.style.display = 'block';
       productosField.style.display = 'block';
       
@@ -347,24 +417,25 @@
       inventarioLabel.textContent = 'Ítem de inventario (opcional)';
       cantidadLabel.innerHTML = 'Cantidad perdida <span class="req">*</span>';
       
-      // Ocultar opción de crear nuevo
+      // Configurar select de inventario (solo ítems con stock > 0, sin opción "nuevo")
       const selectInv = document.getElementById('gasto-inventario-id');
       selectInv.innerHTML = '<option value="">-- No aplica --</option>' +
         inventarioItems.filter(i => i.stock > 0).map(item => 
-          `<option value="${item.id}" data-costo="${item.costo}">${item.nombre} (Stock: ${item.stock} ${item.unidad})</option>`
+          `<option value="${item.id}" data-costo="${item.costo || 0}" data-stock="${item.stock}" data-unidad="${item.unidad}">${item.nombre} (Stock: ${item.stock} ${item.unidad})</option>`
         ).join('');
       
       // Bloquear monto (se calculará automáticamente)
       montoInput.setAttribute('readonly', 'true');
       montoInput.style.backgroundColor = '#f5f5f5';
+      montoInput.style.cursor = 'not-allowed';
       montoInput.value = '0.00';
       montoInput.placeholder = 'Se calculará automáticamente';
       
-      renderInventarioSelect();
+      // Cargar productos con stock
       renderProductosSelect();
       
     } else if (categoria === 'flores' || categoria === 'materiales') {
-      // COMPRA: Mostrar solo inventario
+      // === MODO COMPRA ===
       inventarioFields.style.display = 'block';
       productosField.style.display = 'none';
       
@@ -377,20 +448,22 @@
       // Habilitar monto
       montoInput.removeAttribute('readonly');
       montoInput.style.backgroundColor = '';
+      montoInput.style.cursor = '';
       montoInput.value = '';
       montoInput.placeholder = '';
       
+      // Renderizar select normal con opción de crear nuevo
       renderInventarioSelect();
-      toggleNuevoItem();
       
     } else {
-      // OTRAS CATEGORÍAS: Ocultar todo
+      // === OTRAS CATEGORÍAS ===
       inventarioFields.style.display = 'none';
       productosField.style.display = 'none';
       
       // Habilitar monto
       montoInput.removeAttribute('readonly');
       montoInput.style.backgroundColor = '';
+      montoInput.style.cursor = '';
       montoInput.value = '';
       montoInput.placeholder = '';
     }
@@ -482,16 +555,18 @@
 
   async function guardarGasto() {
     const categoria = document.getElementById('gasto-cat').value;
-    const payload = {
-      descripcion: document.getElementById('gasto-desc').value.trim(),
-      categoria: categoria,
-      monto: parseFloat(document.getElementById('gasto-monto').value) || 0,
-      fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0]
-    };
+    const descripcion = document.getElementById('gasto-desc').value.trim();
+    const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
+    const fecha = document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0];
     
     // Validaciones básicas
-    if (!payload.descripcion) {
+    if (!descripcion) {
       Toast.warning('La descripción es obligatoria');
+      return;
+    }
+    
+    if (!categoria) {
+      Toast.warning('Selecciona una categoría');
       return;
     }
     
@@ -501,68 +576,118 @@
       const productoId = document.getElementById('gasto-producto-id').value;
       const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
       
+      // Validar que se seleccionó algo
       if (!inventarioId && !productoId) {
-        Toast.warning('Selecciona un ítem de inventario o un producto');
+        Toast.warning('Selecciona un ítem de inventario o un producto para la merma');
         return;
       }
       
+      // Validar cantidad
       if (!cantidad || cantidad <= 0) {
-        Toast.warning('Ingresa la cantidad perdida');
+        Toast.warning('Ingresa la cantidad perdida (debe ser mayor a 0)');
         return;
       }
       
       try {
-        if (inventarioId) {
-          // Merma de inventario
+        let montoCalculado = 0;
+        let descripcionFinal = descripcion;
+        
+        if (inventarioId && inventarioId !== '' && inventarioId !== 'nuevo') {
+          // === MERMA DE INVENTARIO ===
           const item = inventarioItems.find(i => i.id == inventarioId);
           if (!item) {
-            Toast.error('Ítem no encontrado');
+            Toast.error('Ítem de inventario no encontrado');
             return;
           }
           
+          // Validar stock disponible
           if (cantidad > item.stock) {
-            Toast.error(`No puedes dar de baja ${cantidad} unidades. Stock disponible: ${item.stock}`);
+            Toast.error(`No puedes dar de baja ${cantidad} ${item.unidad}. Stock disponible: ${item.stock} ${item.unidad}`);
             return;
           }
-          
-          // Actualizar stock (RESTAR)
-          const nuevoStock = item.stock - cantidad;
-          await API.put(`/inventario/${inventarioId}`, { stock: nuevoStock });
           
           // Calcular valor perdido
-          payload.monto = cantidad * (item.costo || 0);
-          payload.descripcion = payload.descripcion || `Merma/Pérdida: ${item.nombre} (${cantidad} ${item.unidad})`;
+          montoCalculado = cantidad * (parseFloat(item.costo) || 0);
+          descripcionFinal = descripcion || `Merma/Pérdida: ${item.nombre} (${cantidad} ${item.unidad})`;
+          
+          // Actualizar stock en inventario (RESTAR)
+          const nuevoStock = item.stock - cantidad;
+          console.log(`Actualizando inventario ${inventarioId}: ${item.stock} -> ${nuevoStock}`);
+          
+          await API.put(`/inventario/${inventarioId}`, { 
+            stock: nuevoStock 
+          });
           
           Toast.success(`Stock reducido: ${item.nombre} -${cantidad} ${item.unidad}`);
           
-        } else if (productoId) {
-          // Merma de producto
+        } else if (productoId && productoId !== '') {
+          // === MERMA DE PRODUCTO ===
           const producto = productosItems.find(p => p.id == productoId);
           if (!producto) {
             Toast.error('Producto no encontrado');
             return;
           }
           
+          // Validar stock disponible
           if (cantidad > producto.stock) {
-            Toast.error(`No puedes dar de baja ${cantidad} unidades. Stock disponible: ${producto.stock}`);
+            Toast.error(`No puedes dar de baja ${cantidad} unidades. Stock disponible: ${producto.stock} unidades`);
             return;
           }
           
-          // Actualizar stock (RESTAR)
-          const nuevoStock = producto.stock - cantidad;
-          await API.put(`/productos/${productoId}`, { stock: nuevoStock });
-          
           // Calcular valor perdido
-          payload.monto = cantidad * (producto.costo || 0);
-          payload.descripcion = payload.descripcion || `Merma/Pérdida: ${producto.nombre} (${cantidad} unidades)`;
+          montoCalculado = cantidad * (parseFloat(producto.costo) || 0);
+          descripcionFinal = descripcion || `Merma/Pérdida: ${producto.nombre} (${cantidad} unidades)`;
+          
+          // Actualizar stock en productos (RESTAR)
+          const nuevoStock = producto.stock - cantidad;
+          console.log(`Actualizando producto ${productoId}: ${producto.stock} -> ${nuevoStock}`);
+          
+          await API.put(`/productos/${productoId}`, { 
+            stock: nuevoStock 
+          });
           
           Toast.success(`Stock reducido: ${producto.nombre} -${cantidad} unidades`);
         }
         
-        // Registrar el gasto
-        await API.post('/gastos', payload);
-        Toast.success(`Merma registrada: S/ ${payload.monto.toFixed(2)}`);
+        // Crear el payload para el gasto
+        const payload = {
+          descripcion: descripcionFinal,
+          categoria: 'merma',
+          monto: montoCalculado,
+          fecha: fecha
+        };
         
+        // IMPORTANTE: Para merma NO enviamos inventario_id ni cantidad
+        // porque ya actualizamos el stock manualmente (restando)
+        // El backend solo debe registrar el gasto, no modificar stock
+        
+        // Validar que el monto calculado sea válido
+        if (montoCalculado < 0) {
+          Toast.error('Error en el cálculo del monto. Verifica los datos.');
+          return;
+        }
+        
+        // Validar formato de fecha
+        if (!fecha || fecha === '') {
+          Toast.error('La fecha es obligatoria');
+          return;
+        }
+        
+        // Validar que la descripción no esté vacía
+        if (!descripcionFinal || descripcionFinal.trim() === '') {
+          Toast.error('La descripción es obligatoria');
+          return;
+        }
+        
+        console.log('Payload para merma:', JSON.stringify(payload, null, 2));
+        
+        // Registrar el gasto de merma
+        const response = await API.post('/gastos', payload);
+        console.log('Respuesta del servidor:', response);
+        
+        Toast.success(`Merma registrada: S/ ${montoCalculado.toFixed(2)}`);
+        
+        // Cerrar modal y recargar datos
         Modal.close('modal-gasto');
         limpiarFormularioGasto();
         await cargarGastos();
@@ -571,20 +696,45 @@
         return;
         
       } catch (error) {
-        console.error('Error al registrar merma:', error);
-        Toast.error(error.message || 'Error al registrar la merma');
+        console.error('Error completo al registrar merma:', error);
+        console.error('Error response:', error.response);
+        console.error('Error data:', error.response?.data);
+        
+        // Mostrar error más específico
+        let errorMsg = 'Error al registrar la merma';
+        if (error.response && error.response.data) {
+          if (error.response.data.detalles && Array.isArray(error.response.data.detalles)) {
+            errorMsg = `Errores de validación:\n${error.response.data.detalles.join('\n')}`;
+          } else if (error.response.data.message) {
+            errorMsg = error.response.data.message;
+          } else if (error.response.data.mensaje) {
+            errorMsg = error.response.data.mensaje;
+          }
+        } else if (error.message) {
+          errorMsg = error.message;
+        }
+        
+        Toast.error(errorMsg);
         return;
       }
     }
     
     // === MANEJO DE COMPRAS (LÓGICA ORIGINAL) ===
-    if (!payload.monto || payload.monto <= 0) {
+    if (!monto || monto <= 0) {
       Toast.warning('El monto debe ser mayor a 0');
       return;
     }
     
     const inventarioId = document.getElementById('gasto-inventario-id').value;
     const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
+    
+    // Crear payload base para compras
+    const payload = {
+      descripcion: descripcion,
+      categoria: categoria,
+      monto: monto,
+      fecha: fecha
+    };
     
     if (inventarioId === 'nuevo') {
       // Crear nuevo ítem de inventario
@@ -619,7 +769,7 @@
         
       } catch (error) {
         console.error('Error al crear ítem:', error);
-        Toast.error('Error al crear el ítem de inventario: ' + error.message);
+        Toast.error('Error al crear el ítem de inventario: ' + (error.message || 'Error desconocido'));
         return;
       }
       
@@ -635,6 +785,7 @@
     }
     
     try {
+      console.log('Payload para compra:', payload);
       const response = await API.post('/gastos', payload);
       
       if (payload.inventario_id && payload.cantidad) {
@@ -649,7 +800,15 @@
       await cargarGastos();
     } catch (error) {
       console.error('Error al guardar gasto:', error);
-      Toast.error(error.message || 'Error al guardar el gasto');
+      
+      let errorMsg = 'Error al guardar el gasto';
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      Toast.error(errorMsg);
     }
   }
   
@@ -663,7 +822,137 @@
     document.getElementById('gasto-cantidad').value = '';
     document.getElementById('nuevo-item-nombre').value = '';
     document.getElementById('nuevo-item-costo').value = '';
+    
+    // Resetear estilos del monto
+    const montoInput = document.getElementById('gasto-monto');
+    montoInput.removeAttribute('readonly');
+    montoInput.style.backgroundColor = '';
+    montoInput.style.cursor = '';
+    montoInput.placeholder = '';
+    
     toggleInventarioFields();
+  }
+
+  // Función auxiliar para abrir modal con merma preseleccionada
+  function abrirModalMerma() {
+    limpiarFormularioGasto();
+    document.getElementById('gasto-cat').value = 'merma';
+    toggleInventarioFields();
+    Modal.open('modal-gasto');
+  }
+
+  // Función para verificar autenticación
+  async function verificarAuth() {
+    const token = Auth.getToken();
+    const user = Auth.getUser();
+    
+    console.log('Token presente:', !!token);
+    console.log('Usuario:', user);
+    
+    if (!token) {
+      Toast.warning('No estás logueado. Redirigiendo al login...');
+      setTimeout(() => {
+        window.location.href = '/pages/admin/login.html';
+      }, 2000);
+      return;
+    }
+    
+    if (token) {
+      console.log('Token (primeros 30 chars):', token.substring(0, 30) + '...');
+      Toast.success(`Logueado como: ${user?.nombre || 'Usuario'} (${user?.rol || 'sin rol'})`);
+    }
+    
+    // Probar una petición autenticada
+    try {
+      const response = await API.get('/gastos?limit=1');
+      console.log('Petición autenticada exitosa:', response);
+      Toast.success('Autenticación válida');
+    } catch (error) {
+      console.error('Error en petición autenticada:', error);
+      Toast.error('Token inválido o expirado');
+    }
+  }
+
+  // Función para verificar el estado del servidor
+  async function verificarServidor() {
+    try {
+      console.log('Verificando servidor en:', API_BASE);
+      
+      // Verificar token de autenticación
+      const token = Auth.getToken();
+      console.log('Token presente:', !!token);
+      if (token) {
+        console.log('Token (primeros 20 chars):', token.substring(0, 20) + '...');
+      } else {
+        Toast.warning('No hay token de autenticación. ¿Estás logueado?');
+        return;
+      }
+      
+      // Probar conexión básica usando la API con autenticación
+      console.log('Probando conexión autenticada...');
+      const response = await API.get('/gastos');
+      console.log('Respuesta exitosa del servidor:', response);
+      Toast.success('Servidor y autenticación OK');
+      
+      // Verificar categorías permitidas haciendo una petición inválida
+      try {
+        await API.post('/gastos', {
+          descripcion: '',
+          categoria: 'categoria_inexistente',
+          monto: 0,
+          fecha: ''
+        });
+      } catch (error) {
+        console.log('Error esperado para verificar validaciones:', error.response?.data);
+        if (error.response?.data?.detalles) {
+          console.log('Validaciones del servidor:', error.response.data.detalles);
+          // Mostrar cada validación específica
+          error.response.data.detalles.forEach((detalle, index) => {
+            console.log(`Validación ${index + 1}:`, detalle);
+          });
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error al verificar servidor:', error);
+      Toast.error('No se puede conectar al servidor');
+    }
+  }
+
+  // Función de prueba para verificar la API de gastos
+  async function probarMerma() {
+    try {
+      // Nota: 'merma' no es una categoría válida. Categorías válidas: flores, transporte, materiales, mantenimiento, otros
+      const payload = {
+        descripcion: 'Prueba de registro de gasto',
+        categoria: 'otros',  // Usar categoría válida para la prueba
+        monto: 10.00,
+        fecha: new Date().toISOString().split('T')[0]
+      };
+      
+      console.log('Probando payload:', JSON.stringify(payload, null, 2));
+      const response = await API.post('/gastos', payload);
+      console.log('Respuesta exitosa:', response);
+      Toast.success('Prueba de API de gastos exitosa');
+      await cargarGastos();
+    } catch (error) {
+      console.error('Error en prueba de merma:', error);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      
+      if (error.response?.data?.detalles) {
+        console.error('Detalles de validación:', error.response.data.detalles);
+        // Mostrar cada detalle específico
+        error.response.data.detalles.forEach((detalle, index) => {
+          console.error(`Error ${index + 1}:`, detalle);
+        });
+        Toast.error(`Errores de validación:\n${error.response.data.detalles.map(d => typeof d === 'string' ? d : JSON.stringify(d)).join('\n')}`);
+      } else if (error.response?.data?.mensaje) {
+        Toast.error('Error: ' + error.response.data.mensaje);
+      } else {
+        Toast.error('Error en prueba: ' + (error.message || 'Error desconocido'));
+      }
+    }
   }
 
   async function eliminarGasto(id) {

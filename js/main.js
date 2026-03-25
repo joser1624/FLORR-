@@ -48,12 +48,33 @@ const API = {
     });
     if (!r.ok) {
       const errorData = await r.json();
+      
+      // Crear un error más detallado que preserve la respuesta
+      const error = new Error('Errores de validación');
+      error.response = {
+        status: r.status,
+        statusText: r.statusText,
+        data: errorData
+      };
+      
       // Si hay errores de validación detallados, mostrarlos
       if (errorData.errores && Array.isArray(errorData.errores)) {
         const detalles = errorData.errores.map(e => e.msg).join(', ');
-        throw new Error(`Errores de validación: ${detalles}`);
+        error.message = `Errores de validación: ${detalles}`;
+      } else if (errorData.detalles && Array.isArray(errorData.detalles)) {
+        // Manejar diferentes formatos de detalles
+        const detalles = errorData.detalles.map(d => {
+          if (typeof d === 'string') return d;
+          if (d.msg) return d.msg;
+          if (d.message) return d.message;
+          return JSON.stringify(d);
+        }).join(', ');
+        error.message = `Errores de validación: ${detalles}`;
+      } else if (errorData.mensaje || errorData.error) {
+        error.message = errorData.mensaje || errorData.error;
       }
-      throw new Error(errorData.mensaje || errorData.error || 'Error en la solicitud');
+      
+      throw error;
     }
     return r.json();
   },

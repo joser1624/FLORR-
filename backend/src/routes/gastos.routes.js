@@ -18,6 +18,7 @@ const createGastoValidation = [
     'transporte',
     'materiales',
     'mantenimiento',
+    'merma',
     'otros',
   ]),
   validationRules.numericRange('monto', 'Monto', 0),
@@ -39,8 +40,8 @@ const queryValidation = [
     .withMessage('mes debe estar en formato YYYY-MM'),
   query('categoria')
     .optional()
-    .isIn(['flores', 'transporte', 'materiales', 'mantenimiento', 'otros'])
-    .withMessage('categoria debe ser uno de: flores, transporte, materiales, mantenimiento, otros'),
+    .isIn(['flores', 'transporte', 'materiales', 'merma', 'mantenimiento', 'otros'])
+    .withMessage('categoria debe ser uno de: flores, transporte, materiales, merma, mantenimiento, otros'),
   validateRequest,
 ];
 
