@@ -220,3 +220,16 @@ document.addEventListener('click', e => {
     e.target.classList.remove('active');
   }
 });
+
+// splash
+window.addEventListener("load", function() {
+  setTimeout(function() {
+    const splash = document.getElementById("splash");
+    splash.style.opacity = "0";
+    splash.style.transition = "opacity 0.5s ease";
+
+    setTimeout(function() {
+      splash.style.display = "none";
+    }, 500);
+  }, 1500);
+});
