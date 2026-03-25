@@ -19,6 +19,162 @@
       #tabla-gastos-wrap { display: none; }
       #gastos-cards { display: grid; }
     }
+    
+    /* Estilos para el modal de detalle de gasto */
+    .modal-detalle-gasto {
+      max-width: 600px;
+      width: 95%;
+    }
+    
+    .detalle-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .detalle-icon {
+      font-size: 48px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+    
+    .detalle-tipo {
+      flex: 1;
+    }
+    
+    .detalle-tipo-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--gris-500);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .detalle-tipo-nombre {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    
+    .detalle-section {
+      margin-bottom: 20px;
+    }
+    
+    .detalle-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gris-500);
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    .detalle-value {
+      font-size: 15px;
+      color: var(--text-primary);
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      line-height: 1.5;
+    }
+    
+    .detalle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    @media (max-width: 480px) {
+      .detalle-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .detalle-monto {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--danger);
+      text-align: center;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 2px solid var(--danger);
+      letter-spacing: -0.5px;
+    }
+    
+    .detalle-merma-box {
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.12) 100%);
+      border-left: 4px solid var(--danger);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .detalle-merma-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    .detalle-merma-icon {
+      font-size: 24px;
+    }
+    
+    .detalle-merma-title {
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    .detalle-merma-item {
+      margin-bottom: 16px;
+    }
+    
+    .detalle-merma-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .detalle-merma-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--danger);
+      margin-bottom: 6px;
+      display: block;
+    }
+    
+    .detalle-merma-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding-left: 8px;
+    }
+    
+    .detalle-timestamp {
+      font-size: 13px;
+      color: var(--gris-500);
+      text-align: center;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .detalle-timestamp-icon {
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -180,13 +336,16 @@
 
 <!-- Modal para ver detalle de gasto -->
 <div class="modal-overlay" id="modal-detalle-gasto">
-  <div class="modal">
-    <div class="modal-header"><h3>Detalle del gasto</h3><button class="btn-close" onclick="Modal.close('modal-detalle-gasto')">×</button></div>
+  <div class="modal modal-detalle-gasto">
+    <div class="modal-header">
+      <h3>Detalle del gasto</h3>
+      <button class="btn-close" onclick="Modal.close('modal-detalle-gasto')">×</button>
+    </div>
     <div class="modal-body">
       <div id="detalle-gasto-content"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-detalle-gasto')">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="Modal.close('modal-detalle-gasto')" style="width: 100%;">Cerrar</button>
     </div>
   </div>
 </div>
@@ -671,9 +830,17 @@
           fecha: fecha
         };
         
-        // IMPORTANTE: Para merma NO enviamos inventario_id ni cantidad
-        // porque ya actualizamos el stock manualmente (restando)
-        // El backend solo debe registrar el gasto, no modificar stock
+        // Agregar información del ítem perdido para el historial
+        if (inventarioId && inventarioId !== '' && inventarioId !== 'nuevo') {
+          payload.inventario_id = parseInt(inventarioId);
+          payload.cantidad = cantidad;
+        } else if (productoId && productoId !== '') {
+          payload.producto_id = parseInt(productoId);
+          payload.cantidad = cantidad;
+        }
+        
+        // IMPORTANTE: Para merma ya actualizamos el stock manualmente (restando)
+        // El backend solo debe registrar el gasto con la información del ítem
         
         // Validar que el monto calculado sea válido
         if (montoCalculado < 0) {
@@ -895,47 +1062,111 @@
     }
     
     const content = `
-      <div style="display: flex; flex-direction: column; gap: 1rem;">
-        <!-- Encabezado con tipo de gasto -->
-        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
-          <span style="font-size: 32px;">${emoji}</span>
-          <div>
-            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gris-500);">Tipo de gasto</div>
-            <div style="font-weight: 600; font-size: 15px;">${tipoInfo}</div>
-          </div>
+      <!-- Encabezado con tipo de gasto -->
+      <div class="detalle-header">
+        <div class="detalle-icon">${emoji}</div>
+        <div class="detalle-tipo">
+          <div class="detalle-tipo-label">Tipo de gasto</div>
+          <div class="detalle-tipo-nombre">${tipoInfo}</div>
         </div>
-        
-        <!-- Descripción -->
-        <div class="form-group">
-          <label class="form-label" style="font-weight: 600;">Descripción</label>
-          <p style="margin: 0; padding: 0.75rem; background: var(--bg-tertiary); border-radius: 6px; line-height: 1.5;">${gasto.descripcion}</p>
-        </div>
-        
-        <!-- Categoría y Monto -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label class="form-label" style="font-weight: 600;">Categoría</label>
-            <p style="margin: 0;"><span class="badge ${categoriaBadge}">${categoriaLabel}</span></p>
-          </div>
-          <div class="form-group">
-            <label class="form-label" style="font-weight: 600;">Monto</label>
-            <p style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--danger);">${Fmt.moneda(gasto.monto)}</p>
-          </div>
-        </div>
-        
-        <!-- Fecha -->
-        <div class="form-group">
-          <label class="form-label" style="font-weight: 600;">Fecha del gasto</label>
-          <p style="margin: 0;">${Fmt.fecha(gasto.fecha)}</p>
-        </div>
-        
-        ${gasto.created_at ? `
-        <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label" style="font-weight: 600;">Registrado el</label>
-          <p style="margin: 0; font-size: 13px; color: var(--gris-500);">${new Date(gasto.created_at).toLocaleString('es-PE')}</p>
-        </div>
-        ` : ''}
       </div>
+      
+      <!-- Descripción -->
+      <div class="detalle-section">
+        <label class="detalle-label">Descripción</label>
+        <div class="detalle-value">${gasto.descripcion}</div>
+      </div>
+      
+      <!-- Grid: Categoría y Fecha -->
+      <div class="detalle-grid">
+        <div class="detalle-section">
+          <label class="detalle-label">Categoría</label>
+          <div class="detalle-value">
+            <span class="badge ${categoriaBadge}">${categoriaLabel}</span>
+          </div>
+        </div>
+        <div class="detalle-section">
+          <label class="detalle-label">Fecha del gasto</label>
+          <div class="detalle-value">${Fmt.fecha(gasto.fecha)}</div>
+        </div>
+      </div>
+      
+      <!-- Monto destacado -->
+      <div class="detalle-section">
+        <label class="detalle-label">Monto total</label>
+        <div class="detalle-monto">${Fmt.moneda(gasto.monto)}</div>
+      </div>
+      
+      ${gasto.categoria === 'merma' ? `
+      <!-- Información específica de merma -->
+      <div class="detalle-merma-box">
+        <div class="detalle-merma-header">
+          <span class="detalle-merma-icon">⚠️</span>
+          <span class="detalle-merma-title">Detalle de la pérdida</span>
+        </div>
+        ${(() => {
+          // Usar los campos de la base de datos si están disponibles
+          if (gasto.item_nombre) {
+            return `
+              <div class="detalle-merma-item">
+                <span class="detalle-merma-label">Producto/Ítem perdido</span>
+                <div class="detalle-merma-value">${gasto.item_nombre}</div>
+              </div>
+              ${gasto.cantidad ? `
+              <div class="detalle-merma-item">
+                <span class="detalle-merma-label">Cantidad perdida</span>
+                <div class="detalle-merma-value">${gasto.cantidad} ${gasto.item_unidad || 'unidades'}</div>
+              </div>
+              ` : ''}
+            `;
+          } else {
+            // Fallback: intentar extraer de la descripción (para gastos antiguos)
+            const desc = gasto.descripcion;
+            if (desc.includes('Merma/Pérdida:')) {
+              const parts = desc.replace('Merma/Pérdida: ', '').split(' (');
+              const item = parts[0];
+              const cantidadMatch = parts[1] ? parts[1].match(/(\d+)\s*(.+)\)/) : null;
+              const cantidad = cantidadMatch ? cantidadMatch[1] : '';
+              const unidad = cantidadMatch ? cantidadMatch[2] : '';
+              
+              return `
+                <div class="detalle-merma-item">
+                  <span class="detalle-merma-label">Producto/Ítem perdido</span>
+                  <div class="detalle-merma-value">${item}</div>
+                </div>
+                ${cantidad ? `
+                <div class="detalle-merma-item">
+                  <span class="detalle-merma-label">Cantidad perdida</span>
+                  <div class="detalle-merma-value">${cantidad} ${unidad}</div>
+                </div>
+                ` : ''}
+              `;
+            } else {
+              return `
+                <div class="detalle-merma-item">
+                  <span class="detalle-merma-label">Descripción de la pérdida</span>
+                  <div class="detalle-merma-value">${desc}</div>
+                </div>
+              `;
+            }
+          }
+        })()}
+      </div>
+      ` : ''}
+      
+      ${gasto.created_at ? `
+      <!-- Timestamp de registro -->
+      <div class="detalle-timestamp">
+        <span class="detalle-timestamp-icon">🕐</span>
+        Registrado el ${new Date(gasto.created_at).toLocaleString('es-PE', { 
+          day: '2-digit', 
+          month: 'long', 
+          year: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })}
+      </div>
+      ` : ''}
     `;
     
     document.getElementById('detalle-gasto-content').innerHTML = content;
