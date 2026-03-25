@@ -74,61 +74,89 @@
   <a href="pages/admin/login.html">🔐 Iniciar sesión →</a>
 </div>
 
-<!-- ░░ HERO ░░ -->
-<section class="hero">
-  <div class="hero-blob"></div>
-  <div class="hero-inner">
-
-    <!-- Texto -->
-    <div class="hero-text">
-      <div class="hero-eyebrow">🌸 Florería en Sicuani, Cusco</div>
-
-      <h1>Detalles y<br>regalos<em> encantos eternos</em></h1>
-
-      <p class="hero-desc">
-        Crea arreglos únicos para los momentos que más importan.
-        Ramos, cajas sorpresa, peluches y mucho más.
-        Entrega a domicilio disponible.
-      </p>
-
-      <div class="hero-btns">
-        <a href="#catalogo"    class="btn btn-primary btn-lg">🌷 Ver catálogo</a>
-        <button onclick="abrirLaboratorioModal()" class="btn btn-outline btn-lg">✨ Diseña tu arreglo</button>
-      </div>
-
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span class="hero-stat-num" id="stat-productos">+50</span>
-          <span class="hero-stat-label">Productos</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat-num" id="stat-clientes">+200</span>
-          <span class="hero-stat-label">Clientes felices</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat-num">🚚</span>
-          <span class="hero-stat-label">Delivery</span>
+<!-- ░░ HERO CAROUSEL ░░ -->
+<section class="hero-carousel">
+  <div class="hero-carousel-container">
+    <!-- Slides -->
+    <div class="hero-carousel-track" id="hero-track">
+      
+      <!-- Slide 1: Tulipanes -->
+      <div class="hero-slide active">
+        <div class="hero-slide-bg" style="background-image:url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1920&q=80')"></div>
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <div class="container">
+            <div class="hero-slide-text">
+              <h1 class="hero-slide-title">
+                Sorprende con<br>
+                <span class="hero-slide-highlight">Hermosos</span><br>
+                y coloridos <span class="hero-slide-highlight">Tulipanes</span>
+              </h1>
+              <a href="#catalogo" class="btn-hero-cta">VER CATÁLOGO</a>
+            </div>
+          </div>
         </div>
       </div>
+      
+      <!-- Slide 2: Rosas -->
+      <div class="hero-slide">
+        <div class="hero-slide-bg" style="background-image:url('https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=1920&q=80')"></div>
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <div class="container">
+            <div class="hero-slide-text">
+              <h1 class="hero-slide-title">
+                Expresa tu amor con<br>
+                <span class="hero-slide-highlight">Rosas</span><br>
+                frescas y elegantes
+              </h1>
+              <a href="#catalogo" class="btn-hero-cta">VER CATÁLOGO</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Slide 3: Arreglos personalizados -->
+      <div class="hero-slide">
+        <div class="hero-slide-bg" style="background-image:url('https://images.unsplash.com/photo-1487070183336-b863922373d4?w=1920&q=80')"></div>
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <div class="container">
+            <div class="hero-slide-text">
+              <h1 class="hero-slide-title">
+                Crea tu<br>
+                <span class="hero-slide-highlight">Arreglo</span><br>
+                personalizado
+              </h1>
+              <button onclick="abrirLaboratorioModal()" class="btn-hero-cta">DISEÑA AHORA</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
     </div>
-
-    <!-- Tarjeta visual -->
-    <div class="hero-visual">
-      <div class="hero-flower-card">
-        <span class="hero-flower-emoji">💐</span>
-        <div class="hero-flower-title">Ramo del día</div>
-        <div class="hero-flower-price">S/ 85.00</div>
-        <div style="font-size:12px;color:#b8a8c8;margin-top:5px;font-family:'Poppins',sans-serif">
-          Rosas + papel dorado + cinta
-        </div>
-        <button onclick="abrirLaboratorioModal()" class="btn btn-primary" style="width:100%;margin-top:1.5rem">
-          ✨ Personalizar
-        </button>
-      </div>
+    
+    <!-- Botones de navegación -->
+    <button class="hero-carousel-btn hero-carousel-prev" onclick="moverHeroSlide(-1)" aria-label="Anterior">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    
+    <button class="hero-carousel-btn hero-carousel-next" onclick="moverHeroSlide(1)" aria-label="Siguiente">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+    
+    <!-- Indicadores -->
+    <div class="hero-carousel-indicators" id="hero-indicators">
+      <button class="hero-indicator active" onclick="irAHeroSlide(0)"></button>
+      <button class="hero-indicator" onclick="irAHeroSlide(1)"></button>
+      <button class="hero-indicator" onclick="irAHeroSlide(2)"></button>
     </div>
-
   </div>
-
+  
   <!-- Barra de confianza -->
   <div class="hero-trust">
     <div class="trust-item">
@@ -1042,6 +1070,69 @@ function prevPage(){
   cargarInventarioPub();
   cargarPromos();
   cargarEventos();
+  
+  /* ── HERO CAROUSEL ── */
+  let heroSlideIndex = 0;
+  let heroAutoplayInterval;
+  const heroSlides = document.querySelectorAll('.hero-slide');
+  const heroIndicators = document.querySelectorAll('.hero-indicator');
+  
+  function mostrarHeroSlide(index) {
+    // Asegurar que el índice esté en rango
+    if (index >= heroSlides.length) {
+      heroSlideIndex = 0;
+    } else if (index < 0) {
+      heroSlideIndex = heroSlides.length - 1;
+    } else {
+      heroSlideIndex = index;
+    }
+    
+    // Actualizar slides
+    heroSlides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === heroSlideIndex);
+    });
+    
+    // Actualizar indicadores
+    heroIndicators.forEach((indicator, i) => {
+      indicator.classList.toggle('active', i === heroSlideIndex);
+    });
+  }
+  
+  function moverHeroSlide(direccion) {
+    mostrarHeroSlide(heroSlideIndex + direccion);
+    reiniciarHeroAutoplay();
+  }
+  
+  function irAHeroSlide(index) {
+    mostrarHeroSlide(index);
+    reiniciarHeroAutoplay();
+  }
+  
+  function siguienteHeroSlide() {
+    mostrarHeroSlide(heroSlideIndex + 1);
+  }
+  
+  function iniciarHeroAutoplay() {
+    heroAutoplayInterval = setInterval(siguienteHeroSlide, 5000); // Cambiar cada 5 segundos
+  }
+  
+  function reiniciarHeroAutoplay() {
+    clearInterval(heroAutoplayInterval);
+    iniciarHeroAutoplay();
+  }
+  
+  // Iniciar el carrusel
+  mostrarHeroSlide(0);
+  iniciarHeroAutoplay();
+  
+  // Pausar autoplay cuando el usuario interactúa
+  document.querySelector('.hero-carousel-container')?.addEventListener('mouseenter', () => {
+    clearInterval(heroAutoplayInterval);
+  });
+  
+  document.querySelector('.hero-carousel-container')?.addEventListener('mouseleave', () => {
+    iniciarHeroAutoplay();
+  });
 </script>
 </body>
 </html>
