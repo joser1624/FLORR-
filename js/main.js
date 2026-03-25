@@ -48,6 +48,11 @@ const API = {
     });
     if (!r.ok) {
       const errorData = await r.json();
+      // Si hay errores de validación detallados, mostrarlos
+      if (errorData.errores && Array.isArray(errorData.errores)) {
+        const detalles = errorData.errores.map(e => e.msg).join(', ');
+        throw new Error(`Errores de validación: ${detalles}`);
+      }
       throw new Error(errorData.mensaje || errorData.error || 'Error en la solicitud');
     }
     return r.json();

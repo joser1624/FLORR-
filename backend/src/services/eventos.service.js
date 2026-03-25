@@ -60,9 +60,17 @@ class EventosService {
       throw new Error(`El color debe ser uno de: ${ALLOWED_COLORS.join(', ')}`);
     }
 
+    // Convertir metadata a JSON si es necesario
+    let metadataValue = null;
+    if (data.metadata) {
+      metadataValue = typeof data.metadata === 'string' 
+        ? data.metadata 
+        : JSON.stringify(data.metadata);
+    }
+
     const result = await query(
-      `INSERT INTO eventos (nombre, descripcion, emoji, fecha, color, activo)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO eventos (nombre, descripcion, emoji, fecha, color, activo, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
        RETURNING *`,
       [
         data.nombre.trim(),
@@ -70,7 +78,8 @@ class EventosService {
         data.emoji || null,
         data.fecha || null,
         data.color,
-        data.activo !== undefined ? data.activo : true
+        data.activo !== undefined ? data.activo : true,
+        metadataValue
       ]
     );
     return result.rows[0];
@@ -89,6 +98,18 @@ class EventosService {
       throw new Error(`El color debe ser uno de: ${ALLOWED_COLORS.join(', ')}`);
     }
 
+    // Convertir metadata a JSON si es necesario
+    let metadataValue = null;
+    if (data.metadata !== undefined) {
+      if (data.metadata === null) {
+        metadataValue = null;
+      } else {
+        metadataValue = typeof data.metadata === 'string' 
+          ? data.metadata 
+          : JSON.stringify(data.metadata);
+      }
+    }
+
     const result = await query(
       `UPDATE eventos
        SET nombre = COALESCE($1, nombre),
@@ -97,8 +118,9 @@ class EventosService {
            fecha = COALESCE($4, fecha),
            color = COALESCE($5, color),
            activo = COALESCE($6, activo),
+           metadata = COALESCE($7::jsonb, metadata),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $8
        RETURNING *`,
       [
         data.nombre !== undefined ? data.nombre.trim() : null,
@@ -107,6 +129,7 @@ class EventosService {
         data.fecha !== undefined ? data.fecha : null,
         data.color !== undefined ? data.color : null,
         data.activo !== undefined ? data.activo : null,
+        metadataValue,
         id
       ]
     );

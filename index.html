@@ -44,89 +44,124 @@
 <nav class="navbar-pub" id="navbar">
  <div class="navbar-brand">
   <img src="icon/logo.png" alt="logo">
-
    <div class="brand-text">
-    Detalles y Regalos Encantos Eternos
-      <span>Florería · Sicuani, Cusco — Perú</span>
+    <span class="brand-name">Detalles y Regalos Encantos Eternos</span>
+    <span class="brand-subtitle">Florería · Sicuani, Cusco — Perú</span>
    </div>
  </div>
   <ul class="navbar-links">
     <li><a href="#catalogo">Catálogo</a></li>
-    <li><a href="#laboratorio">Crea tu arreglo</a></li>
+    <li><a href="#" onclick="event.preventDefault();abrirLaboratorioModal()">Crea tu arreglo</a></li>
     <li><a href="#promociones">Promociones</a></li>
     <li><a href="#contacto">Contacto</a></li>
   </ul>
   <div class="navbar-actions">
     <button class="btn-dark-toggle" id="btn-dark" onclick="toggleDark()" title="Modo oscuro" aria-label="Cambiar tema">🌙</button>
-    <a href="pages/cliente/mis-pedidos.html" class="btn btn-ghost btn-sm">Mis pedidos</a>
-    <a href="pages/admin/login.html" class="btn btn-outline btn-sm">Panel</a>
+    <a href="pages/cliente/mis-pedidos.html" class="btn btn-ghost btn-sm hide-on-small">Mis pedidos</a>
+    <a href="pages/admin/login.html" class="btn btn-outline btn-sm hide-on-small">Panel</a>
     <button class="btn-menu-mob" onclick="toggleMobileNav()" id="btn-menu" aria-label="Menú">☰</button>
   </div>
 </nav>
 
+<!-- Overlay del menú móvil -->
+<div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+
 <div class="mobile-nav" id="mobile-nav">
+  <div class="mobile-nav-header">
+    <span class="mobile-nav-title">Menú</span>
+    <button class="mobile-nav-close" onclick="closeMobileNav()" aria-label="Cerrar menú">×</button>
+  </div>
   <a href="#catalogo"    onclick="closeMobileNav()">🌹 Catálogo</a>
-  <a href="#laboratorio" onclick="closeMobileNav()">🌸 Crea tu arreglo</a>
+  <a href="#" onclick="event.preventDefault();closeMobileNav();abrirLaboratorioModal()">🌸 Crea tu arreglo</a>
   <a href="#promociones" onclick="closeMobileNav()">🎁 Promociones</a>
   <a href="#contacto"    onclick="closeMobileNav()">📍 Contacto</a>
-  <a href="pages/admin/login.html">Iniciar sesión →</a>
+  <a href="pages/cliente/mis-pedidos.html" onclick="closeMobileNav()">📦 Mis pedidos</a>
+  <a href="pages/admin/login.html">🔐 Iniciar sesión →</a>
 </div>
 
-<!-- ░░ HERO ░░ -->
-<section class="hero">
-  <div class="hero-blob"></div>
-  <div class="hero-inner">
-
-    <!-- Texto -->
-    <div class="hero-text">
-      <div class="hero-eyebrow">🌸 Florería en Sicuani, Cusco</div>
-
-      <h1>Detalles y<br>regalos<em> encantos eternos</em></h1>
-
-      <p class="hero-desc">
-        Crea arreglos únicos para los momentos que más importan.
-        Ramos, cajas sorpresa, peluches y mucho más.
-        Entrega a domicilio disponible.
-      </p>
-
-      <div class="hero-btns">
-        <a href="#catalogo"    class="btn btn-primary btn-lg">🌷 Ver catálogo</a>
-        <a href="#laboratorio" class="btn btn-outline btn-lg">✨ Diseña tu arreglo</a>
-      </div>
-
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span class="hero-stat-num" id="stat-productos">+50</span>
-          <span class="hero-stat-label">Productos</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat-num" id="stat-clientes">+200</span>
-          <span class="hero-stat-label">Clientes felices</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat-num">🚚</span>
-          <span class="hero-stat-label">Delivery</span>
+<!-- ░░ HERO CAROUSEL ░░ -->
+<section class="hero-carousel">
+  <div class="hero-carousel-container">
+    <!-- Slides -->
+    <div class="hero-carousel-track" id="hero-track">
+      
+      <!-- Slide 1: Tulipanes -->
+      <div class="hero-slide active">
+        <div class="hero-slide-bg" style="background-image:url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1920&q=80')"></div>
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <div class="container">
+            <div class="hero-slide-text">
+              <h1 class="hero-slide-title">
+                Sorprende con<br>
+                <span class="hero-slide-highlight">Hermosos</span><br>
+                y coloridos <span class="hero-slide-highlight">Tulipanes</span>
+              </h1>
+              <a href="#catalogo" class="btn-hero-cta">VER CATÁLOGO</a>
+            </div>
+          </div>
         </div>
       </div>
+      
+      <!-- Slide 2: Rosas -->
+      <div class="hero-slide">
+        <div class="hero-slide-bg" style="background-image:url('https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=1920&q=80')"></div>
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <div class="container">
+            <div class="hero-slide-text">
+              <h1 class="hero-slide-title">
+                Expresa tu amor con<br>
+                <span class="hero-slide-highlight">Rosas</span><br>
+                frescas y elegantes
+              </h1>
+              <a href="#catalogo" class="btn-hero-cta">VER CATÁLOGO</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Slide 3: Arreglos personalizados -->
+      <div class="hero-slide">
+        <div class="hero-slide-bg" style="background-image:url('https://images.unsplash.com/photo-1487070183336-b863922373d4?w=1920&q=80')"></div>
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <div class="container">
+            <div class="hero-slide-text">
+              <h1 class="hero-slide-title">
+                Crea tu<br>
+                <span class="hero-slide-highlight">Arreglo</span><br>
+                personalizado
+              </h1>
+              <button onclick="abrirLaboratorioModal()" class="btn-hero-cta">DISEÑA AHORA</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
     </div>
-
-    <!-- Tarjeta visual -->
-    <div class="hero-visual">
-      <div class="hero-flower-card">
-        <span class="hero-flower-emoji">💐</span>
-        <div class="hero-flower-title">Ramo del día</div>
-        <div class="hero-flower-price">S/ 85.00</div>
-        <div style="font-size:12px;color:#b8a8c8;margin-top:5px;font-family:'Poppins',sans-serif">
-          Rosas + papel dorado + cinta
-        </div>
-        <a href="#laboratorio" class="btn btn-primary" style="width:100%;margin-top:1.5rem">
-          ✨ Personalizar
-        </a>
-      </div>
+    
+    <!-- Botones de navegación -->
+    <button class="hero-carousel-btn hero-carousel-prev" onclick="moverHeroSlide(-1)" aria-label="Anterior">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    
+    <button class="hero-carousel-btn hero-carousel-next" onclick="moverHeroSlide(1)" aria-label="Siguiente">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+    
+    <!-- Indicadores -->
+    <div class="hero-carousel-indicators" id="hero-indicators">
+      <button class="hero-indicator active" onclick="irAHeroSlide(0)"></button>
+      <button class="hero-indicator" onclick="irAHeroSlide(1)"></button>
+      <button class="hero-indicator" onclick="irAHeroSlide(2)"></button>
     </div>
-
   </div>
-
+  
   <!-- Barra de confianza -->
   <div class="hero-trust">
     <div class="trust-item">
@@ -189,68 +224,7 @@
   </div>
 </section>
 
-<!-- ░░ LABORATORIO ░░ -->
-<section class="section section-alt" id="laboratorio">
-  <div class="container">
-    <div class="section-header">
-      <span class="section-eyebrow">Diseña tu arreglo</span>
-      <h2>Laboratorio de flores</h2>
-      <p>Elige las flores y materiales que quieres. Te mostramos el precio al instante y te conectamos por WhatsApp.</p>
-    </div>
 
-    <div class="lab-layout">
-      <div>
-        <!-- Filtros por categoría -->
-        <div style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;justify-content:center">
-          <button class="lab-filter-btn active" onclick="filtrarLabCategoria('destacados')" id="filter-destacados">
-            ⭐ Destacados
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('flores')" id="filter-flores">
-            🌹 Flores
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('materiales')" id="filter-materiales">
-            📦 Materiales
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('accesorios')" id="filter-accesorios">
-            🎀 Accesorios
-          </button>
-          <button class="lab-filter-btn" onclick="filtrarLabCategoria('todos')" id="filter-todos">
-            🌸 Ver todos
-          </button>
-        </div>
-
-        <div class="lab-section-title" id="lab-categoria-titulo">⭐ Destacados</div>
-        <div class="lab-flores-grid" id="lab-flores-grid"></div>
-      </div>
-
-      <div class="lab-resumen">
-        <div class="lab-resumen-title">🌸 Tu arreglo</div>
-
-        <div id="lab-items-list">
-          <div style="color:#b8a8c8;font-size:13px;text-align:center;padding:2.5rem 0;line-height:1.8;font-family:'Poppins',sans-serif">
-            Selecciona flores para<br>comenzar tu arreglo
-          </div>
-        </div>
-
-        <div style="border-top:1px solid #f0e8f5;padding-top:16px;margin-top:6px">
-          <div class="lab-total">
-            <span>Precio estimado:</span>
-            <span class="lab-precio-total" id="lab-precio-pub">S/ 0.00</span>
-          </div>
-          <div style="font-size:11px;color:#b8a8c8;margin-bottom:1.35rem;margin-top:5px;font-family:'Poppins',sans-serif">
-            * Precio orientativo, incluye margen estándar
-          </div>
-          <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="pedirPorWhatsApp()">
-            📱 Pedir por WhatsApp
-          </button>
-          <button class="btn btn-ghost" style="width:100%" onclick="limpiarLabPub()">
-            Limpiar selección
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ░░ EVENTOS ░░ -->
 <section class="section" id="eventos">
@@ -298,49 +272,159 @@
 
 <!-- ░░ FOOTER ░░ -->
 <footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <div class="footer-brand">Detalles y Regalos Encantos Eternos</div>
-      <p class="footer-desc">Florería peruana especializada en arreglos florales únicos para cada momento especial. Con sede en Sicuani, Cusco. Delivery disponible.</p>
-      <div style="margin-top:1.35rem">
-        <a href="https://wa.me/51972542802" target="_blank"
-           style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;transition:all .3s"
-           onmouseover="this.style.transform='translateY(-2px)'"
-           onmouseout="this.style.transform=''">
-          📱 +51 972 542 802
-        </a>
+  <div class="footer-content">
+    <div class="footer-grid">
+      <!-- Columna principal -->
+      <div class="footer-col footer-col-main">
+        <div class="footer-brand">
+          <img src="icon/logo.png" alt="Encantos Eternos" class="footer-logo">
+          <span class="footer-brand-text">Detalles y Regalos<br>Encantos Eternos</span>
+        </div>
+        <p class="footer-desc">Florería peruana especializada en arreglos florales únicos para cada momento especial. Con sede en Sicuani, Cusco.</p>
+        
+        <!-- Botones de contacto -->
+        <div class="footer-contact-buttons">
+          <a href="https://wa.me/51972542802" target="_blank" class="footer-btn footer-btn-whatsapp">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+            WhatsApp
+          </a>
+          <a href="tel:+51972542802" class="footer-btn footer-btn-phone">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            Llamar
+          </a>
+        </div>
+
+        <!-- Redes sociales -->
+        <div class="footer-social">
+          <a href="https://wa.me/51972542802" target="_blank" class="footer-social-link" aria-label="WhatsApp">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+          </a>
+          <a href="https://facebook.com" target="_blank" class="footer-social-link" aria-label="Facebook">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="https://instagram.com" target="_blank" class="footer-social-link" aria-label="Instagram">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+     <!-- Columna Horarios -->
+      <div class="footer-col">
+        <h4 class="footer-title">Horario de atención</h4>
+        <ul class="footer-schedule">
+          <li>
+            <span class="schedule-day">Lunes - Viernes</span>
+            <span class="schedule-time">9:00 AM - 7:00 PM</span>
+          </li>
+          <li>
+            <span class="schedule-day">Sábados</span>
+            <span class="schedule-time">9:00 AM - 6:00 PM</span>
+          </li>
+          <li>
+            <span class="schedule-day">Domingos</span>
+            <span class="schedule-time">10:00 AM - 2:00 PM</span>
+          </li>
+        </ul>
+        <div class="footer-location">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span>Sicuani, Cusco - Perú</span>
+        </div>
       </div>
     </div>
-    <div>
-      <h4>Productos</h4>
-      <ul class="footer-links">
-        <li><a href="#catalogo">Ramos de flores</a></li>
-        <li><a href="#catalogo">Arreglos florales</a></li>
-        <li><a href="#catalogo">Cajas sorpresa</a></li>
-        <li><a href="#catalogo">Peluches</a></li>
-        <li><a href="#laboratorio">Arreglos personalizados</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Información</h4>
-      <ul class="footer-links">
-        <li><a href="#promociones">Promociones</a></li>
-        <li><a href="#eventos">Eventos especiales</a></li>
-        <li><a href="pages/cliente/mis-pedidos.html">Mis pedidos</a></li>
-        <li><a href="pages/admin/login.html">Panel de gestión</a></li>
-      </ul>
+
+    <!-- Footer bottom -->
+    <div class="footer-bottom">
+      <div class="footer-bottom-content">
+        <div class="footer-copyright">
+          <img src="icon/ih.png" alt="Inversiones Hasbun" class="footer-company-logo">
+          <span>© 2026 Inversiones Hasbun SRL. Todos los derechos reservados.</span>
+        </div>
+      </div>
     </div>
   </div>
-<div class="footer-bottom">
-  <div class="footer-right">
-    <img src="icon/ih.png" alt="logo">
-    <span>2026 Inversiones Hasbun SRL- Todos los derechos reservados</span>
-  </div>
-</div>
 </footer>
 
 <!-- Botón flotante WhatsApp -->
 <a href="https://wa.me/51972542802" target="_blank" class="wa-float" title="Escríbenos por WhatsApp"><img src="/FLORR-/icon/wasap2.png" alt=""></a>
+
+<!-- ░░ MODAL LABORATORIO ░░ -->
+<div class="modal-overlay" id="laboratorioModal">
+  <div class="modal-laboratorio">
+    <div class="modal-lab-header">
+      <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:var(--pub-line-mid);border-radius:999px;display:none" class="modal-drag-indicator"></div>
+      <h3>🌸 Laboratorio de Flores</h3>
+      <button class="btn-close-lab" onclick="cerrarLaboratorioModal()" aria-label="Cerrar modal">×</button>
+    </div>
+    
+    <div class="modal-lab-body">
+      <p class="lab-modal-intro">Crea tu arreglo personalizado seleccionando las flores y materiales disponibles</p>
+      
+      <!-- Filtros por categoría -->
+      <div class="lab-modal-filters">
+        <button class="lab-filter-btn active" onclick="filtrarLabCategoria('destacados')" id="filter-destacados-modal">
+          ⭐ Destacados
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('flores')" id="filter-flores-modal">
+          🌹 Flores
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('materiales')" id="filter-materiales-modal">
+          📦 Materiales
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('accesorios')" id="filter-accesorios-modal">
+          🎀 Accesorios
+        </button>
+        <button class="lab-filter-btn" onclick="filtrarLabCategoria('todos')" id="filter-todos-modal">
+          🌸 Ver todos
+        </button>
+      </div>
+
+      <div class="lab-section-title" id="lab-categoria-titulo">⭐ Destacados</div>
+      
+      <div class="lab-modal-content">
+        <div class="lab-flores-grid" id="lab-flores-grid"></div>
+        
+        <div class="lab-resumen-modal">
+          <div class="lab-resumen-title">🌸 Tu arreglo</div>
+
+          <div id="lab-items-list">
+            <div style="color:#b8a8c8;font-size:13px;text-align:center;padding:2.5rem 0;line-height:1.8;font-family:'Poppins',sans-serif">
+              Selecciona flores para<br>comenzar tu arreglo
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #f0e8f5;padding-top:16px;margin-top:6px">
+            <div class="lab-total">
+              <span>Precio estimado:</span>
+              <span class="lab-precio-total" id="lab-precio-pub">S/ 0.00</span>
+            </div>
+            <div style="font-size:11px;color:#b8a8c8;margin-bottom:1.35rem;margin-top:5px;font-family:'Poppins',sans-serif">
+              * Precio orientativo, incluye margen estándar
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="pedirPorWhatsApp()">
+              📱 Pedir por WhatsApp
+            </button>
+            <button class="btn btn-ghost" style="width:100%" onclick="limpiarLabPub()">
+              Limpiar selección
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ░░ SCRIPTS ░░ -->
 <script src="js/main.js"></script>
@@ -552,7 +636,10 @@ function prevPage(){
     
     // Actualizar botones activos
     document.querySelectorAll('.lab-filter-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('filter-' + categoria).classList.add('active');
+    const btnFiltro = document.getElementById('filter-' + categoria + '-modal');
+    if (btnFiltro) {
+      btnFiltro.classList.add('active');
+    }
     
     // Actualizar título
     const titulos = {
@@ -562,7 +649,10 @@ function prevPage(){
       'accesorios': '🎀 Accesorios',
       'todos': '🌸 Todos los productos'
     };
-    document.getElementById('lab-categoria-titulo').textContent = titulos[categoria] || '🌸 Productos';
+    const tituloEl = document.getElementById('lab-categoria-titulo');
+    if (tituloEl) {
+      tituloEl.textContent = titulos[categoria] || '🌸 Productos';
+    }
     
     renderLabPub();
   }
@@ -608,50 +698,112 @@ function prevPage(){
 
   /* ── PROMOCIONES ── */
   async function cargarPromos(){
-    try{const d=await API.get('/promociones?activa=true');renderPromos(d.data||d.promociones||d||[]);}
-    catch{renderPromos([
-      {titulo:'20% en ramos de rosas',descripcion:'Válido para ramos de 12 rosas en adelante',descuento:20,hasta:'2026-03-31'},
-      {titulo:'Día de la Madre — precio especial',descripcion:'Arreglos con cinta dorada gratis',descuento:0,hasta:'2026-05-11',tipo_clase:'dorada'},
-    ]);}
+    try {
+      console.log('🔄 Cargando promociones desde /promociones...');
+      const d = await API.get('/promociones?activa=true');
+      console.log('✅ Respuesta de promociones:', d);
+      const promos = d.data || d.promociones || d || [];
+      console.log('📊 Promociones cargadas:', promos.length);
+      renderPromos(promos);
+    } catch(error) {
+      console.error('❌ Error cargando promociones:', error);
+      // Mostrar datos mock solo si falla
+      renderPromos([
+        {titulo:'20% en ramos de rosas',descripcion:'Válido para ramos de 12 rosas en adelante',descuento:20,fecha_hasta:'2026-03-31'},
+        {titulo:'Día de la Madre — precio especial',descripcion:'Arreglos con cinta dorada gratis',descuento:0,fecha_hasta:'2026-05-11',tipo_clase:'dorada'},
+      ]);
+    }
   }
 
   function renderPromos(promos){
     const grid=document.getElementById('promo-grid');
-    if(!promos.length){grid.innerHTML='<div style="text-align:center;padding:2rem;color:#b8a8c8">No hay promociones activas actualmente</div>';return;}
-    grid.innerHTML=promos.map(p=>`<div class="promo-card ${p.tipo_clase||''}">
-      <div class="promo-tag">✦ Promoción</div>
-      <div class="promo-title">${p.titulo}</div>
-      <div class="promo-desc">${p.descripcion||''}</div>
-      ${p.descuento?`<div class="promo-descuento">${p.descuento}% OFF</div>`:''}
-      ${p.hasta?`<div class="promo-vigencia">📅 Válido hasta ${new Date(p.hasta).toLocaleDateString('es-PE',{day:'2-digit',month:'long'})}</div>`:''}
-      <div style="margin-top:1.35rem">
-        <a href="https://wa.me/51972542802?text=${encodeURIComponent('¡Hola! Me interesa la promoción: '+p.titulo)}" target="_blank" class="btn btn-primary btn-sm">Aprovechar →</a>
+    if(!promos.length){
+      grid.innerHTML='<div style="text-align:center;padding:3rem 1rem;color:#b8a8c8;font-size:15px"><div style="font-size:48px;margin-bottom:1rem">🎁</div>No hay promociones activas actualmente</div>';
+      return;
+    }
+    
+    grid.innerHTML=promos.map(p=>{
+      const fechaHasta = p.fecha_hasta ? new Date(p.fecha_hasta) : null;
+      const hoy = new Date();
+      const diasRestantes = fechaHasta ? Math.ceil((fechaHasta - hoy) / (1000 * 60 * 60 * 24)) : null;
+      
+      return `
+      <div class="promo-card-modern">
+        ${p.descuento > 0 ? `
+          <div class="promo-badge-corner">
+            <span>-${p.descuento}%</span>
+          </div>
+        ` : ''}
+        
+        <div class="promo-icon">
+          ${p.tipo === '2x1' ? '🎉' : p.tipo === 'regalo' ? '🎁' : p.tipo === 'precio_fijo' ? '💰' : '✨'}
+        </div>
+        
+        <h3 class="promo-title-modern">${p.titulo}</h3>
+        
+        ${p.descripcion ? `
+          <p class="promo-desc-modern">${p.descripcion}</p>
+        ` : ''}
+        
+        ${p.descuento > 0 ? `
+          <div class="promo-discount-badge">
+            <span class="discount-number">${p.descuento}%</span>
+            <span class="discount-text">DESCUENTO</span>
+          </div>
+        ` : ''}
+        
+        ${diasRestantes !== null ? `
+          <div class="promo-validity ${diasRestantes <= 3 ? 'urgent' : ''}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            ${diasRestantes === 0 ? '¡Último día!' : 
+              diasRestantes === 1 ? '¡Termina mañana!' : 
+              diasRestantes <= 3 ? `¡Solo ${diasRestantes} días!` :
+              `Válido hasta ${fechaHasta.toLocaleDateString('es-PE',{day:'numeric',month:'long'})}`}
+          </div>
+        ` : ''}
+        
+        <button class="btn-promo-cta" onclick="solicitarPromo('${p.titulo.replace(/'/g, "\\'")}')">
+          <span>Aprovechar oferta</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
       </div>
-    </div>`).join('');
+    `;
+    }).join('');
+  }
+  
+  function solicitarPromo(titulo) {
+    const mensaje = `¡Hola! 🌸 Me interesa la promoción: *${titulo}*`;
+    WhatsApp.send(mensaje);
   }
 
   /* ── EVENTOS ── */
-  function cargarEventos(){
-    // Cargar eventos desde localStorage
-    const eventosGuardados = localStorage.getItem('ee_eventos');
+  async function cargarEventos(){
     let eventos = [];
     
-    if (eventosGuardados) {
-      try {
-        const todosEventos = JSON.parse(eventosGuardados);
-        // Filtrar solo eventos futuros
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
+    try {
+      // Cargar eventos desde el backend
+      const response = await API.get('/eventos?activo=true');
+      const todosEventos = response.data || [];
+      
+      // Filtrar solo eventos futuros
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      eventos = todosEventos
+        .filter(e => {
+          const fechaEvento = new Date(e.fecha);
+          return fechaEvento >= hoy;
+        })
+        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
         
-        eventos = todosEventos
-          .filter(e => {
-            const fechaEvento = new Date(e.fecha);
-            return fechaEvento >= hoy;
-          })
-          .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-      } catch (error) {
-        console.error('Error al cargar eventos:', error);
-      }
+      console.log('✅ Eventos cargados desde backend:', eventos.length);
+    } catch (error) {
+      console.error('❌ Error al cargar eventos:', error);
     }
     
     // Si no hay eventos, mostrar mock
@@ -673,8 +825,19 @@ function prevPage(){
     }
     
     grid.innerHTML=eventos.map(e=>{
-      const descuento = e.precioOriginal && e.precioFinal ? 
-        Math.round(((e.precioOriginal - e.precioFinal) / e.precioOriginal) * 100) : 0;
+      // Extraer metadata si existe
+      let metadata = {};
+      if (e.metadata) {
+        metadata = typeof e.metadata === 'object' ? e.metadata : {};
+      }
+      
+      const imagen = metadata.imagen || e.imagen || '';
+      const precioOriginal = metadata.precioOriginal || e.precioOriginal || 0;
+      const precioFinal = metadata.precioFinal || e.precioFinal || 0;
+      const productos = metadata.productos || e.productos || [];
+      
+      const descuento = precioOriginal && precioFinal ? 
+        Math.round(((precioOriginal - precioFinal) / precioOriginal) * 100) : 0;
       
       const fechaEvento = new Date(e.fecha + 'T00:00:00');
       const hoy = new Date();
@@ -692,12 +855,12 @@ function prevPage(){
       // Capitalizar primera letra
       const fechaCapitalizada = fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1);
 
-      return `<div class="promo-card" onclick="pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${e.precioFinal || 0})">
+      return `<div class="promo-card" onclick="pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${precioFinal || 0})">
         ${descuento > 0 ? `<div class="promo-tag">-${descuento}% OFF</div>` : ''}
         
-        ${e.imagen ? `
+        ${imagen ? `
           <div class="promo-img">
-            <img src="${e.imagen}" 
+            <img src="${imagen}" 
                  alt="${e.nombre}"
                  style="width:100%;height:100%;object-fit:cover"
                  onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;font-size:72px;background:linear-gradient(135deg, #f0e8f5, #fce7f3)\\'>${e.emoji||'🌸'}</div>'" />
@@ -721,24 +884,24 @@ function prevPage(){
             </div>
           ` : ''}
 
-          ${e.productos && e.productos.length > 0 ? `
+          ${productos && productos.length > 0 ? `
             <div style="background:rgba(204,56,112,0.04);padding:12px;border-radius:10px;margin:12px 0">
               <div style="font-size:11px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">✨ Incluye:</div>
               <div style="font-size:12px;color:var(--ink-600);line-height:1.7">
-                ${e.productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
-                ${e.productos.length > 3 ? `<br>• Y ${e.productos.length - 3} producto${e.productos.length - 3 > 1 ? 's' : ''} más` : ''}
+                ${productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
+                ${productos.length > 3 ? `<br>• Y ${productos.length - 3} producto${productos.length - 3 > 1 ? 's' : ''} más` : ''}
               </div>
             </div>
           ` : ''}
 
-          ${e.precioOriginal && e.precioFinal ? `
+          ${precioOriginal && precioFinal ? `
             <div class="promo-price">
-              <span class="promo-price-old">S/ ${parseFloat(e.precioOriginal).toFixed(2)}</span>
-              <span class="promo-price-new">S/ ${parseFloat(e.precioFinal).toFixed(2)}</span>
+              <span class="promo-price-old">S/ ${parseFloat(precioOriginal).toFixed(2)}</span>
+              <span class="promo-price-new">S/ ${parseFloat(precioFinal).toFixed(2)}</span>
             </div>
           ` : ''}
 
-          <button class="btn btn-primary" style="width:100%;margin-top:16px;font-weight:600" onclick="event.stopPropagation();pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${e.precioFinal || 0})">
+          <button class="btn btn-primary" style="width:100%;margin-top:16px;font-weight:600" onclick="event.stopPropagation();pedirEvento('${e.nombre.replace(/'/g, "\\'")}', ${precioFinal || 0})">
             📱 Pedir por WhatsApp
           </button>
         </div>
@@ -754,9 +917,116 @@ function prevPage(){
     window.open(`https://wa.me/51972542802?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 
+  /* ── MODAL LABORATORIO ── */
+  function abrirLaboratorioModal() {
+    const modal = document.getElementById('laboratorioModal');
+    modal.classList.remove('closing');
+    modal.classList.add('active');
+    
+    // Cargar inventario si no está cargado
+    if (!inventarioPub || inventarioPub.length === 0) {
+      cargarInventarioPub();
+    }
+    
+    // Prevenir scroll del body
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarLaboratorioModal() {
+    const modal = document.getElementById('laboratorioModal');
+    
+    // Agregar clase de cierre para animación
+    modal.classList.add('closing');
+    
+    // Esperar a que termine la animación antes de ocultar
+    setTimeout(() => {
+      modal.classList.remove('active', 'closing');
+      document.body.style.overflow = '';
+    }, 250);
+  }
+
+  // Cerrar modal al hacer click fuera
+  document.addEventListener('click', (e) => {
+    const modal = document.getElementById('laboratorioModal');
+    if (e.target === modal) {
+      cerrarLaboratorioModal();
+    }
+  });
+
+  // Cerrar modal con tecla ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('laboratorioModal');
+      if (modal && modal.classList.contains('active')) {
+        cerrarLaboratorioModal();
+      }
+    }
+  });
+
+  // Cerrar modal con gesto de swipe down en móvil
+  let touchStartY = 0;
+  let touchEndY = 0;
+  
+  document.addEventListener('touchstart', (e) => {
+    const modal = document.getElementById('laboratorioModal');
+    if (modal && modal.classList.contains('active')) {
+      const modalContent = modal.querySelector('.modal-laboratorio');
+      if (modalContent && modalContent.contains(e.target)) {
+        touchStartY = e.touches[0].clientY;
+      }
+    }
+  }, { passive: true });
+  
+  document.addEventListener('touchend', (e) => {
+    const modal = document.getElementById('laboratorioModal');
+    if (modal && modal.classList.contains('active')) {
+      touchEndY = e.changedTouches[0].clientY;
+      const swipeDistance = touchEndY - touchStartY;
+      
+      // Si el swipe es hacia abajo y mayor a 100px, cerrar modal
+      if (swipeDistance > 100 && window.innerWidth <= 767) {
+        const modalBody = modal.querySelector('.modal-lab-body');
+        // Solo cerrar si el scroll está en el top
+        if (modalBody && modalBody.scrollTop === 0) {
+          cerrarLaboratorioModal();
+        }
+      }
+    }
+  }, { passive: true });
+
   /* ── NAVBAR ── */
-  function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('open');}
-  function closeMobileNav(){document.getElementById('mobile-nav').classList.remove('open');}
+  function toggleMobileNav(){
+    const nav = document.getElementById('mobile-nav');
+    const overlay = document.getElementById('mobile-nav-overlay');
+    const isOpen = nav.classList.contains('open');
+    
+    if (isOpen) {
+      closeMobileNav();
+    } else {
+      nav.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  
+  function closeMobileNav(){
+    const nav = document.getElementById('mobile-nav');
+    const overlay = document.getElementById('mobile-nav-overlay');
+    nav.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  
+  // Cerrar menú móvil con tecla ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const nav = document.getElementById('mobile-nav');
+      if (nav && nav.classList.contains('open')) {
+        closeMobileNav();
+      }
+    }
+  });
+  
   window.addEventListener('scroll',()=>{
     document.getElementById('navbar').style.boxShadow=window.scrollY>10?'0 4px 20px rgba(168,85,247,.10)':'none';
   });
@@ -766,6 +1036,69 @@ function prevPage(){
   cargarInventarioPub();
   cargarPromos();
   cargarEventos();
+  
+  /* ── HERO CAROUSEL ── */
+  let heroSlideIndex = 0;
+  let heroAutoplayInterval;
+  const heroSlides = document.querySelectorAll('.hero-slide');
+  const heroIndicators = document.querySelectorAll('.hero-indicator');
+  
+  function mostrarHeroSlide(index) {
+    // Asegurar que el índice esté en rango
+    if (index >= heroSlides.length) {
+      heroSlideIndex = 0;
+    } else if (index < 0) {
+      heroSlideIndex = heroSlides.length - 1;
+    } else {
+      heroSlideIndex = index;
+    }
+    
+    // Actualizar slides
+    heroSlides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === heroSlideIndex);
+    });
+    
+    // Actualizar indicadores
+    heroIndicators.forEach((indicator, i) => {
+      indicator.classList.toggle('active', i === heroSlideIndex);
+    });
+  }
+  
+  function moverHeroSlide(direccion) {
+    mostrarHeroSlide(heroSlideIndex + direccion);
+    reiniciarHeroAutoplay();
+  }
+  
+  function irAHeroSlide(index) {
+    mostrarHeroSlide(index);
+    reiniciarHeroAutoplay();
+  }
+  
+  function siguienteHeroSlide() {
+    mostrarHeroSlide(heroSlideIndex + 1);
+  }
+  
+  function iniciarHeroAutoplay() {
+    heroAutoplayInterval = setInterval(siguienteHeroSlide, 5000); // Cambiar cada 5 segundos
+  }
+  
+  function reiniciarHeroAutoplay() {
+    clearInterval(heroAutoplayInterval);
+    iniciarHeroAutoplay();
+  }
+  
+  // Iniciar el carrusel
+  mostrarHeroSlide(0);
+  iniciarHeroAutoplay();
+  
+  // Pausar autoplay cuando el usuario interactúa
+  document.querySelector('.hero-carousel-container')?.addEventListener('mouseenter', () => {
+    clearInterval(heroAutoplayInterval);
+  });
+  
+  document.querySelector('.hero-carousel-container')?.addEventListener('mouseleave', () => {
+    iniciarHeroAutoplay();
+  });
 </script>
 </body>
 </html>

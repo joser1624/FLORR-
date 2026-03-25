@@ -192,6 +192,15 @@ class CajaService {
       'SELECT COALESCE(SUM(monto), 0) as total FROM gastos WHERE fecha = CURRENT_DATE',
       []
     );
+    
+    // Obtener lista de gastos del día
+    const gastosListaResult = await query(
+      `SELECT id, descripcion, categoria, monto, fecha, created_at
+       FROM gastos
+       WHERE fecha = CURRENT_DATE
+       ORDER BY created_at DESC`,
+      []
+    );
 
     return {
       ...caja,
@@ -210,6 +219,14 @@ class CajaService {
         metodo_pago: v.metodo_pago,
         trabajador_id: v.trabajador_id,
         productos: v.productos || []
+      })),
+      gastos: gastosListaResult.rows.map(g => ({
+        id: g.id,
+        descripcion: g.descripcion,
+        categoria: g.categoria,
+        monto: parseFloat(g.monto),
+        fecha: g.fecha,
+        created_at: g.created_at
       })),
       gastos_total: parseFloat(gastosResult.rows[0].total)
     };
@@ -280,6 +297,229 @@ class CajaService {
   async getHistory(limit = 50) {
     const result = await this.getHistorial(1, limit);
     return result.data;
+  }
+
+  /**
+   * Generate cash register intermediate cut (quiebre de caja)
+   * Returns current totals without closing the box
+   */
+  async generarQuiebre(trabajadorId, montoFisico = null, observaciones = null) {
+    // Verificar que hay caja abierta
+    const cajaResult = await query(
+      "SELECT * FROM caja WHERE fecha = CURRENT_DATE AND estado = 'abierta'",
+      []
+    );
+
+    if (cajaResult.rows.length === 0) {
+      const error = new Error('No hay caja abierta para generar quiebre');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const cajaActual = cajaResult.rows[0];
+    const montoApertura = parseFloat(cajaActual.monto_apertura);
+
+    // Calcular totales actuales por método de pago
+    const totalsResult = await query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN metodo_pago = 'Efectivo' THEN total ELSE 0 END), 0) AS total_efectivo,
+         COALESCE(SUM(CASE WHEN metodo_pago IN ('Yape', 'Plin') THEN total ELSE 0 END), 0) AS total_digital,
+         COALESCE(SUM(CASE WHEN metodo_pago IN ('Tarjeta', 'Transferencia bancaria') THEN total ELSE 0 END), 0) AS total_tarjeta,
+         COALESCE(SUM(total), 0) AS total_ventas
+       FROM ventas
+       WHERE DATE(fecha) = CURRENT_DATE`,
+      []
+    );
+
+    const totals = totalsResult.rows[0];
+
+    // Calcular gastos del día
+    const gastosResult = await query(
+      'SELECT COALESCE(SUM(monto), 0) AS total_gastos FROM gastos WHERE fecha = CURRENT_DATE',
+      []
+    );
+
+    const totalEfectivo = parseFloat(totals.total_efectivo);
+    const totalDigital = parseFloat(totals.total_digital);
+    const totalTarjeta = parseFloat(totals.total_tarjeta);
+    const totalVentas = parseFloat(totals.total_ventas);
+    const totalGastos = parseFloat(gastosResult.rows[0].total_gastos);
+
+    // Calcular efectivo esperado (monto apertura + ventas efectivo - gastos)
+    const efectivoEsperado = montoApertura + totalEfectivo - totalGastos;
+
+    // Calcular diferencia
+    let diferencia = 0;
+    if (montoFisico !== null && montoFisico !== undefined) {
+      diferencia = parseFloat(montoFisico) - efectivoEsperado;
+    }
+
+    // Guardar quiebre en la base de datos
+    const quiebreResult = await query(
+      `INSERT INTO caja_quiebre 
+        (caja_id, trabajador_id, monto_esperado, monto_fisico, diferencia, 
+         total_efectivo_hasta_ahora, total_ventas_hasta_ahora, total_gastos_hasta_ahora, observaciones)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [cajaActual.id, trabajadorId, efectivoEsperado, montoFisico, diferencia,
+       totalEfectivo, totalVentas, totalGastos, observaciones]
+    );
+
+    return {
+      quiebre: {
+        ...quiebreResult.rows[0],
+        monto_esperado: parseFloat(quiebreResult.rows[0].monto_esperado),
+        monto_fisico: quiebreResult.rows[0].monto_fisico !== null ? parseFloat(quiebreResult.rows[0].monto_fisico) : null,
+        diferencia: parseFloat(quiebreResult.rows[0].diferencia),
+        total_efectivo_hasta_ahora: parseFloat(quiebreResult.rows[0].total_efectivo_hasta_ahora),
+        total_ventas_hasta_ahora: parseFloat(quiebreResult.rows[0].total_ventas_hasta_ahora),
+        total_gastos_hasta_ahora: parseFloat(quiebreResult.rows[0].total_gastos_hasta_ahora),
+      },
+      resumen: {
+        monto_apertura: montoApertura,
+        total_efectivo: totalEfectivo,
+        total_digital: totalDigital,
+        total_tarjeta: totalTarjeta,
+        total_ventas: totalVentas,
+        total_gastos: totalGastos,
+        efectivo_esperado: efectivoEsperado,
+        monto_fisico: montoFisico !== null ? parseFloat(montoFisico) : null,
+        diferencia: diferencia,
+        mensaje: montoFisico !== null 
+          ? (diferencia === 0 ? '✅ Cuadrado' : (diferencia < 0 ? `⚠️ Faltante: S/ ${Math.abs(diferencia).toFixed(2)}` : `⚠️ Sobrante: S/ ${diferencia.toFixed(2)}`))
+          : '📊 Sin conteo físico'
+      }
+    };
+  }
+
+  /**
+   * Get quiebres history for today
+   */
+  async getQuiebresHoy() {
+    const result = await query(
+      `SELECT q.*, u.nombre AS trabajador_nombre
+       FROM caja_quiebre q
+       LEFT JOIN usuarios u ON q.trabajador_id = u.id
+       WHERE DATE(q.created_at) = CURRENT_DATE
+       ORDER BY q.created_at DESC`,
+      []
+    );
+
+    return result.rows.map(q => ({
+      ...q,
+      monto_esperado: parseFloat(q.monto_esperado),
+      monto_fisico: q.monto_fisico !== null ? parseFloat(q.monto_fisico) : null,
+      diferencia: parseFloat(q.diferencia),
+      total_efectivo_hasta_ahora: parseFloat(q.total_efectivo_hasta_ahora),
+      total_ventas_hasta_ahora: parseFloat(q.total_ventas_hasta_ahora),
+      total_gastos_hasta_ahora: parseFloat(q.total_gastos_hasta_ahora),
+    }));
+  }
+
+  /**
+   * Anular cierre de caja (solo admin, solo mismo día)
+   * Registra la anulación en tabla de auditoría y reabre la caja
+   */
+  async anularCierre(adminId, motivoAnulacion) {
+    // Validar que hay motivo
+    if (!motivoAnulacion || motivoAnulacion.trim().length === 0) {
+      const error = new Error('Debe proporcionar un motivo para anular el cierre');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Verificar que existe una caja cerrada HOY
+    const cajaResult = await query(
+      `SELECT * FROM caja 
+       WHERE fecha = CURRENT_DATE AND estado = 'cerrada'`,
+      []
+    );
+
+    if (cajaResult.rows.length === 0) {
+      const error = new Error('No hay caja cerrada hoy para anular');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const caja = cajaResult.rows[0];
+
+    // Guardar snapshot del cierre en tabla de auditoría
+    await query(
+      `INSERT INTO caja_cierre_anulado 
+        (caja_id, fecha_cierre, trabajador_cierre_id, monto_cierre,
+         total_efectivo, total_digital, total_tarjeta, total_ventas, total_gastos,
+         anulado_por_id, motivo_anulacion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        caja.id,
+        caja.updated_at || caja.created_at,
+        caja.trabajador_cierre_id,
+        caja.monto_cierre,
+        caja.total_efectivo,
+        caja.total_digital,
+        caja.total_tarjeta,
+        caja.total_ventas,
+        caja.total_gastos,
+        adminId,
+        motivoAnulacion.trim()
+      ]
+    );
+
+    // Reabrir la caja: cambiar estado a 'abierta' y limpiar datos de cierre
+    const result = await query(
+      `UPDATE caja
+       SET estado = 'abierta',
+           trabajador_cierre_id = NULL,
+           monto_cierre = NULL,
+           total_efectivo = NULL,
+           total_digital = NULL,
+           total_tarjeta = NULL,
+           total_ventas = NULL,
+           total_gastos = NULL,
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [caja.id]
+    );
+
+    return {
+      caja: result.rows[0],
+      mensaje: 'Cierre anulado correctamente. La caja ha sido reabierta.',
+      anulacion: {
+        motivo: motivoAnulacion.trim(),
+        anulado_por_id: adminId,
+        fecha_anulacion: new Date()
+      }
+    };
+  }
+
+  /**
+   * Obtener historial de anulaciones (auditoría)
+   */
+  async getAnulaciones(limit = 50) {
+    const result = await query(
+      `SELECT a.*,
+              u1.nombre AS anulado_por_nombre,
+              u2.nombre AS trabajador_cierre_nombre,
+              c.fecha AS fecha_caja
+       FROM caja_cierre_anulado a
+       LEFT JOIN usuarios u1 ON a.anulado_por_id = u1.id
+       LEFT JOIN usuarios u2 ON a.trabajador_cierre_id = u2.id
+       LEFT JOIN caja c ON a.caja_id = c.id
+       ORDER BY a.fecha_anulacion DESC
+       LIMIT $1`,
+      [limit]
+    );
+
+    return result.rows.map(a => ({
+      ...a,
+      monto_cierre: a.monto_cierre !== null ? parseFloat(a.monto_cierre) : null,
+      total_efectivo: a.total_efectivo !== null ? parseFloat(a.total_efectivo) : null,
+      total_digital: a.total_digital !== null ? parseFloat(a.total_digital) : null,
+      total_tarjeta: a.total_tarjeta !== null ? parseFloat(a.total_tarjeta) : null,
+      total_ventas: a.total_ventas !== null ? parseFloat(a.total_ventas) : null,
+      total_gastos: a.total_gastos !== null ? parseFloat(a.total_gastos) : null,
+    }));
   }
 }
 

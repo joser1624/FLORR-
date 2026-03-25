@@ -8,60 +8,725 @@
    <link rel="icon" type="image/png" href="../../icon/favicon.png">
   <style>
     @media print {
-      /* Ocultar elementos no necesarios en PDF */
+      /* Ocultar elementos no necesarios */
       .sidebar, .sidebar-overlay, .topbar, 
       .btn, button, .modal-overlay,
-      #estado-caja {
+      #estado-caja, #seccion-quiebres, #seccion-solicitudes,
+      .page-header > div:last-child {
         display: none !important;
       }
       
-      /* Ajustar layout para impresión */
+      /* Reset de layout */
+      * {
+        box-shadow: none !important;
+      }
+      
+      body {
+        background: white !important;
+        color: #000 !important;
+      }
+      
       .admin-main {
         margin: 0 !important;
-        padding: 20px !important;
+        padding: 0 !important;
       }
       
       .admin-content {
-        max-width: 100% !important;
+        max-width: 210mm !important;
+        margin: 0 auto !important;
+        padding: 15mm !important;
       }
       
-      /* Mejorar tablas en PDF */
-      .data-table {
-        page-break-inside: avoid;
+      /* ═══════════════════════════════════════
+         DISEÑO TIPO BOLETA ELECTRÓNICA
+      ═══════════════════════════════════════ */
+      
+      /* Ocultar título original */
+      .page-header h2,
+      .page-header p {
+        display: none !important;
       }
       
-      .data-table th {
-        background-color: #f5f5f5 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      
-      /* Agregar encabezado de empresa */
+      /* Encabezado tipo boleta */
       .page-header::before {
-        content: "ENCANTOS ETERNOS - Cierre de Caja";
+        content: "";
         display: block;
-        font-size: 24px;
-        font-weight: bold;
         text-align: center;
         margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #333;
       }
       
-      /* Mejorar cards en PDF */
-      .stat-card {
-        border: 1px solid #ddd !important;
+      .page-header::after {
+        content: "ENCANTOS ETERNOS\ARUC: 20XXXXXXXXX\A\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A\ACIERRE DE CAJA\A" attr(data-fecha-cierre) "\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        white-space: pre;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+        font-size: 11pt;
+        line-height: 1.4;
+        margin-bottom: 15px;
+        font-weight: bold;
+      }
+      
+      /* Datos del emisor */
+      .admin-content::before {
+        content: "DATOS DEL EMISOR\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A\ARazón Social:\AEncantos Eternos S.A.C.\A\ADirección Fiscal:\AAv. Principal 123, Lima - Perú\A\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A";
+        display: block;
+        white-space: pre;
+        font-family: 'Courier New', monospace;
+        font-size: 9pt;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        color: #333;
+      }
+      
+      /* Resumen de caja - estilo ticket */
+      .stats-grid {
+        display: block !important;
+        margin: 15px 0 !important;
         page-break-inside: avoid;
       }
       
-      /* Agregar fecha de impresión */
-      body::after {
-        content: "Impreso el: " attr(data-fecha-impresion);
+      .stat-card {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        background: white !important;
+        border: none !important;
+        border-bottom: 1px dashed #ccc !important;
+        padding: 8px 0 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+      
+      .stat-card .stat-icon {
+        display: none !important;
+      }
+      
+      .stat-card .stat-label {
+        font-family: 'Courier New', monospace !important;
+        font-size: 10pt !important;
+        color: #000 !important;
+        font-weight: normal !important;
+        text-transform: uppercase;
+      }
+      
+      .stat-card .stat-value {
+        font-family: 'Courier New', monospace !important;
+        font-size: 11pt !important;
+        color: #000 !important;
+        font-weight: bold !important;
+      }
+      
+      /* Separador de secciones */
+      .stats-grid::before {
+        content: "RESUMEN DE INGRESOS\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         display: block;
+        white-space: pre;
+        font-family: 'Courier New', monospace;
+        font-size: 10pt;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      
+      .stats-grid::after {
+        content: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-size: 10pt;
+        margin-top: 5px;
+        text-align: center;
+      }
+      
+      /* Ocultar desglose visual, solo mostrar tablas */
+      .admin-content > div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] {
+        display: block !important;
+      }
+      
+      .admin-content > div[style*="display:grid"] > .card:first-child {
+        display: none !important;
+      }
+      
+      /* Tablas estilo ticket */
+      .card {
+        background: white !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 15px 0 !important;
+        page-break-inside: avoid;
+      }
+      
+      .card > div[style*="font-weight:600"] {
+        font-family: 'Courier New', monospace !important;
+        font-size: 10pt !important;
+        font-weight: bold !important;
+        text-align: center;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+      
+      .card::before {
+        content: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-size: 10pt;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      
+      .table-wrap {
+        background: white !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+      
+      .data-table {
+        font-family: 'Courier New', monospace !important;
+        font-size: 9pt !important;
+        border-collapse: collapse !important;
+        page-break-inside: avoid;
+      }
+      
+      .data-table thead th {
+        background: white !important;
+        color: #000 !important;
+        border-top: 1px solid #000 !important;
+        border-bottom: 1px solid #000 !important;
+        padding: 6px 8px !important;
+        font-weight: bold !important;
+        text-transform: uppercase;
+        font-size: 8pt !important;
+      }
+      
+      .data-table tbody td {
+        border-bottom: 1px dashed #ccc !important;
+        padding: 6px 8px !important;
+        color: #000 !important;
+      }
+      
+      .data-table tbody tr:last-child td {
+        border-bottom: 1px solid #000 !important;
+      }
+      
+      /* Badge en tablas */
+      .badge {
+        background: transparent !important;
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        padding: 2px 6px !important;
+        font-size: 7pt !important;
+      }
+      
+      /* Footer del recibo */
+      .admin-content::after {
+        content: "\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\A\AFIRMA Y SELLO\A\A\A_______________________________\AResponsable de Caja\A\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\ADocumento generado electrónicamente\AEncantos Eternos © 2024\A━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+        display: block;
+        white-space: pre;
+        font-family: 'Courier New', monospace;
+        font-size: 9pt;
+        line-height: 1.5;
+        text-align: center;
+        margin-top: 30px;
+        page-break-inside: avoid;
+      }
+      
+      /* Saltos de página */
+      .page-header,
+      .stats-grid,
+      .card {
+        page-break-inside: avoid;
+      }
+      
+      /* Ajustes finales */
+      @page {
+        margin: 15mm;
+        size: A4 portrait;
+      }
+    }
+    
+    /* Animación para nuevos quiebres */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    #lista-quiebres > .card {
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    /* ═══════════════════════════════════════
+       RESPONSIVE DESIGN
+    ═══════════════════════════════════════ */
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+    
+    /* Móviles */
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .page-header > div:last-child {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .page-header button {
+        width: 100%;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Desglose y resumen en columna */
+      div[style*="display:grid"][style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .data-table {
+        min-width: 600px;
+        font-size: 12px;
+      }
+      
+      .data-table th,
+      .data-table td {
+        padding: 8px 6px;
+      }
+      
+      /* Modal responsive */
+      .modal {
+        max-width: 95% !important;
+        margin: 10px;
+      }
+      
+      .modal-body {
+        padding: 1rem;
+      }
+      
+      .form-grid-2 {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+      .stat-card {
+        padding: 12px;
+      }
+      
+      .stat-value {
+        font-size: 20px;
+      }
+      
+      .stat-label {
+        font-size: 11px;
+      }
+      
+      .data-table {
+        font-size: 11px;
+      }
+      
+      .btn {
+        font-size: 13px;
+        padding: 8px 12px;
+      }
+      
+      .modal {
+        max-width: 100% !important;
+        margin: 0;
+        border-radius: 0;
+      }
+      
+      .modal-header h3 {
+        font-size: 18px;
+      }
+    }
+    
+    /* Mejoras para cards de quiebre */
+    #lista-quiebres .card {
+      background: var(--card-bg, white);
+      border: 2px solid var(--border-color, var(--gris-200));
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      margin-bottom: 16px;
+    }
+    
+    #lista-quiebres .card:hover {
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+    
+    /* Modo oscuro para cards de quiebre */
+    .dark-mode #lista-quiebres .card {
+      background: var(--card-bg);
+      border-color: var(--border-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .dark-mode #lista-quiebres .card:hover {
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+    
+    /* ═══════════════════════════════════════
+       ESTILOS PARA SOLICITUDES DE GASTOS
+    ═══════════════════════════════════════ */
+    
+    /* Cards de solicitudes */
+    .solicitud-card {
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    
+    .solicitud-card-pendiente {
+      background: linear-gradient(135deg, rgba(156,163,175,0.05) 0%, rgba(156,163,175,0.08) 100%);
+    }
+    
+    .solicitud-card-aprobada {
+      background: linear-gradient(135deg, rgba(34,197,94,0.05) 0%, rgba(34,197,94,0.08) 100%);
+    }
+    
+    .solicitud-card-rechazada {
+      background: linear-gradient(135deg, rgba(239,68,68,0.05) 0%, rgba(239,68,68,0.08) 100%);
+    }
+    
+    /* Modo oscuro - backgrounds más visibles */
+    body.dark-mode .solicitud-card-pendiente {
+      background: linear-gradient(135deg, rgba(156,163,175,0.08) 0%, rgba(156,163,175,0.12) 100%);
+    }
+    
+    body.dark-mode .solicitud-card-aprobada {
+      background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.12) 100%);
+    }
+    
+    body.dark-mode .solicitud-card-rechazada {
+      background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.12) 100%);
+    }
+    
+    /* Grid principal de la solicitud */
+    .solicitud-grid {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 1.25rem;
+      align-items: center;
+    }
+    
+    /* Caja de hora y trabajador */
+    .solicitud-time-box {
+      text-align: center;
+      min-width: 90px;
+      background: var(--bg-card);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .solicitud-hora {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--success);
+      line-height: 1;
+    }
+    
+    .solicitud-trabajador {
+      font-size: 11px;
+      color: var(--gris-600);
+      margin-top: 6px;
+      font-weight: 600;
+    }
+    
+    body.dark-mode .solicitud-trabajador {
+      color: var(--gris-500);
+    }
+    
+    .solicitud-fecha {
+      font-size: 10px;
+      color: var(--gris-500);
+      margin-top: 2px;
+    }
+    
+    body.dark-mode .solicitud-fecha {
+      color: var(--gris-400);
+    }
+    
+    /* Grid de detalles */
+    .solicitud-detalles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+    
+    .solicitud-detalle-item {
+      background: var(--bg-card);
+      padding: 10px;
+      border-radius: 6px;
+      box-shadow: var(--shadow-xs);
+    }
+    
+    .solicitud-detalle-label {
+      font-size: 10px;
+      color: var(--gris-600);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    
+    body.dark-mode .solicitud-detalle-label {
+      color: var(--gris-500);
+    }
+    
+    .solicitud-detalle-valor {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gris-800);
+      text-transform: capitalize;
+    }
+    
+    body.dark-mode .solicitud-detalle-valor {
+      color: var(--gris-700);
+    }
+    
+    .solicitud-monto {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--success);
+    }
+    
+    .solicitud-descripcion {
+      grid-column: 1 / -1;
+      background: var(--gris-50);
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--success);
+    }
+    
+    body.dark-mode .solicitud-descripcion {
+      background: var(--gris-100);
+    }
+    
+    .solicitud-rechazo {
+      grid-column: 1 / -1;
+      background: var(--danger-bg);
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--danger);
+    }
+    
+    .solicitud-rechazo .solicitud-detalle-label {
+      color: var(--danger);
+    }
+    
+    .solicitud-rechazo .solicitud-detalle-valor {
+      color: var(--danger);
+      font-style: italic;
+    }
+    
+    /* Columna de acciones */
+    .solicitud-acciones {
+      min-width: 160px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    /* Cajas de estado */
+    .solicitud-estado-box {
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid;
+    }
+    
+    .solicitud-estado-label {
+      font-size: 11px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    
+    .solicitud-estado-valor {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    
+    .solicitud-estado-info {
+      font-size: 10px;
+      margin-top: 4px;
+    }
+    
+    /* Estado pendiente */
+    .solicitud-pendiente {
+      background: linear-gradient(135deg, var(--gris-100) 0%, var(--gris-200) 100%);
+      border-color: var(--gris-400);
+    }
+    
+    .solicitud-pendiente .solicitud-estado-label {
+      color: var(--gris-600);
+    }
+    
+    .solicitud-pendiente .solicitud-estado-valor {
+      color: var(--gris-700);
+    }
+    
+    body.dark-mode .solicitud-pendiente {
+      background: linear-gradient(135deg, var(--gris-200) 0%, var(--gris-300) 100%);
+    }
+    
+    body.dark-mode .solicitud-pendiente .solicitud-estado-label {
+      color: var(--gris-500);
+    }
+    
+    body.dark-mode .solicitud-pendiente .solicitud-estado-valor {
+      color: var(--gris-600);
+    }
+    
+    /* Estado aprobada */
+    .solicitud-aprobada {
+      background: linear-gradient(135deg, var(--success-bg) 0%, rgba(34,197,94,0.15) 100%);
+      border-color: var(--success);
+    }
+    
+    .solicitud-aprobada .solicitud-estado-label,
+    .solicitud-aprobada .solicitud-estado-valor,
+    .solicitud-aprobada .solicitud-estado-info {
+      color: var(--success);
+    }
+    
+    body.dark-mode .solicitud-aprobada .solicitud-estado-valor {
+      color: var(--verde-400);
+    }
+    
+    /* Estado rechazada */
+    .solicitud-rechazada {
+      background: linear-gradient(135deg, var(--danger-bg) 0%, rgba(239,68,68,0.15) 100%);
+      border-color: var(--danger);
+    }
+    
+    .solicitud-rechazada .solicitud-estado-label,
+    .solicitud-rechazada .solicitud-estado-valor,
+    .solicitud-rechazada .solicitud-estado-info {
+      color: var(--danger);
+    }
+    
+    body.dark-mode .solicitud-rechazada .solicitud-estado-valor {
+      color: #FCA5A5;
+    }
+    
+    /* ═══════════════════════════════════════
+       RESPONSIVE PARA SOLICITUDES
+    ═══════════════════════════════════════ */
+    
+    /* Tablets */
+    @media (max-width: 1024px) {
+      .solicitud-grid {
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
+      }
+      
+      .solicitud-acciones {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        justify-content: space-between;
+        min-width: auto;
+      }
+      
+      .solicitud-estado-box {
+        flex: 1;
+      }
+    }
+    
+    /* Móviles */
+    @media (max-width: 768px) {
+      .solicitud-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      
+      .solicitud-time-box {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-width: auto;
+        width: 100%;
+      }
+      
+      .solicitud-hora {
+        font-size: 20px;
+      }
+      
+      .solicitud-trabajador,
+      .solicitud-fecha {
         text-align: right;
-        font-size: 10px;
-        margin-top: 20px;
-        color: #666;
+      }
+      
+      .solicitud-detalles {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      
+      .solicitud-detalle-item {
+        padding: 8px;
+      }
+      
+      .solicitud-detalle-label {
+        font-size: 9px;
+      }
+      
+      .solicitud-detalle-valor {
+        font-size: 12px;
+      }
+      
+      .solicitud-monto {
+        font-size: 16px;
+      }
+      
+      .solicitud-acciones {
+        flex-direction: column;
+      }
+      
+      .solicitud-estado-box {
+        width: 100%;
+      }
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+      .solicitud-card {
+        padding: 1rem;
+      }
+      
+      .solicitud-detalles {
+        grid-template-columns: 1fr;
+      }
+      
+      .solicitud-time-box {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .solicitud-trabajador,
+      .solicitud-fecha {
+        text-align: center;
       }
     }
   </style>
@@ -79,8 +744,11 @@
           <p id="fecha-hoy-txt" style="color:var(--gris-500);font-size:14px"></p>
           <div id="estado-caja" style="margin-top:8px"></div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-outline" onclick="exportarPDF()" id="btn-imprimir">📄 Exportar PDF</button>
+          <button class="btn btn-success" onclick="abrirModalSolicitudGasto()" id="btn-solicitar-gasto" style="display:none">💰 Solicitar Gasto</button>
+          <button class="btn btn-warning" onclick="abrirModalQuiebre()" id="btn-quiebre" style="display:none">📊 Quiebre</button>
+          <button class="btn btn-danger" onclick="abrirModalAnularCierre()" id="btn-anular-cierre" style="display:none">🔓 Anular Cierre</button>
           <button class="btn btn-primary" onclick="Modal.open('modal-apertura')" id="btn-abrir">Abrir caja</button>
           <button class="btn btn-danger" onclick="confirmarCierre()" id="btn-cerrar" style="display:none">Cerrar caja</button>
         </div>
@@ -126,10 +794,38 @@
 
       </div>
 
+      <!-- Quiebres del día -->
+      <div id="seccion-quiebres" style="margin-bottom:1.5rem;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <div style="font-weight:600;font-size:15px">📊 Quiebres del día</div>
+          <span id="count-quiebres" class="badge badge-primary" style="font-size:12px">0 cortes</span>
+        </div>
+        <div id="lista-quiebres" style="display:grid;gap:12px"></div>
+      </div>
+
+      <!-- Solicitudes de Gastos del día -->
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+          <div style="font-weight:600;font-size:15px">💰 Solicitudes de Gastos</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span id="count-solicitudes-pendientes" class="badge badge-warning" style="font-size:12px;display:none">0 pendientes</span>
+            <button class="btn btn-outline btn-sm" onclick="abrirModalHistorialSolicitudes()">📋 Ver historial</button>
+          </div>
+        </div>
+        <div id="seccion-solicitudes-hoy" style="display:none">
+          <div id="lista-solicitudes" style="display:grid;gap:12px"></div>
+        </div>
+        <div id="sin-solicitudes-hoy" style="display:none;text-align:center;padding:1.5rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1.5px dashed var(--gris-200)">
+          <div style="font-size:48px;margin-bottom:8px;opacity:0.5">📋</div>
+          <div style="color:var(--gris-500);font-size:14px">No hay solicitudes de gastos para hoy</div>
+          <div style="color:var(--gris-400);font-size:12px;margin-top:4px">Usa el botón "Ver historial" para consultar días anteriores</div>
+        </div>
+      </div>
+
       <!-- Transacciones del día -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
         <div style="font-weight:600;font-size:15px">Transacciones del día</div>
-        <button class="btn btn-outline btn-sm" onclick="Modal.open('modal-historial')">📋 Ver historial</button>
+        <button class="btn btn-outline btn-sm" onclick="abrirModalHistorial()">📋 Ver historial</button>
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -158,6 +854,110 @@
     <div class="modal-footer">
       <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-apertura')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="abrirCaja()">Confirmar apertura</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Quiebre de Caja -->
+<div class="modal-overlay" id="modal-quiebre">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--rosa-500) 0%, var(--rosa-600) 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem">
+      <div>
+        <h3 style="margin:0;color:white;font-size:1.5rem">📊 Quiebre de Caja</h3>
+        <p style="margin:0.25rem 0 0 0;font-size:13px;opacity:0.9">Corte parcial del día</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-quiebre')" style="color:white;opacity:0.9">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div class="form-stack">
+        <!-- Efectivo esperado destacado -->
+        <div style="background:linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);padding:1.5rem;border-radius:12px;margin-bottom:1.5rem;text-align:center;border:2px solid var(--rosa-200);box-shadow:0 4px 12px rgba(204,56,112,0.1)">
+          <div style="font-size:13px;color:var(--gris-600);margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">💵 Efectivo esperado en caja</div>
+          <div style="font-size:42px;font-weight:800;color:var(--rosa-600);font-family:var(--font-display);line-height:1" id="quiebre-efectivo-esperado">S/ 0.00</div>
+          <div style="font-size:11px;color:var(--gris-500);margin-top:8px">Apertura + Ventas efectivo - Gastos</div>
+        </div>
+        
+        <!-- Desglose en grid -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem">
+          <div style="background:var(--success-light,#e8f5e9);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Apertura</div>
+            <div style="font-size:16px;font-weight:700;color:var(--success)" id="quiebre-apertura">S/ 0.00</div>
+          </div>
+          <div style="background:var(--success-light,#e8f5e9);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Ventas efectivo</div>
+            <div style="font-size:16px;font-weight:700;color:var(--success)" id="quiebre-ventas-efectivo">S/ 0.00</div>
+          </div>
+          <div style="background:var(--danger-light,#ffebee);padding:12px;border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--gris-600);margin-bottom:4px">Gastos</div>
+            <div style="font-size:16px;font-weight:700;color:var(--danger)" id="quiebre-gastos">S/ 0.00</div>
+          </div>
+        </div>
+        
+        <!-- Otros métodos de pago (colapsable) -->
+        <details style="margin-bottom:1.5rem;border:1px solid var(--gris-200);border-radius:8px;padding:12px">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--gris-700);user-select:none">
+            📱 Otros métodos de pago (ver desglose)
+          </summary>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--gris-100)">
+            <div style="display:flex;justify-content:space-between;font-size:12px">
+              <span style="color:var(--gris-600)">Digital (Yape/Plin):</span>
+              <span style="font-weight:600" id="quiebre-digital">S/ 0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px">
+              <span style="color:var(--gris-600)">Tarjeta/Transf.:</span>
+              <span style="font-weight:600" id="quiebre-tarjeta">S/ 0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;grid-column:1/-1;padding-top:8px;border-top:1px solid var(--gris-100)">
+              <span style="color:var(--gris-700);font-weight:600">Total ventas:</span>
+              <span style="font-weight:700;color:var(--rosa-600)" id="quiebre-total-ventas">S/ 0.00</span>
+            </div>
+          </div>
+        </details>
+        
+        <!-- Monto físico -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px">
+            <span style="font-size:20px">💰</span>
+            Monto físico contado (opcional)
+          </label>
+          <input 
+            class="form-control" 
+            type="number" 
+            id="quiebre-monto-fisico" 
+            step="0.50" 
+            min="0" 
+            placeholder="Ej: 1250.00"
+            style="font-size:18px;font-weight:600;padding:14px;text-align:center;border:2px solid var(--gris-300)"
+          />
+          <div style="font-size:11px;color:var(--gris-500);margin-top:6px;text-align:center">
+            💡 Ingresa el efectivo que tienes físicamente para calcular la diferencia
+          </div>
+        </div>
+        
+        <!-- Diferencia (se muestra si hay monto físico) -->
+        <div id="quiebre-diferencia-container" style="display:none;padding:1.25rem;border-radius:10px;margin-bottom:1rem;text-align:center;border:2px solid;transition:all 0.3s ease">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Resultado del cuadre</div>
+          <div style="font-size:32px;font-weight:800;font-family:var(--font-display)" id="quiebre-diferencia">S/ 0.00</div>
+        </div>
+        
+        <!-- Observaciones -->
+        <div class="form-group">
+          <label class="form-label" style="font-weight:600;font-size:13px">📝 Observaciones (opcional)</label>
+          <textarea 
+            class="form-control" 
+            id="quiebre-observaciones" 
+            rows="2" 
+            placeholder="Ej: Corte a las 2pm, caja verificada, turno de mañana"
+            style="resize:vertical"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:1rem 1.5rem;background:var(--gris-50)">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-quiebre')">Cancelar</button>
+      <button class="btn btn-warning btn-sm" onclick="generarQuiebre()" style="padding:10px 24px;font-weight:600">
+        📊 Generar Quiebre
+      </button>
     </div>
   </div>
 </div>
@@ -252,6 +1052,159 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Anular Cierre -->
+<div class="modal-overlay" id="modal-anular-cierre">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem">
+      <div>
+        <h3 style="margin:0;color:white;font-size:1.5rem">🔓 Anular Cierre de Caja</h3>
+        <p style="margin:0.25rem 0 0 0;font-size:13px;opacity:0.9">Esta acción quedará registrada en auditoría</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-anular-cierre')" style="color:white;opacity:0.9">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div class="alert alert-warning" style="margin-bottom:1rem">
+        <strong>⚠️ Advertencia:</strong> Al anular el cierre, la caja volverá a estado "abierta" y podrás continuar registrando operaciones. Esta acción quedará registrada permanentemente en el sistema de auditoría.
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Motivo de anulación <span class="req">*</span></label>
+        <textarea 
+          id="anular-motivo" 
+          class="form-control" 
+          rows="4" 
+          placeholder="Ej: Error en el conteo de efectivo, venta registrada después del cierre, etc."
+          required
+        ></textarea>
+        <small style="color:var(--gris-500);font-size:11px;margin-top:4px;display:block">
+          Explica claramente por qué necesitas anular este cierre
+        </small>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:1rem 1.5rem;background:var(--gris-50)">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-anular-cierre')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmarAnularCierre()" style="padding:10px 24px;font-weight:600">
+        🔓 Anular Cierre
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Solicitud de Gasto -->
+<div class="modal-overlay" id="modal-solicitud-gasto">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--success) 0%, #2d8c4e 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem">
+      <div>
+        <h3 style="margin:0;color:white;font-size:1.5rem">💰 Solicitar Gasto</h3>
+        <p style="margin:0.25rem 0 0 0;font-size:13px;opacity:0.9">Completa los datos del comprobante</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-solicitud-gasto')" style="color:white;opacity:0.9">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div class="form-stack">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Monto (S/) <span class="req">*</span></label>
+            <input class="form-control" type="number" id="solicitud-monto" step="0.50" min="0" placeholder="Ej: 50.00" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoría <span class="req">*</span></label>
+            <select class="form-control" id="solicitud-categoria" required>
+              <option value="">Seleccionar...</option>
+              <option value="flores">Flores</option>
+              <option value="transporte">Transporte</option>
+              <option value="materiales">Materiales</option>
+              <option value="mantenimiento">Mantenimiento</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Descripción <span class="req">*</span></label>
+          <textarea class="form-control" id="solicitud-descripcion" rows="2" placeholder="Ej: Compra de rosas rojas para arreglos" required></textarea>
+        </div>
+        
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Empresa/Proveedor <span class="req">*</span></label>
+            <input class="form-control" type="text" id="solicitud-empresa" placeholder="Ej: Flores del Valle" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">N° Boleta/Factura <span class="req">*</span></label>
+            <input class="form-control" type="text" id="solicitud-comprobante" placeholder="Ej: B001-12345" required />
+          </div>
+        </div>
+        
+        <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px;font-size:12px;color:var(--text-secondary, var(--gris-600));border-left:3px solid var(--success)">
+          <strong>📝 Nota:</strong> Esta solicitud será enviada al administrador para su aprobación. Recibirás una notificación cuando sea revisada.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:1rem 1.5rem;background:var(--gris-50)">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-solicitud-gasto')">Cancelar</button>
+      <button class="btn btn-success btn-sm" onclick="crearSolicitudGasto()" style="padding:10px 24px;font-weight:600">
+        💰 Enviar Solicitud
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Historial de Solicitudes -->
+<div class="modal-overlay" id="modal-historial-solicitudes">
+  <div class="modal" style="max-width:1000px">
+    <div class="modal-header">
+      <h3>📋 Historial de Solicitudes de Gastos</h3>
+      <button class="btn-close" onclick="Modal.close('modal-historial-solicitudes')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+        <input type="date" id="filtro-fecha-historial" class="form-control" style="max-width:150px;font-size:13px" onchange="cargarHistorialSolicitudes()" />
+        <select id="filtro-estado-historial" class="form-control" style="max-width:150px;font-size:13px" onchange="cargarHistorialSolicitudes()">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="aprobada">Aprobadas</option>
+          <option value="rechazada">Rechazadas</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="limpiarFiltrosHistorial()">🔄 Limpiar filtros</button>
+      </div>
+      
+      <!-- Lista de solicitudes -->
+      <div id="lista-historial-solicitudes" style="display:grid;gap:12px;max-height:500px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-historial-solicitudes')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Aprobar/Rechazar Solicitud (Admin) -->
+<div class="modal-overlay" id="modal-revisar-solicitud">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>📋 Revisar Solicitud de Gasto</h3>
+      <button class="btn-close" onclick="Modal.close('modal-revisar-solicitud')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detalle-solicitud-revisar" style="padding:1rem">
+        <!-- Contenido dinámico -->
+      </div>
+      <div class="form-group" id="grupo-comentario-rechazo" style="display:none">
+        <label class="form-label">Comentario de rechazo <span class="req">*</span></label>
+        <textarea class="form-control" id="comentario-rechazo" rows="3" placeholder="Explica el motivo del rechazo..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-revisar-solicitud')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="mostrarCampoRechazo()" id="btn-mostrar-rechazo">❌ Rechazar</button>
+      <button class="btn btn-danger btn-sm" onclick="rechazarSolicitud()" id="btn-confirmar-rechazo" style="display:none">Confirmar Rechazo</button>
+      <button class="btn btn-success btn-sm" onclick="aprobarSolicitud()" id="btn-aprobar">✅ Aprobar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -267,12 +1220,18 @@
       const data = response.data || response;
       renderCaja(data);
       actualizarBotones(data.estado);
+      
+      // Cargar quiebres del día
+      await cargarQuiebres();
     } catch (error) {
       // Error esperado: no hay caja abierta para hoy
       if (error.message && error.message.includes('No hay caja abierta')) {
         console.log('No hay caja abierta para hoy - mostrando vista inicial');
         renderCajaSinAbrir();
         actualizarBotones('sin_abrir');
+        
+        // Ocultar sección de quiebres
+        document.getElementById('seccion-quiebres').style.display = 'none';
       } else {
         // Error inesperado
         console.error('Error al cargar caja:', error);
@@ -287,24 +1246,77 @@
     const btnAbrir = document.getElementById('btn-abrir');
     const btnCerrar = document.getElementById('btn-cerrar');
     const btnImprimir = document.getElementById('btn-imprimir');
+    const btnQuiebre = document.getElementById('btn-quiebre');
+    const btnSolicitarGasto = document.getElementById('btn-solicitar-gasto');
+    const btnAnularCierre = document.getElementById('btn-anular-cierre');
     const estadoCaja = document.getElementById('estado-caja');
+    const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
+
+    console.log('Actualizando botones con estado:', estado);
+
+    if (!btnAbrir || !btnCerrar || !btnImprimir || !estadoCaja) {
+      console.error('Error: No se encontraron los elementos de botones');
+      return;
+    }
 
     if (estado === 'abierta') {
+      // Caja abierta: mostrar botones de quiebre, cerrar y solicitar gasto
       btnAbrir.style.display = 'none';
-      btnCerrar.style.display = 'block';
+      btnCerrar.style.display = 'inline-block';
+      btnQuiebre.style.display = 'inline-block';
       btnImprimir.disabled = false;
+      
+      // Ocultar botón de anular cierre
+      if (btnAnularCierre) {
+        btnAnularCierre.style.display = 'none';
+      }
+      
+      // Mostrar botón de solicitar gasto para todos los roles
+      if (btnSolicitarGasto) {
+        btnSolicitarGasto.style.display = 'inline-block';
+      }
+      
       estadoCaja.innerHTML = '<span class="badge badge-success" style="font-size:12px">✓ Caja abierta</span>';
-    } else if (estado === 'cerrada') {
-      btnAbrir.style.display = 'none';
-      btnCerrar.style.display = 'none';
-      btnImprimir.disabled = false;
-      estadoCaja.innerHTML = '<span class="badge badge-gray" style="font-size:12px">🔒 Caja cerrada</span>';
+      
+      // Cargar solicitudes de gastos
+      cargarSolicitudesGastos();
     } else {
-      btnAbrir.style.display = 'block';
+      // Caja cerrada o sin abrir: mostrar solo botón de abrir
+      // Esto permite abrir una nueva caja para el día siguiente
+      btnAbrir.style.display = 'inline-block';
       btnCerrar.style.display = 'none';
-      btnImprimir.disabled = true;
-      estadoCaja.innerHTML = '<span class="badge badge-warning" style="font-size:12px">⚠ Caja no abierta</span>';
+      btnQuiebre.style.display = 'none';
+      
+      // Ocultar botón de solicitar gasto
+      if (btnSolicitarGasto) {
+        btnSolicitarGasto.style.display = 'none';
+      }
+      
+      if (estado === 'cerrada') {
+        btnImprimir.disabled = false;
+        estadoCaja.innerHTML = '<span class="badge badge-gray" style="font-size:12px">🔒 Caja cerrada - Puedes abrir nueva caja</span>';
+        
+        // Mostrar botón de anular cierre solo para admin/dueña
+        if (btnAnularCierre && (user.rol === 'admin' || user.rol === 'duena')) {
+          btnAnularCierre.style.display = 'inline-block';
+        }
+      } else {
+        // Estado 'sin_abrir' o cualquier otro
+        btnImprimir.disabled = true;
+        estadoCaja.innerHTML = '<span class="badge badge-warning" style="font-size:12px">⚠ Caja no abierta</span>';
+        
+        // Ocultar botón de anular cierre
+        if (btnAnularCierre) {
+          btnAnularCierre.style.display = 'none';
+        }
+      }
     }
+
+    console.log('Botón abrir display:', btnAbrir.style.display);
+    console.log('Botón cerrar display:', btnCerrar.style.display);
+    console.log('Botón quiebre display:', btnQuiebre ? btnQuiebre.style.display : 'N/A');
+    console.log('Botón solicitar gasto display:', btnSolicitarGasto ? btnSolicitarGasto.style.display : 'N/A');
+    console.log('Botón anular cierre display:', btnAnularCierre ? btnAnularCierre.style.display : 'N/A');
   }
 
   function renderCaja(d) {
@@ -348,20 +1360,56 @@
           </div>`).join('')
       : '<div style="color:var(--gris-400);font-size:13px;text-align:center">Sin ventas registradas</div>';
 
-    // Renderizar tabla de transacciones
+    // Renderizar tabla de transacciones (ventas + gastos)
     const tbody = document.getElementById('tbody-transacciones');
-    tbody.innerHTML = ventas.length
-      ? ventas.map(v => {
-          const productosNombres = (v.productos || []).map(p => p.nombre).join(', ') || 'Venta';
-          const hora = new Date(v.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-          return `<tr>
-            <td style="font-size:12px">${hora}</td>
-            <td style="font-size:13px">${productosNombres}</td>
-            <td><span class="badge badge-success">Venta</span></td>
-            <td style="font-size:12px">${v.metodo}</td>
-            <td style="font-weight:600;color:var(--success)">+${Fmt.moneda(v.total)}</td>
-          </tr>`;
-        }).join('')
+    const gastos = d.gastos || [];
+    
+    // Combinar ventas y gastos en una sola lista de transacciones
+    const transacciones = [];
+    
+    // Agregar ventas
+    ventas.forEach(v => {
+      const productosNombres = (v.productos || []).map(p => p.nombre).join(', ') || 'Venta';
+      const hora = new Date(v.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      transacciones.push({
+        fecha: new Date(v.fecha),
+        html: `<tr>
+          <td style="font-size:12px">${hora}</td>
+          <td style="font-size:13px">${productosNombres}</td>
+          <td><span class="badge badge-success">Venta</span></td>
+          <td style="font-size:12px">${v.metodo}</td>
+          <td style="font-weight:600;color:var(--success)">+${Fmt.moneda(v.total)}</td>
+        </tr>`
+      });
+    });
+    
+    // Agregar gastos
+    gastos.forEach(g => {
+      const hora = new Date(g.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const categoriaEmoji = {
+        flores: '🌸',
+        transporte: '🚗',
+        materiales: '📦',
+        mantenimiento: '🔧',
+        otros: '📝'
+      };
+      transacciones.push({
+        fecha: new Date(g.created_at),
+        html: `<tr>
+          <td style="font-size:12px">${hora}</td>
+          <td style="font-size:13px">${g.descripcion}</td>
+          <td><span class="badge badge-danger">Gasto</span></td>
+          <td style="font-size:12px">${categoriaEmoji[g.categoria] || '📝'} ${g.categoria}</td>
+          <td style="font-weight:600;color:var(--danger)">-${Fmt.moneda(g.monto)}</td>
+        </tr>`
+      });
+    });
+    
+    // Ordenar por fecha (más reciente primero)
+    transacciones.sort((a, b) => b.fecha - a.fecha);
+    
+    tbody.innerHTML = transacciones.length
+      ? transacciones.map(t => t.html).join('')
       : '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gris-400)">Sin transacciones hoy</td></tr>';
   }
 
@@ -528,6 +1576,313 @@
     }
   }
 
+  // =====================
+  // ANULAR CIERRE
+  // =====================
+  
+  function abrirModalAnularCierre() {
+    // Limpiar campo de motivo
+    document.getElementById('anular-motivo').value = '';
+    Modal.open('modal-anular-cierre');
+  }
+  
+  async function confirmarAnularCierre() {
+    const motivo = document.getElementById('anular-motivo').value.trim();
+    
+    if (!motivo || motivo.length < 10) {
+      Toast.warning('Debes proporcionar un motivo detallado (mínimo 10 caracteres)');
+      return;
+    }
+    
+    // Confirmación adicional
+    if (!confirm('¿Estás seguro de anular el cierre de caja? Esta acción quedará registrada en auditoría.')) {
+      return;
+    }
+    
+    try {
+      const response = await API.post('/caja/anular-cierre', { motivo });
+      const data = response.data || response;
+      
+      Toast.success(data.mensaje || 'Cierre anulado correctamente');
+      Modal.close('modal-anular-cierre');
+      await cargarCaja();
+    } catch (error) {
+      console.error('Error al anular cierre:', error);
+      Toast.error(error.message || 'Error al anular el cierre');
+    }
+  }
+
+  // =====================
+  // QUIEBRE DE CAJA
+  // =====================
+  
+  let datosQuiebreActual = null;
+  
+  async function cargarQuiebres() {
+    try {
+      const response = await API.get('/caja/quiebres');
+      const quiebres = response.data || [];
+      
+      console.log('📊 Quiebres cargados:', quiebres.length);
+      
+      if (quiebres.length > 0) {
+        renderQuiebres(quiebres);
+        document.getElementById('seccion-quiebres').style.display = 'block';
+      } else {
+        document.getElementById('seccion-quiebres').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error al cargar quiebres:', error);
+      document.getElementById('seccion-quiebres').style.display = 'none';
+    }
+  }
+  
+  function renderQuiebres(quiebres) {
+    const container = document.getElementById('lista-quiebres');
+    const countEl = document.getElementById('count-quiebres');
+    
+    countEl.textContent = `${quiebres.length} ${quiebres.length === 1 ? 'corte' : 'cortes'}`;
+    
+    container.innerHTML = quiebres.map(q => {
+      const hora = new Date(q.created_at).toLocaleTimeString('es-PE', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      const montoEsperado = parseFloat(q.monto_esperado || 0);
+      const montoFisico = q.monto_fisico !== null ? parseFloat(q.monto_fisico) : null;
+      const diferencia = parseFloat(q.diferencia || 0);
+      
+      // Determinar color y estado
+      let estadoHTML = '';
+      let cardBorderColor = '';
+      let cardBgGradient = '';
+      
+      if (montoFisico === null) {
+        // Sin conteo físico
+        estadoHTML = `
+          <div style="background:var(--bg-secondary, var(--gris-100));padding:12px;border-radius:8px;text-align:center;border:2px solid var(--border-color, var(--gris-300))">
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-600));margin-bottom:4px;font-weight:600">Sin conteo físico</div>
+            <div style="font-size:16px;font-weight:700;color:var(--text-primary, var(--gris-700))">📊 Solo registro</div>
+          </div>
+        `;
+        cardBorderColor = 'var(--gris-400)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(156,163,175,0.05) 0%, rgba(156,163,175,0.1) 100%)';
+      } else if (diferencia === 0) {
+        // Cuadrado
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--success)">
+            <div style="font-size:11px;color:var(--success);margin-bottom:4px;font-weight:600">Diferencia</div>
+            <div style="font-size:20px;font-weight:800;color:var(--success)">✅ S/ 0.00</div>
+            <div style="font-size:12px;color:var(--success);margin-top:4px;font-weight:700">¡Cuadrado!</div>
+          </div>
+        `;
+        cardBorderColor = 'var(--success)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(45,140,78,0.05) 0%, rgba(45,140,78,0.1) 100%)';
+      } else if (diferencia < 0) {
+        // Faltante
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--danger)">
+            <div style="font-size:11px;color:var(--danger);margin-bottom:4px;font-weight:600">Diferencia</div>
+            <div style="font-size:20px;font-weight:800;color:var(--danger)">⚠️ -${Fmt.moneda(Math.abs(diferencia))}</div>
+            <div style="font-size:12px;color:var(--danger);margin-top:4px;font-weight:700">Faltante</div>
+          </div>
+        `;
+        cardBorderColor = 'var(--danger)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(196,50,50,0.05) 0%, rgba(196,50,50,0.1) 100%)';
+      } else {
+        // Sobrante
+        estadoHTML = `
+          <div style="background:linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);padding:12px;border-radius:8px;text-align:center;border:2px solid var(--warning)">
+            <div style="font-size:11px;color:var(--warning);margin-bottom:4px;font-weight:600">Diferencia</div>
+            <div style="font-size:20px;font-weight:800;color:var(--warning)">📈 +${Fmt.moneda(diferencia)}</div>
+            <div style="font-size:12px;color:var(--warning);margin-top:4px;font-weight:700">Sobrante</div>
+          </div>
+        `;
+        cardBorderColor = 'var(--warning)';
+        cardBgGradient = 'linear-gradient(135deg, rgba(200,123,26,0.05) 0%, rgba(200,123,26,0.1) 100%)';
+      }
+      
+      return `
+        <div class="card" style="padding:1.25rem;border-left:6px solid ${cardBorderColor};background:${cardBgGradient}">
+          <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1.25rem;align-items:center">
+            <!-- Hora y trabajador -->
+            <div style="text-align:center;min-width:90px;background:var(--card-bg, white);padding:12px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
+              <div style="font-size:24px;font-weight:800;color:var(--rosa-600);line-height:1">${hora}</div>
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-top:6px;font-weight:600">${q.trabajador_nombre || 'N/A'}</div>
+            </div>
+            
+            <!-- Detalles -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">
+              <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">Efectivo esperado</div>
+                <div style="font-size:16px;font-weight:700;color:var(--text-primary, var(--gris-900))">${Fmt.moneda(montoEsperado)}</div>
+              </div>
+              ${montoFisico !== null ? `
+                <div style="background:var(--card-bg, white);padding:10px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                  <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">Monto físico</div>
+                  <div style="font-size:16px;font-weight:700;color:var(--text-primary, var(--gris-900))">${Fmt.moneda(montoFisico)}</div>
+                </div>
+              ` : ''}
+              ${q.observaciones ? `
+                <div style="grid-column:1/-1;background:var(--bg-secondary, var(--gris-50));padding:10px;border-radius:6px;border-left:3px solid var(--rosa-500)">
+                  <div style="font-size:10px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px;text-transform:uppercase;font-weight:600">📝 Observaciones</div>
+                  <div style="font-size:13px;color:var(--text-primary, var(--gris-700));font-style:italic">"${q.observaciones}"</div>
+                </div>
+              ` : ''}
+            </div>
+            
+            <!-- Estado -->
+            <div style="min-width:160px">
+              ${estadoHTML}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  function abrirModalQuiebre() {
+    // Obtener datos de los elementos correctos
+    datosQuiebreActual = {
+      monto_apertura: parseFloat(document.getElementById('apertura-monto')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_efectivo: parseFloat(document.getElementById('caja-efectivo')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_digital: parseFloat(document.getElementById('caja-digital')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_tarjeta: parseFloat(document.getElementById('caja-tarjeta')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+      total_ventas: parseFloat(document.getElementById('caja-total')?.textContent?.replace(/[^\d.-]/g, '') || 0),
+    };
+    
+    // Obtener gastos del día
+    const gastosEl = document.getElementById('gastos-hoy-caja');
+    const totalGastos = gastosEl ? parseFloat(gastosEl.textContent?.replace(/[^\d.-]/g, '') || 0) : 0;
+    
+    // Calcular efectivo esperado
+    const efectivoEsperado = datosQuiebreActual.monto_apertura + datosQuiebreActual.total_efectivo - totalGastos;
+    
+    console.log('=== DATOS QUIEBRE ===');
+    console.log('Apertura:', datosQuiebreActual.monto_apertura);
+    console.log('Efectivo:', datosQuiebreActual.total_efectivo);
+    console.log('Gastos:', totalGastos);
+    console.log('Efectivo esperado:', efectivoEsperado);
+    
+    // Llenar datos del modal
+    document.getElementById('quiebre-apertura').textContent = Fmt.moneda(datosQuiebreActual.monto_apertura);
+    document.getElementById('quiebre-ventas-efectivo').textContent = Fmt.moneda(datosQuiebreActual.total_efectivo);
+    document.getElementById('quiebre-gastos').textContent = Fmt.moneda(totalGastos);
+    document.getElementById('quiebre-digital').textContent = Fmt.moneda(datosQuiebreActual.total_digital);
+    document.getElementById('quiebre-tarjeta').textContent = Fmt.moneda(datosQuiebreActual.total_tarjeta);
+    document.getElementById('quiebre-total-ventas').textContent = Fmt.moneda(datosQuiebreActual.total_ventas);
+    document.getElementById('quiebre-efectivo-esperado').textContent = Fmt.moneda(efectivoEsperado);
+    
+    // Guardar efectivo esperado para cálculos posteriores
+    datosQuiebreActual.efectivo_esperado = efectivoEsperado;
+    datosQuiebreActual.total_gastos = totalGastos;
+    
+    // Limpiar campos
+    document.getElementById('quiebre-monto-fisico').value = '';
+    document.getElementById('quiebre-observaciones').value = '';
+    document.getElementById('quiebre-diferencia-container').style.display = 'none';
+    
+    Modal.open('modal-quiebre');
+  }
+  
+  // Actualizar preview de diferencia cuando se ingresa monto físico
+  document.getElementById('modal-quiebre')?.addEventListener('input', function(e) {
+    if (e.target.id === 'quiebre-monto-fisico') {
+      const montoFisico = parseFloat(e.target.value) || 0;
+      const efectivoEsperado = datosQuiebreActual ? datosQuiebreActual.efectivo_esperado : 0;
+      const diferencia = montoFisico - efectivoEsperado;
+      
+      const container = document.getElementById('quiebre-diferencia-container');
+      const diferenciaEl = document.getElementById('quiebre-diferencia');
+      
+      if (montoFisico > 0) {
+        container.style.display = 'block';
+        
+        if (diferencia === 0) {
+          // Cuadrado - Verde
+          container.style.background = 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)';
+          container.style.borderColor = 'var(--success)';
+          diferenciaEl.style.color = 'var(--success)';
+          diferenciaEl.innerHTML = '✅<br>S/ 0.00<br><span style="font-size:14px;font-weight:600;margin-top:4px;display:block">¡Caja cuadrada!</span>';
+        } else if (diferencia < 0) {
+          // Faltante - Rojo
+          container.style.background = 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)';
+          container.style.borderColor = 'var(--danger)';
+          diferenciaEl.style.color = 'var(--danger)';
+          diferenciaEl.innerHTML = `⚠️ Faltante<br>-${Fmt.moneda(Math.abs(diferencia))}<br><span style="font-size:13px;font-weight:500;margin-top:4px;display:block">Falta efectivo en caja</span>`;
+        } else {
+          // Sobrante - Amarillo
+          container.style.background = 'linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%)';
+          container.style.borderColor = 'var(--warning)';
+          diferenciaEl.style.color = 'var(--warning)';
+          diferenciaEl.innerHTML = `📈 Sobrante<br>+${Fmt.moneda(diferencia)}<br><span style="font-size:13px;font-weight:500;margin-top:4px;display:block">Hay más efectivo del esperado</span>`;
+        }
+      } else {
+        container.style.display = 'none';
+      }
+    }
+  });
+  
+  async function generarQuiebre() {
+    console.log('🔄 Iniciando generación de quiebre...');
+    
+    const montoFisico = document.getElementById('quiebre-monto-fisico').value;
+    const observaciones = document.getElementById('quiebre-observaciones').value;
+    
+    console.log('📝 Datos del formulario:', { montoFisico, observaciones });
+    
+    const payload = {};
+    if (montoFisico && parseFloat(montoFisico) >= 0) {
+      payload.monto_fisico = parseFloat(montoFisico);
+    }
+    if (observaciones && observaciones.trim()) {
+      payload.observaciones = observaciones.trim();
+    }
+    
+    console.log('📦 Payload a enviar:', payload);
+    
+    try {
+      console.log('🚀 Enviando petición a /caja/quiebre...');
+      const response = await API.post('/caja/quiebre', payload);
+      console.log('✅ Respuesta recibida:', response);
+      
+      const data = response.data || response;
+      
+      Toast.success('Quiebre de caja generado correctamente');
+      Modal.close('modal-quiebre');
+      
+      // Mostrar resultado del quiebre
+      if (data && data.resumen) {
+        const resumen = data.resumen;
+        console.log('📊 Resumen del quiebre:', resumen);
+        
+        let mensaje = `Efectivo esperado: ${Fmt.moneda(resumen.efectivo_esperado)}`;
+        if (resumen.monto_fisico !== null && resumen.monto_fisico !== undefined) {
+          mensaje += `\n${resumen.mensaje}`;
+        }
+        
+        // Mostrar toast con el resultado
+        setTimeout(() => {
+          Toast.info(mensaje, 5000);
+        }, 500);
+      }
+      
+      // Recargar datos de caja
+      console.log('🔄 Recargando datos de caja...');
+      await cargarCaja();
+      
+      // Recargar quiebres
+      await cargarQuiebres();
+      
+      console.log('✅ Quiebre generado exitosamente');
+    } catch (error) {
+      console.error('❌ Error al generar quiebre:', error);
+      console.error('Error completo:', error);
+      Toast.error(error.message || 'Error al generar el quiebre de caja');
+    }
+  }
+
   function imprimirCierre() {
     const btnImprimir = document.getElementById('btn-imprimir');
     if (btnImprimir.disabled) {
@@ -650,20 +2005,10 @@
   }
 
   // Cargar historial cuando se abre el modal
-  document.addEventListener('DOMContentLoaded', () => {
-    const modalHistorial = document.getElementById('modal-historial');
-    if (modalHistorial) {
-      modalHistorial.addEventListener('click', (e) => {
-        if (e.target === modalHistorial || e.target.closest('.btn-close')) {
-          return;
-        }
-        if (modalHistorial.classList.contains('active') && !modalHistorial.dataset.loaded) {
-          cargarHistorial(1);
-          modalHistorial.dataset.loaded = 'true';
-        }
-      });
-    }
-  });
+  function abrirModalHistorial() {
+    Modal.open('modal-historial');
+    cargarHistorial(1);
+  }
 
   // Exportar a PDF
   function exportarPDF() {
@@ -673,22 +2018,34 @@
       return;
     }
 
-    // Agregar clase para estilos de impresión
-    document.body.classList.add('imprimiendo');
+    // Agregar fecha al header para el recibo
+    const fecha = new Date();
+    const fechaStr = fecha.toLocaleDateString('es-PE', { 
+      weekday: 'long',
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const horaStr = fecha.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const pageHeader = document.querySelector('.page-header');
+    pageHeader.setAttribute('data-fecha-cierre', `Fecha: ${fechaStr}\nHora: ${horaStr}`);
     
     // Configurar título del documento
     const tituloOriginal = document.title;
-    const fecha = new Date().toLocaleDateString('es-PE');
-    document.title = `Cierre de Caja - ${fecha}`;
+    document.title = `Cierre_Caja_${fecha.toISOString().split('T')[0]}`;
 
     // Imprimir
     window.print();
 
     // Restaurar
     document.title = tituloOriginal;
-    document.body.classList.remove('imprimiendo');
+    pageHeader.removeAttribute('data-fecha-cierre');
     
-    Toast.success('Documento listo para guardar como PDF');
+    Toast.success('Recibo listo para guardar como PDF');
   }
 
   // Notificaciones
@@ -734,6 +2091,431 @@
   // Verificar caja al cargar y cada 30 minutos
   verificarCajaAbierta();
   setInterval(verificarCajaAbierta, 30 * 60 * 1000); // 30 minutos
+
+  // =====================
+  // SOLICITUDES DE GASTOS
+  // =====================
+  
+  let solicitudActualId = null;
+  
+  async function cargarSolicitudesGastos() {
+    try {
+      const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
+      
+      // Obtener solo las solicitudes del día actual
+      const hoy = new Date().toISOString().split('T')[0];
+      const url = `/solicitudes-gastos?fecha=${hoy}`;
+      
+      const response = await API.get(url);
+      let solicitudes = response.data || [];
+      
+      // Filtrar por fecha en el frontend para asegurar que solo sean del día actual
+      solicitudes = solicitudes.filter(s => {
+        const fechaSolicitud = new Date(s.fecha_solicitud).toISOString().split('T')[0];
+        return fechaSolicitud === hoy;
+      });
+      
+      console.log('📋 Solicitudes del día:', solicitudes.length);
+      
+      if (solicitudes.length > 0) {
+        renderSolicitudes(solicitudes, user.rol);
+        document.getElementById('seccion-solicitudes-hoy').style.display = 'block';
+        document.getElementById('sin-solicitudes-hoy').style.display = 'none';
+        
+        // Actualizar contador de pendientes
+        const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
+        const badgePendientes = document.getElementById('count-solicitudes-pendientes');
+        if (badgePendientes) {
+          badgePendientes.textContent = `${pendientes} ${pendientes === 1 ? 'pendiente' : 'pendientes'}`;
+          badgePendientes.style.display = pendientes > 0 ? 'inline-flex' : 'none';
+        }
+      } else {
+        // Mostrar mensaje de que no hay solicitudes hoy
+        document.getElementById('seccion-solicitudes-hoy').style.display = 'none';
+        document.getElementById('sin-solicitudes-hoy').style.display = 'block';
+        document.getElementById('count-solicitudes-pendientes').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error al cargar solicitudes:', error);
+      // Mostrar mensaje de error pero mantener la sección visible
+      document.getElementById('seccion-solicitudes-hoy').style.display = 'none';
+      document.getElementById('sin-solicitudes-hoy').style.display = 'block';
+    }
+  }
+  
+  function abrirModalHistorialSolicitudes() {
+    // Establecer fecha de hoy por defecto
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('filtro-fecha-historial').value = hoy;
+    document.getElementById('filtro-estado-historial').value = '';
+    
+    Modal.open('modal-historial-solicitudes');
+    cargarHistorialSolicitudes();
+  }
+  
+  async function cargarHistorialSolicitudes() {
+    try {
+      const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
+      const fecha = document.getElementById('filtro-fecha-historial')?.value || '';
+      const estado = document.getElementById('filtro-estado-historial')?.value || '';
+      
+      let url = '/solicitudes-gastos';
+      const params = [];
+      
+      if (fecha) {
+        params.push(`fecha=${fecha}`);
+      }
+      
+      if (estado) {
+        params.push(`estado=${estado}`);
+      }
+      
+      if (params.length > 0) {
+        url += `?${params.join('&')}`;
+      }
+      
+      const response = await API.get(url);
+      let solicitudes = response.data || [];
+      
+      // Filtrar por fecha en el frontend si se especificó
+      if (fecha && solicitudes.length > 0) {
+        solicitudes = solicitudes.filter(s => {
+          const fechaSolicitud = new Date(s.fecha_solicitud).toISOString().split('T')[0];
+          return fechaSolicitud === fecha;
+        });
+      }
+      
+      console.log('📋 Solicitudes historial:', solicitudes.length);
+      
+      const container = document.getElementById('lista-historial-solicitudes');
+      
+      if (solicitudes.length > 0) {
+        renderSolicitudesHistorial(solicitudes, user.rol);
+      } else {
+        container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No se encontraron solicitudes</div>';
+      }
+    } catch (error) {
+      console.error('Error al cargar historial de solicitudes:', error);
+      const container = document.getElementById('lista-historial-solicitudes');
+      container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--danger)">Error al cargar el historial</div>';
+    }
+  }
+  
+  function limpiarFiltrosHistorial() {
+    document.getElementById('filtro-fecha-historial').value = '';
+    document.getElementById('filtro-estado-historial').value = '';
+    cargarHistorialSolicitudes();
+  }
+  
+  function renderSolicitudesHistorial(solicitudes, usuarioRol) {
+    const container = document.getElementById('lista-historial-solicitudes');
+    container.innerHTML = solicitudes.map(s => renderSolicitudCard(s, usuarioRol)).join('');
+  }
+  
+  function renderSolicitudCard(s, usuarioRol) {
+    const fecha = new Date(s.fecha_solicitud);
+    const fechaStr = fecha.toLocaleDateString('es-PE', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+    const horaStr = fecha.toLocaleTimeString('es-PE', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    // Determinar color y estado
+    let estadoHTML = '';
+    let cardBorderColor = '';
+    let cardBgClass = '';
+    let botonesHTML = '';
+    
+    if (s.estado === 'pendiente') {
+      estadoHTML = `
+        <div class="solicitud-estado-box solicitud-pendiente">
+          <div class="solicitud-estado-label">Estado</div>
+          <div class="solicitud-estado-valor">⏳ Pendiente</div>
+        </div>
+      `;
+      cardBorderColor = 'var(--gris-400)';
+      cardBgClass = 'solicitud-card-pendiente';
+      
+      // Botones solo para admin
+      if (usuarioRol === 'admin' || usuarioRol === 'duena') {
+        botonesHTML = `
+          <button class="btn btn-success btn-sm" onclick="abrirModalRevisarSolicitud(${s.id})" style="flex:1">
+            ✅ Revisar
+          </button>
+        `;
+      }
+    } else if (s.estado === 'aprobada') {
+      const fechaAprobacion = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short' 
+      }) : '';
+      estadoHTML = `
+        <div class="solicitud-estado-box solicitud-aprobada">
+          <div class="solicitud-estado-label">Estado</div>
+          <div class="solicitud-estado-valor">✅ Aprobada</div>
+          ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
+          ${fechaAprobacion ? `<div class="solicitud-estado-info">${fechaAprobacion}</div>` : ''}
+        </div>
+      `;
+      cardBorderColor = 'var(--success)';
+      cardBgClass = 'solicitud-card-aprobada';
+    } else if (s.estado === 'rechazada') {
+      const fechaRechazo = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short' 
+      }) : '';
+      estadoHTML = `
+        <div class="solicitud-estado-box solicitud-rechazada">
+          <div class="solicitud-estado-label">Estado</div>
+          <div class="solicitud-estado-valor">❌ Rechazada</div>
+          ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
+          ${fechaRechazo ? `<div class="solicitud-estado-info">${fechaRechazo}</div>` : ''}
+        </div>
+      `;
+      cardBorderColor = 'var(--danger)';
+      cardBgClass = 'solicitud-card-rechazada';
+    }
+    
+    return `
+      <div class="card solicitud-card ${cardBgClass}" style="border-left:6px solid ${cardBorderColor}">
+        <div class="solicitud-grid">
+          <!-- Hora y trabajador -->
+          <div class="solicitud-time-box">
+            <div class="solicitud-hora">${horaStr}</div>
+            <div class="solicitud-trabajador">${s.trabajador_nombre || 'N/A'}</div>
+            <div class="solicitud-fecha">${fechaStr}</div>
+          </div>
+          
+          <!-- Detalles -->
+          <div class="solicitud-detalles">
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">💰 Monto</div>
+              <div class="solicitud-detalle-valor solicitud-monto">${Fmt.moneda(s.monto)}</div>
+            </div>
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">📁 Categoría</div>
+              <div class="solicitud-detalle-valor">${s.categoria}</div>
+            </div>
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">🏢 Empresa</div>
+              <div class="solicitud-detalle-valor">${s.empresa || 'N/A'}</div>
+            </div>
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">📄 Comprobante</div>
+              <div class="solicitud-detalle-valor">${s.numero_comprobante || 'N/A'}</div>
+            </div>
+            <div class="solicitud-descripcion">
+              <div class="solicitud-detalle-label">Descripción</div>
+              <div class="solicitud-detalle-valor">${s.descripcion || 'Sin descripción'}</div>
+            </div>
+            ${s.estado === 'rechazada' && s.comentario_rechazo ? `
+              <div class="solicitud-rechazo">
+                <div class="solicitud-detalle-label">Motivo de rechazo</div>
+                <div class="solicitud-detalle-valor">${s.comentario_rechazo}</div>
+              </div>
+            ` : ''}
+          </div>
+          
+          <!-- Acciones -->
+          <div class="solicitud-acciones">
+            ${estadoHTML}
+            ${botonesHTML}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  function renderSolicitudes(solicitudes, usuarioRol) {
+    const container = document.getElementById('lista-solicitudes');
+    container.innerHTML = solicitudes.map(s => renderSolicitudCard(s, usuarioRol)).join('');
+  }
+  
+  function abrirModalSolicitudGasto() {
+    // Limpiar formulario
+    document.getElementById('solicitud-monto').value = '';
+    document.getElementById('solicitud-categoria').value = '';
+    document.getElementById('solicitud-descripcion').value = '';
+    document.getElementById('solicitud-empresa').value = '';
+    document.getElementById('solicitud-comprobante').value = '';
+    
+    Modal.open('modal-solicitud-gasto');
+  }
+  
+  async function crearSolicitudGasto() {
+    const monto = parseFloat(document.getElementById('solicitud-monto').value);
+    const categoria = document.getElementById('solicitud-categoria').value;
+    const descripcion = document.getElementById('solicitud-descripcion').value.trim();
+    const empresa = document.getElementById('solicitud-empresa').value.trim();
+    const numero_comprobante = document.getElementById('solicitud-comprobante').value.trim();
+    
+    // Validaciones
+    if (!monto || monto <= 0) {
+      Toast.warning('Ingresa un monto válido');
+      return;
+    }
+    if (!categoria) {
+      Toast.warning('Selecciona una categoría');
+      return;
+    }
+    if (!descripcion) {
+      Toast.warning('Ingresa una descripción');
+      return;
+    }
+    if (!empresa) {
+      Toast.warning('Ingresa el nombre de la empresa');
+      return;
+    }
+    if (!numero_comprobante) {
+      Toast.warning('Ingresa el número de comprobante');
+      return;
+    }
+    
+    const payload = {
+      monto,
+      categoria,
+      descripcion,
+      empresa,
+      numero_comprobante
+    };
+    
+    try {
+      const response = await API.post('/solicitudes-gastos', payload);
+      Toast.success('Solicitud enviada correctamente. Pendiente de aprobación.');
+      Modal.close('modal-solicitud-gasto');
+      await cargarSolicitudesGastos();
+    } catch (error) {
+      console.error('Error al crear solicitud:', error);
+      Toast.error(error.message || 'Error al crear la solicitud');
+    }
+  }
+  
+  async function abrirModalRevisarSolicitud(id) {
+    try {
+      const response = await API.get(`/solicitudes-gastos/${id}`);
+      const solicitud = response.data || response;
+      
+      solicitudActualId = id;
+      
+      const fecha = new Date(solicitud.fecha_solicitud);
+      const fechaStr = fecha.toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'long', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const detalleHTML = `
+        <div style="display:grid;gap:12px">
+          <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Solicitante</div>
+            <div style="font-size:15px;font-weight:600">${solicitud.trabajador_nombre}</div>
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-top:4px">${fechaStr}</div>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Monto</div>
+              <div style="font-size:20px;font-weight:700;color:var(--success)">${Fmt.moneda(solicitud.monto)}</div>
+            </div>
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Categoría</div>
+              <div style="font-size:15px;font-weight:600;text-transform:capitalize">${solicitud.categoria}</div>
+            </div>
+          </div>
+          
+          <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+            <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Descripción</div>
+            <div style="font-size:14px">${solicitud.descripcion}</div>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">Empresa</div>
+              <div style="font-size:14px;font-weight:600">${solicitud.empresa}</div>
+            </div>
+            <div style="background:var(--bg-secondary, var(--gris-50));padding:12px;border-radius:8px">
+              <div style="font-size:11px;color:var(--text-secondary, var(--gris-500));margin-bottom:4px">N° Comprobante</div>
+              <div style="font-size:14px;font-weight:600">${solicitud.numero_comprobante}</div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('detalle-solicitud-revisar').innerHTML = detalleHTML;
+      document.getElementById('grupo-comentario-rechazo').style.display = 'none';
+      document.getElementById('comentario-rechazo').value = '';
+      document.getElementById('btn-mostrar-rechazo').style.display = 'inline-block';
+      document.getElementById('btn-confirmar-rechazo').style.display = 'none';
+      document.getElementById('btn-aprobar').style.display = 'inline-block';
+      
+      Modal.open('modal-revisar-solicitud');
+    } catch (error) {
+      console.error('Error al cargar solicitud:', error);
+      Toast.error('No se pudo cargar la solicitud');
+    }
+  }
+  
+  function mostrarCampoRechazo() {
+    document.getElementById('grupo-comentario-rechazo').style.display = 'block';
+    document.getElementById('btn-mostrar-rechazo').style.display = 'none';
+    document.getElementById('btn-confirmar-rechazo').style.display = 'inline-block';
+    document.getElementById('btn-aprobar').style.display = 'none';
+  }
+  
+  async function aprobarSolicitud() {
+    if (!solicitudActualId) return;
+    
+    try {
+      const response = await API.put(`/solicitudes-gastos/${solicitudActualId}/aprobar`);
+      Toast.success('Solicitud aprobada correctamente. Gasto registrado.');
+      Modal.close('modal-revisar-solicitud');
+      await cargarSolicitudesGastos();
+      
+      // Si el modal de historial está abierto, recargarlo también
+      const modalHistorial = document.getElementById('modal-historial-solicitudes');
+      if (modalHistorial && modalHistorial.classList.contains('active')) {
+        await cargarHistorialSolicitudes();
+      }
+      
+      await cargarCaja(); // Recargar para actualizar gastos
+    } catch (error) {
+      console.error('Error al aprobar solicitud:', error);
+      Toast.error(error.message || 'Error al aprobar la solicitud');
+    }
+  }
+  
+  async function rechazarSolicitud() {
+    if (!solicitudActualId) return;
+    
+    const comentario = document.getElementById('comentario-rechazo').value.trim();
+    
+    if (!comentario) {
+      Toast.warning('Debes ingresar un comentario para rechazar');
+      return;
+    }
+    
+    try {
+      const response = await API.put(`/solicitudes-gastos/${solicitudActualId}/rechazar`, { comentario });
+      Toast.success('Solicitud rechazada correctamente.');
+      Modal.close('modal-revisar-solicitud');
+      await cargarSolicitudesGastos();
+      
+      // Si el modal de historial está abierto, recargarlo también
+      const modalHistorial = document.getElementById('modal-historial-solicitudes');
+      if (modalHistorial && modalHistorial.classList.contains('active')) {
+        await cargarHistorialSolicitudes();
+      }
+    } catch (error) {
+      console.error('Error al rechazar solicitud:', error);
+      Toast.error(error.message || 'Error al rechazar la solicitud');
+    }
+  }
 
   cargarCaja();
 </script>

@@ -24,6 +24,7 @@ const promocionesRoutes = require('./routes/promociones.routes');
 const eventosRoutes = require('./routes/eventos.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const capitalRoutes = require('./routes/capital.routes');
+const solicitudesGastosRoutes = require('./routes/solicitudes-gastos.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -122,6 +123,7 @@ app.use('/api/arreglos', arreglosRoutes);
 app.use('/api/promociones', promocionesRoutes);
 app.use('/api/eventos', eventosRoutes);
 app.use('/api/capital', capitalRoutes);
+app.use('/api/solicitudes-gastos', solicitudesGastosRoutes);
 
 // 404 handler
 app.use(notFound);

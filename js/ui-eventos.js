@@ -28,7 +28,26 @@ const UIEventos = {
    * Crear card de evento para panel admin
    */
   crearCardAdmin(evento) {
-    const descuento = Eventos.calcularDescuento(evento.precioOriginal, evento.precioFinal);
+    // Parsear metadata si existe - PostgreSQL devuelve JSONB como objeto
+    let metadata = {};
+    if (evento.metadata) {
+      if (typeof evento.metadata === 'object') {
+        metadata = evento.metadata;
+      } else {
+        try {
+          metadata = JSON.parse(evento.metadata);
+        } catch (e) {
+          console.warn('No se pudo parsear metadata:', e);
+        }
+      }
+    }
+
+    const precioOriginal = metadata.precioOriginal || 0;
+    const precioFinal = metadata.precioFinal || 0;
+    const productos = metadata.productos || [];
+    const imagen = metadata.imagen || '';
+
+    const descuento = Eventos.calcularDescuento(precioOriginal, precioFinal);
     const diasRestantes = Eventos.diasRestantes(evento.fecha);
     const fechaFormateada = Eventos.formatearFecha(evento.fecha);
 
@@ -37,7 +56,7 @@ const UIEventos = {
         <div style="display:flex;gap:1rem;align-items:start">
           <!-- Imagen -->
           <div style="flex-shrink:0">
-            <img src="${evento.imagen}" 
+            <img src="${imagen}" 
                  alt="${evento.nombre}" 
                  style="width:120px;height:120px;object-fit:cover;border-radius:8px"
                  onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22%3E%3Crect fill=%22%23f0e8f5%22 width=%22120%22 height=%22120%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-size=%2240%22%3E🌸%3C/text%3E%3C/svg%3E'" />
@@ -47,7 +66,7 @@ const UIEventos = {
           <div style="flex:1">
             <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
               <div>
-                <h3 style="margin:0;font-size:18px;color:var(--gris-900)">${evento.emoji} ${evento.nombre}</h3>
+                <h3 style="margin:0;font-size:18px;color:var(--gris-900)">${evento.emoji || '🌸'} ${evento.nombre}</h3>
                 <p style="margin:4px 0 0 0;font-size:13px;color:var(--gris-600)">${fechaFormateada}</p>
               </div>
               <div style="display:flex;gap:6px">
@@ -65,24 +84,28 @@ const UIEventos = {
               <span class="badge ${diasRestantes <= 7 ? 'badge-warning' : 'badge-success'}">
                 ${diasRestantes === 0 ? '¡Hoy!' : diasRestantes === 1 ? 'Mañana' : `En ${diasRestantes} días`}
               </span>
-              <span class="badge badge-danger">${descuento}% OFF</span>
-              <span class="badge badge-gray">${evento.productos.length} producto(s)</span>
+              ${descuento > 0 ? `<span class="badge badge-danger">${descuento}% OFF</span>` : ''}
+              <span class="badge badge-gray">${productos.length} producto(s)</span>
             </div>
 
             <!-- Productos -->
+            ${productos.length > 0 ? `
             <div style="font-size:12px;color:var(--gris-600);margin-bottom:8px">
-              <strong>Productos:</strong> ${evento.productos.map(p => p.nombre).join(', ')}
+              <strong>Productos:</strong> ${productos.map(p => p.nombre).join(', ')}
             </div>
+            ` : ''}
 
             <!-- Precios -->
+            ${precioOriginal > 0 && precioFinal > 0 ? `
             <div style="display:flex;gap:12px;align-items:center">
               <span style="text-decoration:line-through;color:var(--gris-400);font-size:14px">
-                S/ ${evento.precioOriginal.toFixed(2)}
+                S/ ${precioOriginal.toFixed(2)}
               </span>
               <span style="font-size:20px;font-weight:700;color:var(--rosa-500)">
-                S/ ${evento.precioFinal.toFixed(2)}
+                S/ ${precioFinal.toFixed(2)}
               </span>
             </div>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -107,7 +130,26 @@ const UIEventos = {
    * Crear card de evento para página pública
    */
   crearCardPublico(evento) {
-    const descuento = Eventos.calcularDescuento(evento.precioOriginal, evento.precioFinal);
+    // Parsear metadata si existe - PostgreSQL devuelve JSONB como objeto
+    let metadata = {};
+    if (evento.metadata) {
+      if (typeof evento.metadata === 'object') {
+        metadata = evento.metadata;
+      } else {
+        try {
+          metadata = JSON.parse(evento.metadata);
+        } catch (e) {
+          console.warn('No se pudo parsear metadata:', e);
+        }
+      }
+    }
+
+    const precioOriginal = metadata.precioOriginal || 0;
+    const precioFinal = metadata.precioFinal || 0;
+    const productos = metadata.productos || [];
+    const imagen = metadata.imagen || '';
+
+    const descuento = Eventos.calcularDescuento(precioOriginal, precioFinal);
     const diasRestantes = Eventos.diasRestantes(evento.fecha);
     const fechaFormateada = new Date(evento.fecha).toLocaleDateString('es-PE', { 
       day: '2-digit', 
@@ -115,24 +157,24 @@ const UIEventos = {
     });
 
     return `
-      <div class="promo-card" onclick="pedirEvento('${evento.nombre.replace(/'/g, "\\'")}', ${evento.precioFinal})">
+      <div class="promo-card" onclick="pedirEvento('${evento.nombre.replace(/'/g, "\\'")}', ${precioFinal})">
         <!-- Badge de descuento -->
-        <div class="promo-tag">-${descuento}% OFF</div>
+        ${descuento > 0 ? `<div class="promo-tag">-${descuento}% OFF</div>` : ''}
         
         <!-- Imagen -->
         <div class="promo-img">
-          <img src="${evento.imagen}" 
+          <img src="${imagen}" 
                alt="${evento.nombre}"
                style="width:100%;height:100%;object-fit:cover"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
           <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:64px;background:#f0e8f5">
-            ${evento.emoji}
+            ${evento.emoji || '🌸'}
           </div>
         </div>
 
         <!-- Contenido -->
         <div class="promo-body">
-          <div class="promo-emoji">${evento.emoji}</div>
+          <div class="promo-emoji">${evento.emoji || '🌸'}</div>
           <div class="promo-title">${evento.nombre}</div>
           <div class="promo-date">📅 ${fechaFormateada}</div>
           
@@ -143,17 +185,21 @@ const UIEventos = {
           ` : ''}
 
           <!-- Productos incluidos -->
+          ${productos.length > 0 ? `
           <div style="font-size:11px;color:var(--gris-600);margin:8px 0;line-height:1.5">
             <strong>Incluye:</strong><br>
-            ${evento.productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
-            ${evento.productos.length > 3 ? `<br>• Y ${evento.productos.length - 3} más...` : ''}
+            ${productos.slice(0, 3).map(p => `• ${p.nombre}`).join('<br>')}
+            ${productos.length > 3 ? `<br>• Y ${productos.length - 3} más...` : ''}
           </div>
+          ` : ''}
 
           <!-- Precios -->
+          ${precioOriginal > 0 && precioFinal > 0 ? `
           <div class="promo-price">
-            <span class="promo-price-old">S/ ${evento.precioOriginal.toFixed(2)}</span>
-            <span class="promo-price-new">S/ ${evento.precioFinal.toFixed(2)}</span>
+            <span class="promo-price-old">S/ ${precioOriginal.toFixed(2)}</span>
+            <span class="promo-price-new">S/ ${precioFinal.toFixed(2)}</span>
           </div>
+          ` : ''}
 
           <button class="btn btn-primary" style="width:100%;margin-top:8px">
             📱 Pedir por WhatsApp

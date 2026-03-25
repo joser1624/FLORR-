@@ -34,17 +34,27 @@ const updateWorkerValidation = [
 
 /**
  * GET /api/trabajadores
- * Requirement 9.10: Admin only
+ * Requirement 9.10: Admin only for full access
+ * Empleado can view list (read-only, needed for ventas dropdown)
  * Requirement 20.1, 20.2: Standardized response
  */
-router.get('/', verifyToken, requireRole(['admin']), trabajadoresController.getAll.bind(trabajadoresController));
+router.get('/', 
+  verifyToken, 
+  requireRole(['admin', 'empleado']), 
+  trabajadoresController.getAll.bind(trabajadoresController)
+);
 
 /**
  * GET /api/trabajadores/:id
- * Requirement 9.10: Admin only
+ * Requirement 9.10: Admin only for full access
+ * Empleado can view (read-only)
  * Requirement 20.1, 20.2: Standardized response
  */
-router.get('/:id', verifyToken, requireRole(['admin']), trabajadoresController.getById.bind(trabajadoresController));
+router.get('/:id', 
+  verifyToken, 
+  requireRole(['admin', 'empleado']), 
+  trabajadoresController.getById.bind(trabajadoresController)
+);
 
 /**
  * POST /api/trabajadores

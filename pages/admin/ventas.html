@@ -5,6 +5,434 @@
   <title>Ventas — Encantos Eternos</title>
   <link rel="stylesheet" href="../../css/variables.css" />
   <link rel="stylesheet" href="../../css/admin.css" />
+  <style>
+    /* ═══════════════════════════════════════
+       ESTILOS PARA RECIBO IMPRIMIBLE
+    ═══════════════════════════════════════ */
+    @media print {
+      /* Ocultar todo excepto el recibo */
+      body * {
+        visibility: hidden !important;
+        display: none !important;
+      }
+      
+      /* Mostrar solo el contenedor de impresión */
+      #recibo-print {
+        visibility: visible !important;
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      #recibo-print * {
+        visibility: visible !important;
+        display: block !important;
+      }
+      
+      #recibo-print .recibo-row,
+      #recibo-print .recibo-producto-detalle,
+      #recibo-print .recibo-total-row {
+        display: flex !important;
+      }
+      
+      /* Configuración de página para impresora térmica */
+      @page {
+        size: 80mm 297mm;  /* Ancho 80mm, alto estándar para rollo */
+        margin: 0mm;       /* Sin márgenes */
+      }
+      
+      /* Forzar el tamaño del body */
+      body {
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      html {
+        width: 80mm !important;
+      }
+    }
+
+    /* Estilos del recibo */
+    .recibo-container {
+      width: 80mm;
+      max-width: 100%;
+      margin: 0 auto;
+      background: white;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #000;
+      padding: 10mm;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    /* Asegurar que el contenedor de impresión tenga los mismos estilos */
+    #recibo-print .recibo-container {
+      box-shadow: none;
+    }
+
+    .recibo-header {
+      text-align: center;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .recibo-logo {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .recibo-empresa {
+      font-weight: bold;
+      font-size: 13px;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .recibo-info {
+      font-size: 10px;
+      color: #333;
+    }
+
+    .recibo-section {
+      margin-bottom: 12px;
+    }
+
+    .recibo-section-title {
+      font-weight: bold;
+      font-size: 10px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      color: #666;
+    }
+
+    .recibo-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .recibo-productos {
+      border-top: 1px dashed #000;
+      border-bottom: 1px dashed #000;
+      padding: 8px 0;
+      margin: 12px 0;
+    }
+
+    .recibo-producto {
+      margin-bottom: 6px;
+    }
+
+    .recibo-producto-nombre {
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .recibo-producto-detalle {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      padding-left: 8px;
+    }
+
+    .recibo-total {
+      border-top: 2px solid #000;
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+
+    .recibo-total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+
+    .recibo-footer {
+      text-align: center;
+      border-top: 2px dashed #000;
+      padding-top: 12px;
+      margin-top: 12px;
+      font-size: 10px;
+    }
+
+    .recibo-gracias {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .recibo-contacto {
+      margin-top: 8px;
+      font-size: 9px;
+      color: #666;
+    }
+
+    /* Modal para vista previa */
+    #modal-recibo .modal {
+      max-width: 400px;
+    }
+
+    #modal-recibo .modal-body {
+      padding: 0;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE DESIGN
+    ═══════════════════════════════════════ */
+    
+    /* Tablets y pantallas medianas */
+    @media (max-width: 1024px) {
+      .stats-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      
+      .filter-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      
+      .filter-bar > * {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 150px;
+      }
+    }
+    
+    /* Móviles */
+    @media (max-width: 768px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      
+      .page-header > div:last-child {
+        width: 100%;
+      }
+      
+      .page-header button {
+        width: 100%;
+      }
+      
+      .stats-grid-4 {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .filter-bar {
+        flex-direction: column;
+      }
+      
+      .filter-bar > * {
+        width: 100%;
+        max-width: 100%;
+      }
+      
+      /* Ocultar tabla y mostrar cards en móvil */
+      .table-wrap {
+        display: none;
+      }
+      
+      #ventas-cards-mobile {
+        display: block !important;
+      }
+      
+      /* Modal responsive */
+      .modal {
+        max-width: 95% !important;
+        margin: 10px;
+      }
+      
+      .modal-body {
+        padding: 1rem;
+      }
+      
+      .form-grid-2 {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Paginación responsive */
+      #paginacion-ventas {
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      
+      #paginacion-ventas button {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+    }
+    
+    /* Estilos para cards móviles */
+    #ventas-cards-mobile {
+      display: none;
+    }
+    
+    .venta-card-mobile {
+      background: var(--card-bg, white);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid var(--rosa-500);
+      transition: all 0.3s ease;
+    }
+    
+    .venta-card-mobile:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+    
+    .venta-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color, var(--gris-100));
+    }
+    
+    .venta-card-id {
+      font-size: 12px;
+      color: var(--text-secondary, var(--gris-500));
+      font-weight: 600;
+    }
+    
+    .venta-card-total {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--rosa-600);
+    }
+    
+    .venta-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .venta-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    
+    .venta-card-label {
+      color: var(--text-secondary, var(--gris-600));
+      font-weight: 500;
+    }
+    
+    .venta-card-value {
+      color: var(--text-primary, var(--gris-900));
+      font-weight: 600;
+      text-align: right;
+    }
+    
+    .venta-card-productos {
+      background: var(--bg-secondary, var(--gris-50));
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-primary, var(--gris-700));
+      margin: 8px 0;
+      border: 1px solid var(--border-color, transparent);
+    }
+    
+    .venta-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color, var(--gris-100));
+    }
+    
+    .venta-card-actions button {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    /* Modo oscuro para cards */
+    .dark-mode .venta-card-mobile {
+      background: var(--card-bg);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    .dark-mode .venta-card-mobile:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    
+    .dark-mode .venta-card-header {
+      border-bottom-color: var(--border-color);
+    }
+    
+    .dark-mode .venta-card-id {
+      color: var(--text-secondary);
+    }
+    
+    .dark-mode .venta-card-label {
+      color: var(--text-secondary);
+    }
+    
+    .dark-mode .venta-card-value {
+      color: var(--text-primary);
+    }
+    
+    .dark-mode .venta-card-productos {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+    
+    .dark-mode .venta-card-actions {
+      border-top-color: var(--border-color);
+    }
+    
+    /* Móviles pequeños */
+    @media (max-width: 480px) {
+      .stat-card {
+        padding: 12px;
+      }
+      
+      .stat-value {
+        font-size: 20px;
+      }
+      
+      .stat-label {
+        font-size: 11px;
+      }
+      
+      .data-table {
+        font-size: 11px;
+      }
+      
+      .btn {
+        font-size: 13px;
+        padding: 8px 12px;
+      }
+      
+      .modal {
+        max-width: 100% !important;
+        margin: 0;
+        border-radius: 0;
+      }
+      
+      .modal-header h3 {
+        font-size: 18px;
+      }
+    }
+  </style>
    <link rel="icon" type="image/png" href="../../icon/favicon.png">
 </head>
 <body>
@@ -52,6 +480,9 @@
           <tbody id="tbody-ventas"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">Cargando ventas...</td></tr></tbody>
         </table>
       </div>
+      
+      <!-- Vista de cards para móvil -->
+      <div id="ventas-cards-mobile"></div>
       
       <!-- Paginación -->
       <div id="paginacion-ventas" style="display:flex;justify-content:center;gap:8px;margin-top:1rem"></div>
@@ -121,6 +552,26 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Recibo Imprimible -->
+<div class="modal-overlay" id="modal-recibo">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Recibo de Venta</h3>
+      <button class="btn-close" onclick="Modal.close('modal-recibo')">×</button>
+    </div>
+    <div class="modal-body" id="recibo-preview">
+      <!-- Contenido del recibo generado dinámicamente -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-recibo')">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="imprimirRecibo()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contenedor oculto para impresión -->
+<div id="recibo-print" style="display:none"></div>
 
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
@@ -208,13 +659,17 @@
         break;
     }
     
+    // Renderizar tabla (desktop)
     const tbody = document.getElementById('tbody-ventas');
     if (!lista.length) { 
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">No hay ventas para este filtro</td></tr>'; 
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--gris-400)">No hay ventas para este filtro</td></tr>';
+      document.getElementById('ventas-cards-mobile').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No hay ventas para este filtro</div>';
       return; 
     }
     
     const metodoIcon = { Efectivo:'💵', Yape:'📱', Plin:'📱', Tarjeta:'💳', 'Transferencia bancaria':'🏦' };
+    
+    // Renderizar tabla
     tbody.innerHTML = lista.map(v => {
       const metodo = v.metodo_pago || v.metodo || 'Efectivo';
       const productos = v.productos || [];
@@ -229,8 +684,59 @@
         <td style="font-size:12px">${v.trabajador_nombre || v.trabajador || '—'}</td>
         <td><span class="badge badge-gray">${metodoIcon[metodo]||''} ${metodo}</span></td>
         <td style="font-weight:600;color:var(--rosa-600)">${Fmt.moneda(v.total)}</td>
-        <td><button class="btn-tbl btn-tbl-view" onclick="verDetalleVenta(${v.id})">Ver</button></td>
+        <td>
+          <button class="btn-tbl btn-tbl-view" onclick="verDetalleVenta(${v.id})" title="Ver detalle">Ver</button>
+          <button class="btn-tbl btn-tbl-edit" onclick="generarRecibo(${v.id})" title="Imprimir recibo" style="margin-left:4px">🖨️</button>
+        </td>
       </tr>`;
+    }).join('');
+    
+    // Renderizar cards móviles
+    const cardsContainer = document.getElementById('ventas-cards-mobile');
+    cardsContainer.innerHTML = lista.map(v => {
+      const metodo = v.metodo_pago || v.metodo || 'Efectivo';
+      const productos = v.productos || [];
+      const productosTexto = productos.length > 0 
+        ? productos.map(p => `${p.producto_nombre || p.nombre} x${p.cantidad}`).join(', ')
+        : 'Sin productos';
+      const fecha = new Date(v.fecha || v.created_at);
+      const fechaStr = fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+      const horaStr = fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      
+      return `
+        <div class="venta-card-mobile">
+          <div class="venta-card-header">
+            <span class="venta-card-id">#${v.id}</span>
+            <span class="venta-card-total">${Fmt.moneda(v.total)}</span>
+          </div>
+          <div class="venta-card-body">
+            <div class="venta-card-row">
+              <span class="venta-card-label">📅 Fecha:</span>
+              <span class="venta-card-value">${fechaStr}</span>
+            </div>
+            <div class="venta-card-row">
+              <span class="venta-card-label">🕐 Hora:</span>
+              <span class="venta-card-value">${horaStr}</span>
+            </div>
+            <div class="venta-card-row">
+              <span class="venta-card-label">💳 Método:</span>
+              <span class="venta-card-value">${metodoIcon[metodo]||''} ${metodo}</span>
+            </div>
+            <div class="venta-card-row">
+              <span class="venta-card-label">👤 Trabajador:</span>
+              <span class="venta-card-value">${v.trabajador_nombre || v.trabajador || '—'}</span>
+            </div>
+            <div class="venta-card-productos">
+              <strong>🛒 Productos:</strong><br>
+              ${productosTexto}
+            </div>
+          </div>
+          <div class="venta-card-actions">
+            <button class="btn btn-outline btn-sm" onclick="verDetalleVenta(${v.id})">👁️ Ver detalle</button>
+            <button class="btn btn-primary btn-sm" onclick="generarRecibo(${v.id})">🖨️ Recibo</button>
+          </div>
+        </div>
+      `;
     }).join('');
 
     // Resumen
@@ -382,15 +888,40 @@
     
     const clienteId = document.getElementById('venta-cliente').value;
     
+    // Asegurar que todos los valores sean del tipo correcto
     const payload = {
-      productos: itemsVenta.map(i => ({ 
-        producto_id: i.id, 
-        cantidad: i.cantidad, 
-        precio_unitario: i.precio 
-      })),
-      metodo_pago: document.getElementById('metodo-pago').value,
-      cliente_id: clienteId ? parseInt(clienteId) : null
+      productos: itemsVenta.map(i => {
+        const producto = {
+          producto_id: parseInt(i.id, 10),
+          cantidad: parseInt(i.cantidad, 10),
+          precio_unitario: parseFloat(i.precio)
+        };
+        
+        // Validar que los valores sean válidos
+        if (isNaN(producto.producto_id) || producto.producto_id <= 0) {
+          throw new Error(`ID de producto inválido: ${i.id}`);
+        }
+        if (isNaN(producto.cantidad) || producto.cantidad <= 0) {
+          throw new Error(`Cantidad inválida para producto ${i.nombre}: ${i.cantidad}`);
+        }
+        if (isNaN(producto.precio_unitario) || producto.precio_unitario < 0) {
+          throw new Error(`Precio inválido para producto ${i.nombre}: ${i.precio}`);
+        }
+        
+        return producto;
+      }),
+      metodo_pago: document.getElementById('metodo-pago').value
     };
+    
+    // Solo incluir cliente_id si tiene un valor seleccionado
+    if (clienteId && clienteId !== '') {
+      const clienteIdNum = parseInt(clienteId, 10);
+      if (!isNaN(clienteIdNum) && clienteIdNum > 0) {
+        payload.cliente_id = clienteIdNum;
+      }
+    }
+    
+    console.log('Payload a enviar:', JSON.stringify(payload, null, 2));
     
     try {
       const response = await API.post('/ventas', payload);
@@ -403,9 +934,13 @@
       document.getElementById('venta-cliente').value = '';
       
       Modal.close('modal-venta');
-      await cargarVentas(paginaActual); // Recargar la página actual
+      
+      // Recargar las ventas desde la primera página para asegurar ver la nueva venta
+      paginaActual = 1;
+      await cargarVentas(1);
     } catch (error) {
       console.error('Error al registrar venta:', error);
+      console.error('Payload que causó el error:', payload);
       Toast.error(error.message || 'Error al registrar la venta');
     }
   }
@@ -515,6 +1050,190 @@
         }
       }
     }
+  }
+
+  // ═══════════════════════════════════════
+  // FUNCIONES DE RECIBO IMPRIMIBLE
+  // ═══════════════════════════════════════
+
+  /**
+   * Genera y muestra el recibo de una venta
+   * @param {number} ventaId - ID de la venta
+   */
+  async function generarRecibo(ventaId) {
+    try {
+      console.log('🧾 Generando recibo para venta ID:', ventaId);
+      
+      const response = await API.get('/ventas/' + ventaId);
+      const venta = response.data?.venta || response.venta || response.data || response;
+      
+      if (!venta) {
+        Toast.error('No se pudo cargar la venta');
+        return;
+      }
+
+      console.log('✅ Datos de venta cargados:', venta);
+
+      const reciboHTML = crearReciboHTML(venta);
+      
+      console.log('📝 HTML del recibo generado (primeros 200 chars):', reciboHTML.substring(0, 200));
+      
+      // Mostrar en modal de vista previa
+      const previewEl = document.getElementById('recibo-preview');
+      if (previewEl) {
+        previewEl.innerHTML = reciboHTML;
+        console.log('✅ Recibo insertado en preview');
+      } else {
+        console.error('❌ No se encontró #recibo-preview');
+      }
+      
+      // Copiar al contenedor de impresión
+      const printEl = document.getElementById('recibo-print');
+      if (printEl) {
+        printEl.innerHTML = reciboHTML;
+        console.log('✅ Recibo insertado en contenedor de impresión');
+        console.log('Contenedor de impresión:', printEl);
+      } else {
+        console.error('❌ No se encontró #recibo-print');
+      }
+      
+      Modal.open('modal-recibo');
+    } catch (error) {
+      console.error('❌ Error al generar recibo:', error);
+      Toast.error('No se pudo generar el recibo');
+    }
+  }
+
+  /**
+   * Crea el HTML del recibo con los datos de la venta
+   * @param {object} venta - Datos de la venta
+   * @returns {string} HTML del recibo
+   */
+  function crearReciboHTML(venta) {
+    const productos = venta.productos || [];
+    const metodo = venta.metodo_pago || venta.metodo || 'Efectivo';
+    const fecha = new Date(venta.fecha || venta.created_at);
+    const fechaStr = fecha.toLocaleDateString('es-PE', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric' 
+    });
+    const horaStr = fecha.toLocaleTimeString('es-PE', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+
+    // Calcular subtotal
+    const subtotal = productos.reduce((sum, p) => {
+      return sum + (parseFloat(p.precio_unitario || p.precio || 0) * parseInt(p.cantidad || 0));
+    }, 0);
+
+    return `
+      <div class="recibo-container">
+        <!-- Header -->
+        <div class="recibo-header">
+          <div class="recibo-logo">🌸</div>
+          <div class="recibo-empresa">Encantos Eternos</div>
+          <div class="recibo-info">Florería y Regalos</div>
+          <div class="recibo-info">Jr. Ejemplo 123, Lima</div>
+          <div class="recibo-info">Tel: (01) 234-5678</div>
+        </div>
+
+        <!-- Información de la venta -->
+        <div class="recibo-section">
+          <div class="recibo-row">
+            <span>Recibo:</span>
+            <span>#${String(venta.id).padStart(6, '0')}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Fecha:</span>
+            <span>${fechaStr}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Hora:</span>
+            <span>${horaStr}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Atendió:</span>
+            <span>${venta.trabajador_nombre || venta.trabajador || 'N/A'}</span>
+          </div>
+        </div>
+
+        <!-- Productos -->
+        <div class="recibo-productos">
+          <div class="recibo-section-title">Productos</div>
+          ${productos.map(p => {
+            const nombre = p.producto_nombre || p.nombre || 'Producto';
+            const cantidad = parseInt(p.cantidad || 0);
+            const precio = parseFloat(p.precio_unitario || p.precio || 0);
+            const total = cantidad * precio;
+            
+            return `
+              <div class="recibo-producto">
+                <div class="recibo-producto-nombre">${nombre}</div>
+                <div class="recibo-producto-detalle">
+                  <span>${cantidad} x ${Fmt.moneda(precio)}</span>
+                  <span>${Fmt.moneda(total)}</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Totales -->
+        <div class="recibo-section">
+          <div class="recibo-row">
+            <span>Subtotal:</span>
+            <span>${Fmt.moneda(subtotal)}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Método de pago:</span>
+            <span>${metodo}</span>
+          </div>
+          <div class="recibo-total">
+            <div class="recibo-total-row">
+              <span>TOTAL:</span>
+              <span>${Fmt.moneda(venta.total)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="recibo-footer">
+          <div class="recibo-gracias">¡Gracias por su compra!</div>
+          <div class="recibo-info">Vuelva pronto</div>
+          <div class="recibo-contacto">
+            WhatsApp: 987 654 321<br>
+            www.encantoseternos.com
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Imprime el recibo
+   */
+  function imprimirRecibo() {
+    // Verificar que hay contenido en el contenedor de impresión
+    const reciboContent = document.getElementById('recibo-print').innerHTML;
+    
+    if (!reciboContent || reciboContent.trim() === '') {
+      Toast.error('No hay recibo para imprimir');
+      console.error('El contenedor #recibo-print está vacío');
+      return;
+    }
+    
+    console.log('📄 Imprimiendo recibo...');
+    console.log('Contenido del recibo:', reciboContent.substring(0, 100) + '...');
+    
+    // Mostrar instrucciones al usuario
+    Toast.info('💡 En el diálogo de impresión, selecciona:\n- Tamaño: 80mm o Personalizado\n- Márgenes: Ninguno', 6000);
+    
+    // Dar tiempo para que el navegador procese el contenido
+    setTimeout(() => {
+      window.print();
+    }, 100);
   }
 </script>
 </body>

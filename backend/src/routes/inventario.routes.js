@@ -47,25 +47,39 @@ router.get('/:id', inventarioController.getById.bind(inventarioController));
 
 /**
  * POST /api/inventario
- * Requirement 2.5: All authenticated roles can access
+ * Requirement 2.5: Admin only for creating inventory items
  * Requirement 17.1, 17.2, 17.3: Request validation
  * Creates a new inventory item
  */
-router.post('/', verifyToken, createInventoryValidation, inventarioController.create.bind(inventarioController));
+router.post('/', 
+  verifyToken, 
+  requireRole(['admin']), 
+  createInventoryValidation, 
+  inventarioController.create.bind(inventarioController)
+);
 
 /**
  * PUT /api/inventario/:id
- * Requirement 2.5: All authenticated roles can access
+ * Requirement 2.5: Admin only for updating inventory items
  * Requirement 17.1, 17.2, 17.3: Request validation
  * Updates an existing inventory item
  */
-router.put('/:id', verifyToken, updateInventoryValidation, inventarioController.update.bind(inventarioController));
+router.put('/:id', 
+  verifyToken, 
+  requireRole(['admin']), 
+  updateInventoryValidation, 
+  inventarioController.update.bind(inventarioController)
+);
 
 /**
  * DELETE /api/inventario/:id
- * Requirement 2.5: All authenticated roles can access
+ * Requirement 2.5: Admin only for deleting inventory items
  * Deletes an inventory item
  */
-router.delete('/:id', verifyToken, inventarioController.delete.bind(inventarioController));
+router.delete('/:id', 
+  verifyToken, 
+  requireRole(['admin']), 
+  inventarioController.delete.bind(inventarioController)
+);
 
 module.exports = router;
