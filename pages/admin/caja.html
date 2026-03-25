@@ -803,21 +803,23 @@
         <div id="lista-quiebres" style="display:grid;gap:12px"></div>
       </div>
 
-      <!-- Solicitudes de Gastos -->
-      <div id="seccion-solicitudes" style="margin-bottom:1.5rem;display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+      <!-- Solicitudes de Gastos del día -->
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
           <div style="font-weight:600;font-size:15px">💰 Solicitudes de Gastos</div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span id="count-solicitudes-pendientes" class="badge badge-warning" style="font-size:12px;display:none">0 pendientes</span>
-            <select id="filtro-estado-solicitudes" class="form-control" style="max-width:150px;font-size:13px" onchange="cargarSolicitudesGastos()">
-              <option value="">Todas</option>
-              <option value="pendiente">Pendientes</option>
-              <option value="aprobada">Aprobadas</option>
-              <option value="rechazada">Rechazadas</option>
-            </select>
+            <button class="btn btn-outline btn-sm" onclick="abrirModalHistorialSolicitudes()">📋 Ver historial</button>
           </div>
         </div>
-        <div id="lista-solicitudes" style="display:grid;gap:12px"></div>
+        <div id="seccion-solicitudes-hoy" style="display:none">
+          <div id="lista-solicitudes" style="display:grid;gap:12px"></div>
+        </div>
+        <div id="sin-solicitudes-hoy" style="display:none;text-align:center;padding:1.5rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1.5px dashed var(--gris-200)">
+          <div style="font-size:48px;margin-bottom:8px;opacity:0.5">📋</div>
+          <div style="color:var(--gris-500);font-size:14px">No hay solicitudes de gastos para hoy</div>
+          <div style="color:var(--gris-400);font-size:12px;margin-top:4px">Usa el botón "Ver historial" para consultar días anteriores</div>
+        </div>
       </div>
 
       <!-- Transacciones del día -->
@@ -1149,6 +1151,35 @@
   </div>
 </div>
 
+<!-- Modal Historial de Solicitudes -->
+<div class="modal-overlay" id="modal-historial-solicitudes">
+  <div class="modal" style="max-width:1000px">
+    <div class="modal-header">
+      <h3>📋 Historial de Solicitudes de Gastos</h3>
+      <button class="btn-close" onclick="Modal.close('modal-historial-solicitudes')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+        <input type="date" id="filtro-fecha-historial" class="form-control" style="max-width:150px;font-size:13px" onchange="cargarHistorialSolicitudes()" />
+        <select id="filtro-estado-historial" class="form-control" style="max-width:150px;font-size:13px" onchange="cargarHistorialSolicitudes()">
+          <option value="">Todos los estados</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="aprobada">Aprobadas</option>
+          <option value="rechazada">Rechazadas</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="limpiarFiltrosHistorial()">🔄 Limpiar filtros</button>
+      </div>
+      
+      <!-- Lista de solicitudes -->
+      <div id="lista-historial-solicitudes" style="display:grid;gap:12px;max-height:500px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-historial-solicitudes')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Aprobar/Rechazar Solicitud (Admin) -->
 <div class="modal-overlay" id="modal-revisar-solicitud">
   <div class="modal" style="max-width:520px">
@@ -1279,9 +1310,6 @@
           btnAnularCierre.style.display = 'none';
         }
       }
-      
-      // Ocultar sección de solicitudes
-      document.getElementById('seccion-solicitudes').style.display = 'none';
     }
 
     console.log('Botón abrir display:', btnAbrir.style.display);
@@ -2073,21 +2101,26 @@
   async function cargarSolicitudesGastos() {
     try {
       const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
-      const estado = document.getElementById('filtro-estado-solicitudes')?.value || '';
       
-      let url = '/solicitudes-gastos';
-      if (estado) {
-        url += `?estado=${estado}`;
-      }
+      // Obtener solo las solicitudes del día actual
+      const hoy = new Date().toISOString().split('T')[0];
+      const url = `/solicitudes-gastos?fecha=${hoy}`;
       
       const response = await API.get(url);
-      const solicitudes = response.data || [];
+      let solicitudes = response.data || [];
       
-      console.log('📋 Solicitudes cargadas:', solicitudes.length);
+      // Filtrar por fecha en el frontend para asegurar que solo sean del día actual
+      solicitudes = solicitudes.filter(s => {
+        const fechaSolicitud = new Date(s.fecha_solicitud).toISOString().split('T')[0];
+        return fechaSolicitud === hoy;
+      });
+      
+      console.log('📋 Solicitudes del día:', solicitudes.length);
       
       if (solicitudes.length > 0) {
         renderSolicitudes(solicitudes, user.rol);
-        document.getElementById('seccion-solicitudes').style.display = 'block';
+        document.getElementById('seccion-solicitudes-hoy').style.display = 'block';
+        document.getElementById('sin-solicitudes-hoy').style.display = 'none';
         
         // Actualizar contador de pendientes
         const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
@@ -2097,134 +2130,209 @@
           badgePendientes.style.display = pendientes > 0 ? 'inline-flex' : 'none';
         }
       } else {
-        document.getElementById('seccion-solicitudes').style.display = 'none';
+        // Mostrar mensaje de que no hay solicitudes hoy
+        document.getElementById('seccion-solicitudes-hoy').style.display = 'none';
+        document.getElementById('sin-solicitudes-hoy').style.display = 'block';
+        document.getElementById('count-solicitudes-pendientes').style.display = 'none';
       }
     } catch (error) {
       console.error('Error al cargar solicitudes:', error);
-      document.getElementById('seccion-solicitudes').style.display = 'none';
+      // Mostrar mensaje de error pero mantener la sección visible
+      document.getElementById('seccion-solicitudes-hoy').style.display = 'none';
+      document.getElementById('sin-solicitudes-hoy').style.display = 'block';
     }
+  }
+  
+  function abrirModalHistorialSolicitudes() {
+    // Establecer fecha de hoy por defecto
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('filtro-fecha-historial').value = hoy;
+    document.getElementById('filtro-estado-historial').value = '';
+    
+    Modal.open('modal-historial-solicitudes');
+    cargarHistorialSolicitudes();
+  }
+  
+  async function cargarHistorialSolicitudes() {
+    try {
+      const user = JSON.parse(localStorage.getItem('ee_user') || '{}');
+      const fecha = document.getElementById('filtro-fecha-historial')?.value || '';
+      const estado = document.getElementById('filtro-estado-historial')?.value || '';
+      
+      let url = '/solicitudes-gastos';
+      const params = [];
+      
+      if (fecha) {
+        params.push(`fecha=${fecha}`);
+      }
+      
+      if (estado) {
+        params.push(`estado=${estado}`);
+      }
+      
+      if (params.length > 0) {
+        url += `?${params.join('&')}`;
+      }
+      
+      const response = await API.get(url);
+      let solicitudes = response.data || [];
+      
+      // Filtrar por fecha en el frontend si se especificó
+      if (fecha && solicitudes.length > 0) {
+        solicitudes = solicitudes.filter(s => {
+          const fechaSolicitud = new Date(s.fecha_solicitud).toISOString().split('T')[0];
+          return fechaSolicitud === fecha;
+        });
+      }
+      
+      console.log('📋 Solicitudes historial:', solicitudes.length);
+      
+      const container = document.getElementById('lista-historial-solicitudes');
+      
+      if (solicitudes.length > 0) {
+        renderSolicitudesHistorial(solicitudes, user.rol);
+      } else {
+        container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gris-400)">No se encontraron solicitudes</div>';
+      }
+    } catch (error) {
+      console.error('Error al cargar historial de solicitudes:', error);
+      const container = document.getElementById('lista-historial-solicitudes');
+      container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--danger)">Error al cargar el historial</div>';
+    }
+  }
+  
+  function limpiarFiltrosHistorial() {
+    document.getElementById('filtro-fecha-historial').value = '';
+    document.getElementById('filtro-estado-historial').value = '';
+    cargarHistorialSolicitudes();
+  }
+  
+  function renderSolicitudesHistorial(solicitudes, usuarioRol) {
+    const container = document.getElementById('lista-historial-solicitudes');
+    container.innerHTML = solicitudes.map(s => renderSolicitudCard(s, usuarioRol)).join('');
+  }
+  
+  function renderSolicitudCard(s, usuarioRol) {
+    const fecha = new Date(s.fecha_solicitud);
+    const fechaStr = fecha.toLocaleDateString('es-PE', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    });
+    const horaStr = fecha.toLocaleTimeString('es-PE', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+    
+    // Determinar color y estado
+    let estadoHTML = '';
+    let cardBorderColor = '';
+    let cardBgClass = '';
+    let botonesHTML = '';
+    
+    if (s.estado === 'pendiente') {
+      estadoHTML = `
+        <div class="solicitud-estado-box solicitud-pendiente">
+          <div class="solicitud-estado-label">Estado</div>
+          <div class="solicitud-estado-valor">⏳ Pendiente</div>
+        </div>
+      `;
+      cardBorderColor = 'var(--gris-400)';
+      cardBgClass = 'solicitud-card-pendiente';
+      
+      // Botones solo para admin
+      if (usuarioRol === 'admin' || usuarioRol === 'duena') {
+        botonesHTML = `
+          <button class="btn btn-success btn-sm" onclick="abrirModalRevisarSolicitud(${s.id})" style="flex:1">
+            ✅ Revisar
+          </button>
+        `;
+      }
+    } else if (s.estado === 'aprobada') {
+      const fechaAprobacion = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short' 
+      }) : '';
+      estadoHTML = `
+        <div class="solicitud-estado-box solicitud-aprobada">
+          <div class="solicitud-estado-label">Estado</div>
+          <div class="solicitud-estado-valor">✅ Aprobada</div>
+          ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
+          ${fechaAprobacion ? `<div class="solicitud-estado-info">${fechaAprobacion}</div>` : ''}
+        </div>
+      `;
+      cardBorderColor = 'var(--success)';
+      cardBgClass = 'solicitud-card-aprobada';
+    } else if (s.estado === 'rechazada') {
+      const fechaRechazo = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
+        day: '2-digit', 
+        month: 'short' 
+      }) : '';
+      estadoHTML = `
+        <div class="solicitud-estado-box solicitud-rechazada">
+          <div class="solicitud-estado-label">Estado</div>
+          <div class="solicitud-estado-valor">❌ Rechazada</div>
+          ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
+          ${fechaRechazo ? `<div class="solicitud-estado-info">${fechaRechazo}</div>` : ''}
+        </div>
+      `;
+      cardBorderColor = 'var(--danger)';
+      cardBgClass = 'solicitud-card-rechazada';
+    }
+    
+    return `
+      <div class="card solicitud-card ${cardBgClass}" style="border-left:6px solid ${cardBorderColor}">
+        <div class="solicitud-grid">
+          <!-- Hora y trabajador -->
+          <div class="solicitud-time-box">
+            <div class="solicitud-hora">${horaStr}</div>
+            <div class="solicitud-trabajador">${s.trabajador_nombre || 'N/A'}</div>
+            <div class="solicitud-fecha">${fechaStr}</div>
+          </div>
+          
+          <!-- Detalles -->
+          <div class="solicitud-detalles">
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">💰 Monto</div>
+              <div class="solicitud-detalle-valor solicitud-monto">${Fmt.moneda(s.monto)}</div>
+            </div>
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">📁 Categoría</div>
+              <div class="solicitud-detalle-valor">${s.categoria}</div>
+            </div>
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">🏢 Empresa</div>
+              <div class="solicitud-detalle-valor">${s.empresa || 'N/A'}</div>
+            </div>
+            <div class="solicitud-detalle-item">
+              <div class="solicitud-detalle-label">📄 Comprobante</div>
+              <div class="solicitud-detalle-valor">${s.numero_comprobante || 'N/A'}</div>
+            </div>
+            <div class="solicitud-descripcion">
+              <div class="solicitud-detalle-label">Descripción</div>
+              <div class="solicitud-detalle-valor">${s.descripcion || 'Sin descripción'}</div>
+            </div>
+            ${s.estado === 'rechazada' && s.comentario_rechazo ? `
+              <div class="solicitud-rechazo">
+                <div class="solicitud-detalle-label">Motivo de rechazo</div>
+                <div class="solicitud-detalle-valor">${s.comentario_rechazo}</div>
+              </div>
+            ` : ''}
+          </div>
+          
+          <!-- Acciones -->
+          <div class="solicitud-acciones">
+            ${estadoHTML}
+            ${botonesHTML}
+          </div>
+        </div>
+      </div>
+    `;
   }
   
   function renderSolicitudes(solicitudes, usuarioRol) {
     const container = document.getElementById('lista-solicitudes');
-    
-    container.innerHTML = solicitudes.map(s => {
-      const fecha = new Date(s.fecha_solicitud);
-      const fechaStr = fecha.toLocaleDateString('es-PE', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      });
-      const horaStr = fecha.toLocaleTimeString('es-PE', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-      
-      // Determinar color y estado
-      let estadoHTML = '';
-      let cardBorderColor = '';
-      let cardBgClass = '';
-      let botonesHTML = '';
-      
-      if (s.estado === 'pendiente') {
-        estadoHTML = `
-          <div class="solicitud-estado-box solicitud-pendiente">
-            <div class="solicitud-estado-label">Estado</div>
-            <div class="solicitud-estado-valor">⏳ Pendiente</div>
-          </div>
-        `;
-        cardBorderColor = 'var(--gris-400)';
-        cardBgClass = 'solicitud-card-pendiente';
-        
-        // Botones solo para admin
-        if (usuarioRol === 'admin' || usuarioRol === 'duena') {
-          botonesHTML = `
-            <button class="btn btn-success btn-sm" onclick="abrirModalRevisarSolicitud(${s.id})" style="flex:1">
-              ✅ Revisar
-            </button>
-          `;
-        }
-      } else if (s.estado === 'aprobada') {
-        const fechaAprobacion = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
-          day: '2-digit', 
-          month: 'short' 
-        }) : '';
-        estadoHTML = `
-          <div class="solicitud-estado-box solicitud-aprobada">
-            <div class="solicitud-estado-label">Estado</div>
-            <div class="solicitud-estado-valor">✅ Aprobada</div>
-            ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
-            ${fechaAprobacion ? `<div class="solicitud-estado-info">${fechaAprobacion}</div>` : ''}
-          </div>
-        `;
-        cardBorderColor = 'var(--success)';
-        cardBgClass = 'solicitud-card-aprobada';
-      } else if (s.estado === 'rechazada') {
-        const fechaRechazo = s.fecha_aprobacion ? new Date(s.fecha_aprobacion).toLocaleDateString('es-PE', { 
-          day: '2-digit', 
-          month: 'short' 
-        }) : '';
-        estadoHTML = `
-          <div class="solicitud-estado-box solicitud-rechazada">
-            <div class="solicitud-estado-label">Estado</div>
-            <div class="solicitud-estado-valor">❌ Rechazada</div>
-            ${s.aprobado_por_nombre ? `<div class="solicitud-estado-info">Por: ${s.aprobado_por_nombre}</div>` : ''}
-            ${fechaRechazo ? `<div class="solicitud-estado-info">${fechaRechazo}</div>` : ''}
-          </div>
-        `;
-        cardBorderColor = 'var(--danger)';
-        cardBgClass = 'solicitud-card-rechazada';
-      }
-      
-      return `
-        <div class="card solicitud-card ${cardBgClass}" style="border-left:6px solid ${cardBorderColor}">
-          <div class="solicitud-grid">
-            <!-- Hora y trabajador -->
-            <div class="solicitud-time-box">
-              <div class="solicitud-hora">${horaStr}</div>
-              <div class="solicitud-trabajador">${s.trabajador_nombre || 'N/A'}</div>
-              <div class="solicitud-fecha">${fechaStr}</div>
-            </div>
-            
-            <!-- Detalles -->
-            <div class="solicitud-detalles">
-              <div class="solicitud-detalle-item">
-                <div class="solicitud-detalle-label">💰 Monto</div>
-                <div class="solicitud-detalle-valor solicitud-monto">${Fmt.moneda(s.monto)}</div>
-              </div>
-              <div class="solicitud-detalle-item">
-                <div class="solicitud-detalle-label">📁 Categoría</div>
-                <div class="solicitud-detalle-valor">${s.categoria}</div>
-              </div>
-              <div class="solicitud-detalle-item">
-                <div class="solicitud-detalle-label">🏢 Empresa</div>
-                <div class="solicitud-detalle-valor">${s.empresa}</div>
-              </div>
-              <div class="solicitud-detalle-item">
-                <div class="solicitud-detalle-label">📄 Comprobante</div>
-                <div class="solicitud-detalle-valor">${s.numero_comprobante}</div>
-              </div>
-              <div class="solicitud-descripcion">
-                <div class="solicitud-detalle-label">📝 Descripción</div>
-                <div class="solicitud-detalle-valor">${s.descripcion}</div>
-              </div>
-              ${s.comentario_rechazo ? `
-                <div class="solicitud-rechazo">
-                  <div class="solicitud-detalle-label">💬 Motivo de rechazo</div>
-                  <div class="solicitud-detalle-valor">"${s.comentario_rechazo}"</div>
-                </div>
-              ` : ''}
-            </div>
-            
-            <!-- Estado y botones -->
-            <div class="solicitud-acciones">
-              ${estadoHTML}
-              ${botonesHTML ? `<div style="display:flex;gap:8px">${botonesHTML}</div>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+    container.innerHTML = solicitudes.map(s => renderSolicitudCard(s, usuarioRol)).join('');
   }
   
   function abrirModalSolicitudGasto() {
@@ -2368,6 +2476,13 @@
       Toast.success('Solicitud aprobada correctamente. Gasto registrado.');
       Modal.close('modal-revisar-solicitud');
       await cargarSolicitudesGastos();
+      
+      // Si el modal de historial está abierto, recargarlo también
+      const modalHistorial = document.getElementById('modal-historial-solicitudes');
+      if (modalHistorial && modalHistorial.classList.contains('active')) {
+        await cargarHistorialSolicitudes();
+      }
+      
       await cargarCaja(); // Recargar para actualizar gastos
     } catch (error) {
       console.error('Error al aprobar solicitud:', error);
@@ -2390,6 +2505,12 @@
       Toast.success('Solicitud rechazada correctamente.');
       Modal.close('modal-revisar-solicitud');
       await cargarSolicitudesGastos();
+      
+      // Si el modal de historial está abierto, recargarlo también
+      const modalHistorial = document.getElementById('modal-historial-solicitudes');
+      if (modalHistorial && modalHistorial.classList.contains('active')) {
+        await cargarHistorialSolicitudes();
+      }
     } catch (error) {
       console.error('Error al rechazar solicitud:', error);
       Toast.error(error.message || 'Error al rechazar la solicitud');
