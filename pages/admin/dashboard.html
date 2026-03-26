@@ -8,6 +8,82 @@
   <link rel="stylesheet" href="../../css/admin.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
    <link rel="icon" type="image/png" href="../../icon/favicon.png">
+   <style>
+    /* Estilos responsivos y tema claro/oscuro para widgets */
+    .widget-reloj,
+    .widget-eventos {
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      background: var(--card-bg, white);
+      border: 1px solid var(--gris-100);
+      transition: all 0.3s ease;
+    }
+
+    .widget-reloj:hover,
+    .widget-eventos:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Tema oscuro */
+    @media (prefers-color-scheme: dark) {
+      .widget-reloj,
+      .widget-eventos {
+        background: var(--gris-900, #1a1a1a);
+        border-color: var(--gris-700, #333);
+        color: var(--gris-100, #f5f5f5);
+      }
+
+      .widget-reloj:hover,
+      .widget-eventos:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      }
+    }
+
+    /* Responsividad para móviles */
+    @media (max-width: 768px) {
+      .admin-content {
+        padding: 1rem !important;
+      }
+
+      .stat-card {
+        padding: 1rem !important;
+      }
+
+      .stat-value {
+        font-size: 24px !important;
+      }
+
+      .card {
+        padding: 1rem !important;
+      }
+
+      #clima-temp,
+      #reloj-hora {
+        font-size: 28px !important;
+      }
+
+      #capital-actual-compacto {
+        font-size: 24px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stat-icon {
+        font-size: 32px !important;
+      }
+
+      .stat-value {
+        font-size: 20px !important;
+      }
+
+      #clima-temp,
+      #reloj-hora {
+        font-size: 24px !important;
+      }
+    }
+   </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -19,11 +95,11 @@
 
     <div class="admin-content">
 
-      <!-- Fila superior: Clima + Estado de Caja + Capital -->
-      <div style="display:grid;grid-template-columns:300px 1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+      <!-- Fila superior: Clima + Reloj + Eventos + Estado de Caja + Capital -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin-bottom:1.25rem">
         
         <!-- Widget de Clima -->
-        <div class="card" style="padding:1.25rem;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;position:relative;overflow:hidden">
+        <div class="card widget-clima" style="padding:1.25rem;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;position:relative;overflow:hidden">
           <div id="clima-widget">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
               <div>
@@ -41,11 +117,47 @@
           <div style="position:absolute;bottom:-20px;right:-20px;font-size:120px;opacity:0.1">🌸</div>
         </div>
 
+        <!-- Widget de Reloj y Fecha -->
+        <div class="card widget-reloj">
+          <div style="text-align:center">
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px">🕐 Hora Actual</div>
+            <div id="reloj-hora" style="font-size:36px;font-weight:800;line-height:1;margin-bottom:8px">--:--:--</div>
+            <div id="reloj-dia" style="font-size:14px;font-weight:600;margin-bottom:2px">Cargando...</div>
+            <div id="reloj-fecha" style="font-size:12px;opacity:0.7">-- --- ----</div>
+          </div>
+          <div style="position:absolute;bottom:-15px;right:-15px;font-size:100px;opacity:0.05">⏰</div>
+        </div>
+
+        <!-- Widget de Próximos Eventos -->
+        <div class="card widget-eventos">
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;opacity:0.7;margin-bottom:4px">📅 Próximos Eventos</div>
+            <div style="font-size:14px;font-weight:700">Fechas Importantes</div>
+          </div>
+          <div id="eventos-lista" style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+            <div style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px;background:var(--rosa-50)">
+              <span style="font-size:20px">🌹</span>
+              <div style="flex:1">
+                <div style="font-weight:600;color:var(--rosa-600)">San Valentín</div>
+                <div style="font-size:10px;opacity:0.7">14 Febrero</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px;background:var(--rosa-50)">
+              <span style="font-size:20px">👩</span>
+              <div style="flex:1">
+                <div style="font-weight:600;color:var(--rosa-600)">Día de la Madre</div>
+                <div style="font-size:10px;opacity:0.7">10 Mayo</div>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:-15px;right:-15px;font-size:100px;opacity:0.05">📅</div>
+        </div>
+
         <!-- Estado de Caja (compacto) -->
         <div id="estado-caja-card-compacto"></div>
 
         <!-- Capital del Negocio (compacto) -->
-        <div class="card" style="padding:1.25rem;background:linear-gradient(135deg, #2D8C4E 0%, #1E6FA8 100%);color:white;position:relative;overflow:hidden">
+        <div class="card widget-capital" style="padding:1.25rem;background:linear-gradient(135deg, #2D8C4E 0%, #1E6FA8 100%);color:white;position:relative;overflow:hidden">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div style="font-size:11px;opacity:0.9">💰 Capital del Negocio</div>
             <div id="capital-botones-compacto" style="display:flex;gap:4px"></div>
@@ -72,7 +184,7 @@
       <div id="alertas-stock"></div>
 
       <!-- Stats principales -->
-      <div class="stats-grid" id="stats-grid" style="margin-bottom:1.25rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem;margin-bottom:1.25rem" id="stats-grid">
         <div class="stat-card rosa">
           <span class="stat-icon">💰</span>
           <div class="stat-label">Ventas del día</div>
@@ -100,7 +212,7 @@
       </div>
 
       <!-- Gráfico ventas + Pedidos recientes -->
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.25rem;margin-bottom:1.25rem">
 
         <!-- Gráfico ventas semana -->
         <div class="card" style="padding:1.25rem">
@@ -130,7 +242,7 @@
       </div>
 
       <!-- Productos más vendidos + Ventas por trabajador -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.25rem;margin-bottom:1.25rem">
 
         <div class="card" style="padding:1.25rem">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
@@ -364,6 +476,35 @@
   let chartVentas = null;
   let chartProductos = null;
   let chartTrabajadores = null;
+
+  // ============================================
+  // WIDGET DE RELOJ
+  // ============================================
+  
+  function actualizarReloj() {
+    const ahora = new Date();
+    
+    // Hora
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    const segundos = String(ahora.getSeconds()).padStart(2, '0');
+    document.getElementById('reloj-hora').textContent = `${horas}:${minutos}:${segundos}`;
+    
+    // Día de la semana
+    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    document.getElementById('reloj-dia').textContent = diasSemana[ahora.getDay()];
+    
+    // Fecha
+    const dia = ahora.getDate();
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const mes = meses[ahora.getMonth()];
+    const año = ahora.getFullYear();
+    document.getElementById('reloj-fecha').textContent = `${dia} ${mes} ${año}`;
+  }
+  
+  // Actualizar reloj cada segundo
+  setInterval(actualizarReloj, 1000);
+  actualizarReloj(); // Llamar inmediatamente
 
   // ============================================
   // WIDGET DE CLIMA
