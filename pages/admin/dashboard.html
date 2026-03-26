@@ -11,8 +11,78 @@
    <style>
     /* Estilos responsivos y tema claro/oscuro para dashboard */
     
-    /* Responsividad para móviles */
-    @media (max-width: 768px) {
+    /* Layout principal responsivo */
+    .dashboard-widgets-top {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Desktop: 3 columnas */
+    @media (min-width: 1024px) {
+      .dashboard-widgets-top {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* Tablet: 2 columnas */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .dashboard-widgets-top {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Stats grid responsivo */
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .dashboard-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .dashboard-stats {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* Gráficos responsivos */
+    .dashboard-charts {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 1024px) {
+      .dashboard-charts {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+
+    /* Productos grid responsivo */
+    .dashboard-productos {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 1024px) {
+      .dashboard-productos {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Ajustes para móvil */
+    @media (max-width: 767px) {
       .admin-content {
         padding: 1rem !important;
       }
@@ -36,9 +106,18 @@
       #capital-actual-compacto {
         font-size: 24px !important;
       }
+
+      /* Ocultar elementos menos importantes en móvil */
+      .stat-change {
+        font-size: 11px !important;
+      }
     }
 
     @media (max-width: 480px) {
+      .admin-content {
+        padding: 0.75rem !important;
+      }
+
       .stat-icon {
         font-size: 32px !important;
       }
@@ -49,6 +128,10 @@
 
       #clima-temp {
         font-size: 24px !important;
+      }
+
+      #capital-actual-compacto {
+        font-size: 20px !important;
       }
     }
    </style>
@@ -64,7 +147,7 @@
     <div class="admin-content">
 
       <!-- Fila superior: Clima + Estado de Caja + Capital -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin-bottom:1.25rem">
+      <div class="dashboard-widgets-top">
         
         <!-- Widget de Clima -->
         <div class="card widget-clima" style="padding:1.25rem;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;position:relative;overflow:hidden">
@@ -116,7 +199,7 @@
       <div id="alertas-stock"></div>
 
       <!-- Stats principales -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.25rem;margin-bottom:1.25rem" id="stats-grid">
+      <div class="dashboard-stats" id="stats-grid">
         <div class="stat-card rosa">
           <span class="stat-icon">💰</span>
           <div class="stat-label">Ventas del día</div>
@@ -144,7 +227,7 @@
       </div>
 
       <!-- Gráfico ventas + Pedidos recientes -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.25rem;margin-bottom:1.25rem">
+      <div class="dashboard-charts">
 
         <!-- Gráfico ventas semana -->
         <div class="card" style="padding:1.25rem">
@@ -174,7 +257,7 @@
       </div>
 
       <!-- Productos más vendidos + Ventas por trabajador -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.25rem;margin-bottom:1.25rem">
+      <div class="dashboard-productos">
 
         <div class="card" style="padding:1.25rem">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
