@@ -37,6 +37,51 @@ class CajaController {
   }
 
   /**
+   * POST /api/caja/cierre-fecha
+   * Cierra caja de una fecha específica (admin only)
+   */
+  async cierreFecha(req, res, next) {
+    try {
+      // Solo admin o dueña pueden cerrar cajas de días anteriores
+      if (req.user.rol !== 'admin' && req.user.rol !== 'duena') {
+        return res.status(403).json({ 
+          error: true, 
+          mensaje: 'Solo administradores pueden cerrar cajas de días anteriores' 
+        });
+      }
+
+      const trabajadorId = req.user.id;
+      const { fecha, monto_cierre } = req.body;
+
+      if (!fecha) {
+        return res.status(400).json({ 
+          error: true, 
+          mensaje: 'La fecha es requerida (formato: YYYY-MM-DD)' 
+        });
+      }
+
+      // Validar monto_cierre si se proporciona
+      if (monto_cierre !== undefined && monto_cierre !== null) {
+        const montoNum = parseFloat(monto_cierre);
+        if (isNaN(montoNum) || montoNum < 0) {
+          return res.status(400).json({ 
+            error: true, 
+            mensaje: 'El monto de cierre debe ser un número mayor o igual a 0' 
+          });
+        }
+      }
+
+      const caja = await cajaService.cierreFecha(trabajadorId, fecha, monto_cierre);
+      res.json({ success: true, data: caja, mensaje: caja.mensaje || 'Caja cerrada correctamente' });
+    } catch (error) {
+      if (error.statusCode === 404 || error.statusCode === 400) {
+        return res.status(error.statusCode).json({ error: true, mensaje: error.message });
+      }
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/caja/cierre
    * Requirements: 12.6-12.13
    */

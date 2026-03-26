@@ -91,6 +91,17 @@ router.get('/quiebres',
 );
 
 /**
+ * POST /api/caja/cierre-fecha
+ * Cierra caja de una fecha específica (solo admin/dueña)
+ * Permite cerrar cajas de días anteriores que quedaron abiertas
+ */
+router.post('/cierre-fecha',
+  verifyToken,
+  requireRole(['admin', 'duena']),
+  cajaController.cierreFecha.bind(cajaController)
+);
+
+/**
  * POST /api/caja/anular-cierre
  * Anula el cierre de caja del día (solo admin/dueña)
  * Registra la anulación en tabla de auditoría

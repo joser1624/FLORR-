@@ -258,8 +258,20 @@
               <option value="otros">Otros</option>
             </select>
           </div>
-          <div class="form-group"><label class="form-label">Monto (S/) <span class="req">*</span></label><input class="form-control" type="number" id="gasto-monto" step="0.01" min="0" required /></div>
+          <div class="form-group">
+            <label class="form-label">Método de pago</label>
+            <select class="form-control" id="gasto-metodo-pago">
+              <option value="efectivo_caja">Efectivo de caja</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="no_aplica">No aplica</option>
+            </select>
+            <small style="color: var(--gris-500); font-size: 11px; margin-top: 4px;">
+              💡 Solo "Efectivo de caja" afecta el cuadre diario
+            </small>
+          </div>
         </div>
+        <div class="form-group"><label class="form-label">Monto (S/) <span class="req">*</span></label><input class="form-control" type="number" id="gasto-monto" step="0.01" min="0" required /></div>
         
         <!-- Campos de inventario (solo para flores, materiales y merma) -->
         <div id="inventario-fields" style="display:block">
@@ -566,6 +578,7 @@
     const inventarioLabel = document.getElementById('inventario-label');
     const cantidadLabel = document.getElementById('cantidad-label');
     const montoInput = document.getElementById('gasto-monto');
+    const metodoPagoSelect = document.getElementById('gasto-metodo-pago');
     
     // Resetear todos los campos
     document.getElementById('gasto-inventario-id').value = '';
@@ -600,6 +613,12 @@
       montoInput.value = '0.00';
       montoInput.placeholder = 'Se calculará automáticamente';
       
+      // Establecer método de pago en "no_aplica" para merma
+      metodoPagoSelect.value = 'no_aplica';
+      metodoPagoSelect.setAttribute('readonly', 'true');
+      metodoPagoSelect.style.backgroundColor = '#f5f5f5';
+      metodoPagoSelect.style.cursor = 'not-allowed';
+      
       // Cargar productos con stock
       renderProductosSelect();
       
@@ -621,6 +640,12 @@
       montoInput.value = '';
       montoInput.placeholder = '';
       
+      // Habilitar método de pago y sugerir transferencia para compras grandes
+      metodoPagoSelect.removeAttribute('readonly');
+      metodoPagoSelect.style.backgroundColor = '';
+      metodoPagoSelect.style.cursor = '';
+      metodoPagoSelect.value = 'transferencia'; // Sugerir transferencia para compras
+      
       // Renderizar select normal con opción de crear nuevo
       renderInventarioSelect();
       
@@ -635,6 +660,18 @@
       montoInput.style.cursor = '';
       montoInput.value = '';
       montoInput.placeholder = '';
+      
+      // Habilitar método de pago
+      metodoPagoSelect.removeAttribute('readonly');
+      metodoPagoSelect.style.backgroundColor = '';
+      metodoPagoSelect.style.cursor = '';
+      
+      // Sugerir método según categoría
+      if (categoria === 'transporte') {
+        metodoPagoSelect.value = 'efectivo_caja'; // Transporte suele ser efectivo
+      } else {
+        metodoPagoSelect.value = 'transferencia'; // Otros gastos suelen ser transferencia
+      }
     }
   }
 
@@ -827,7 +864,8 @@
           descripcion: descripcionFinal,
           categoria: 'merma',
           monto: montoCalculado,
-          fecha: fecha
+          fecha: fecha,
+          metodo_pago: 'no_aplica' // Merma no es un pago real
         };
         
         // Agregar información del ítem perdido para el historial
@@ -908,13 +946,15 @@
     
     const inventarioId = document.getElementById('gasto-inventario-id').value;
     const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
+    const metodoPago = document.getElementById('gasto-metodo-pago').value;
     
     // Crear payload base para compras
     const payload = {
       descripcion: descripcion,
       categoria: categoria,
       monto: monto,
-      fecha: fecha
+      fecha: fecha,
+      metodo_pago: metodoPago
     };
     
     if (inventarioId === 'nuevo') {
@@ -997,6 +1037,7 @@
     document.getElementById('gasto-desc').value = '';
     document.getElementById('gasto-monto').value = '';
     document.getElementById('gasto-cat').value = 'flores';
+    document.getElementById('gasto-metodo-pago').value = 'efectivo_caja';
     document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('gasto-inventario-id').value = '';
     document.getElementById('gasto-producto-id').value = '';
@@ -1010,6 +1051,12 @@
     montoInput.style.backgroundColor = '';
     montoInput.style.cursor = '';
     montoInput.placeholder = '';
+    
+    // Resetear estilos del método de pago
+    const metodoPagoSelect = document.getElementById('gasto-metodo-pago');
+    metodoPagoSelect.removeAttribute('readonly');
+    metodoPagoSelect.style.backgroundColor = '';
+    metodoPagoSelect.style.cursor = '';
     
     toggleInventarioFields();
   }
