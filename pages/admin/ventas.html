@@ -492,21 +492,40 @@
 
 <!-- Modal nueva venta -->
 <div class="modal-overlay" id="modal-venta">
-  <div class="modal" style="max-width:640px">
+  <div class="modal" style="max-width:700px">
     <div class="modal-header">
       <h3>Nueva venta</h3>
       <button class="btn-close" onclick="Modal.close('modal-venta')">×</button>
     </div>
     <div class="modal-body">
       <div class="form-stack">
+        <!-- Buscador de productos y arreglos -->
+        <div class="form-group">
+          <label class="form-label">🔍 Buscar producto o arreglo</label>
+          <input 
+            class="form-control" 
+            type="text" 
+            id="buscar-producto-venta" 
+            placeholder="Escribe para buscar..." 
+            oninput="filtrarProductosVenta()"
+            autocomplete="off"
+          />
+        </div>
+        
+        <!-- Lista de productos agregados -->
         <div id="productos-venta" style="border:1px solid var(--rosa-100);border-radius:var(--radius-md);padding:12px;min-height:80px;max-height:220px;overflow-y:auto">
           <div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Agrega productos a la venta</div>
         </div>
+        
+        <!-- Selector de productos con cantidad -->
         <div style="display:flex;gap:8px">
-          <select class="form-control" id="sel-producto"><option value="">Seleccionar producto...</option></select>
+          <select class="form-control" id="sel-producto">
+            <option value="">Seleccionar producto...</option>
+          </select>
           <input class="form-control" type="number" id="cant-producto" value="1" min="1" style="max-width:80px" placeholder="Cant." />
           <button class="btn btn-outline btn-sm" onclick="agregarProductoVenta()">Agregar</button>
         </div>
+        
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label">Método de pago <span class="req">*</span></label>
@@ -522,6 +541,7 @@
             </select>
           </div>
         </div>
+        
         <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:12px;display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:14px;font-weight:500">Total de la venta:</span>
           <span style="font-size:22px;font-weight:700;color:var(--rosa-600);font-family:var(--font-display)" id="total-venta">S/ 0.00</span>
@@ -850,29 +870,59 @@
   function agregarProductoVenta() {
     const sel = document.getElementById('sel-producto');
     const cant = parseInt(document.getElementById('cant-producto').value) || 1;
-    const id = parseInt(sel.value);
-    if (!id) { Toast.warning('Selecciona un producto'); return; }
-    const prod = productosDisp.find(p => p.id === id);
-    if (!prod) return;
-    const existing = itemsVenta.find(i => i.id === id);
-    if (existing) existing.cantidad += cant;
-    else itemsVenta.push({ ...prod, cantidad: cant });
+    const valorSel = sel.value; // Formato: "producto-123" o "arreglo-456"
+    
+    if (!valorSel) { 
+      Toast.warning('Selecciona un producto o arreglo'); 
+      return; 
+    }
+    
+    // Parsear el valor seleccionado
+    const [tipo, idStr] = valorSel.split('-');
+    const id = parseInt(idStr);
+    
+    // Buscar el item en todosLosItems
+    const item = todosLosItems.find(i => i.id === id && i.tipo === tipo);
+    if (!item) {
+      Toast.error('Item no encontrado');
+      return;
+    }
+    
+    // Verificar si ya existe en el carrito
+    const existing = itemsVenta.find(i => i.id === id && i.tipo === tipo);
+    if (existing) {
+      existing.cantidad += cant;
+    } else {
+      itemsVenta.push({ ...item, cantidad: cant });
+    }
+    
     renderItemsVenta();
     sel.value = '';
+    document.getElementById('cant-producto').value = 1;
+    document.getElementById('buscar-producto-venta').value = '';
   }
 
   function renderItemsVenta() {
     const el = document.getElementById('productos-venta');
-    if (!itemsVenta.length) { el.innerHTML = '<div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Agrega productos a la venta</div>'; document.getElementById('total-venta').textContent = 'S/ 0.00'; return; }
+    if (!itemsVenta.length) { 
+      el.innerHTML = '<div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Agrega productos a la venta</div>'; 
+      document.getElementById('total-venta').textContent = 'S/ 0.00'; 
+      return; 
+    }
+    
     el.innerHTML = itemsVenta.map((i,idx) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--gris-50)">
-        <span style="font-size:13px">${i.nombre}</span>
+        <div style="flex:1">
+          <span style="font-size:13px">${i.tipo_label || ''} ${i.nombre}</span>
+          ${i.tipo === 'arreglo' ? '<span class="badge badge-dorado" style="font-size:10px;margin-left:6px">Arreglo</span>' : ''}
+        </div>
         <div style="display:flex;align-items:center;gap:8px">
           <input type="number" min="1" value="${i.cantidad}" style="width:50px;padding:4px 6px;border:1px solid var(--gris-200);border-radius:6px;font-size:12px" onchange="cambiarCant(${idx},this.value)" />
           <span style="font-size:13px;font-weight:500;min-width:60px;text-align:right">${Fmt.moneda(i.precio*i.cantidad)}</span>
           <button style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px" onclick="quitarItem(${idx})">×</button>
         </div>
       </div>`).join('');
+    
     const total = itemsVenta.reduce((s,i) => s + i.precio*i.cantidad, 0);
     document.getElementById('total-venta').textContent = Fmt.moneda(total);
   }
@@ -945,25 +995,95 @@
     }
   }
 
+  let todosLosItems = []; // Array combinado de productos y arreglos
+  
   async function cargarProductosSelect() {
     try {
-      const response = await API.get('/productos');
-      const result = response.data || response;
-      productosDisp = result.data || result.productos || result || [];
-      console.log('Productos cargados:', productosDisp.length);
+      // Cargar productos
+      const responseProductos = await API.get('/productos');
+      const resultProductos = responseProductos.data || responseProductos;
+      const productos = resultProductos.data || resultProductos.productos || resultProductos || [];
+      
+      // Cargar arreglos
+      const responseArreglos = await API.get('/arreglos');
+      const resultArreglos = responseArreglos.data || responseArreglos;
+      const arreglos = resultArreglos.data || resultArreglos.arreglos || resultArreglos || [];
+      
+      // Combinar productos y arreglos en un solo array
+      todosLosItems = [
+        ...productos.map(p => ({ ...p, tipo: 'producto', tipo_label: '🌸' })),
+        ...arreglos.map(a => ({ ...a, tipo: 'arreglo', tipo_label: '💐' }))
+      ];
+      
+      // Mantener productosDisp para compatibilidad
+      productosDisp = todosLosItems;
+      
+      console.log(`Items cargados: ${productos.length} productos + ${arreglos.length} arreglos = ${todosLosItems.length} total`);
+      
+      renderProductosSelect();
     } catch (error) {
-      console.error('Error al cargar productos:', error);
+      console.error('Error al cargar items:', error);
+      todosLosItems = [];
       productosDisp = [];
     }
-    
+  }
+  
+  function renderProductosSelect(filtro = '') {
     const sel = document.getElementById('sel-producto');
-    sel.innerHTML = '<option value="">Seleccionar producto...</option>';
-    productosDisp.forEach(p => { 
-      const o = document.createElement('option'); 
-      o.value = p.id; 
-      o.textContent = `${p.nombre} — ${Fmt.moneda(p.precio)}`; 
-      sel.appendChild(o); 
-    });
+    sel.innerHTML = '<option value="">Seleccionar producto o arreglo...</option>';
+    
+    // Filtrar items si hay texto de búsqueda
+    let itemsFiltrados = todosLosItems;
+    if (filtro) {
+      const filtroLower = filtro.toLowerCase();
+      itemsFiltrados = todosLosItems.filter(item => 
+        item.nombre.toLowerCase().includes(filtroLower)
+      );
+    }
+    
+    // Agrupar por tipo
+    const productos = itemsFiltrados.filter(i => i.tipo === 'producto');
+    const arreglos = itemsFiltrados.filter(i => i.tipo === 'arreglo');
+    
+    // Agregar productos
+    if (productos.length > 0) {
+      const optgroupProductos = document.createElement('optgroup');
+      optgroupProductos.label = '🌸 Productos';
+      productos.forEach(p => {
+        const o = document.createElement('option');
+        o.value = `producto-${p.id}`;
+        o.textContent = `${p.nombre} — ${Fmt.moneda(p.precio)}`;
+        optgroupProductos.appendChild(o);
+      });
+      sel.appendChild(optgroupProductos);
+    }
+    
+    // Agregar arreglos
+    if (arreglos.length > 0) {
+      const optgroupArreglos = document.createElement('optgroup');
+      optgroupArreglos.label = '💐 Arreglos';
+      arreglos.forEach(a => {
+        const o = document.createElement('option');
+        o.value = `arreglo-${a.id}`;
+        o.textContent = `${a.nombre} — ${Fmt.moneda(a.precio)}`;
+        optgroupArreglos.appendChild(o);
+      });
+      sel.appendChild(optgroupArreglos);
+    }
+    
+    // Mostrar mensaje si no hay resultados
+    if (itemsFiltrados.length === 0 && filtro) {
+      const o = document.createElement('option');
+      o.value = '';
+      o.textContent = 'No se encontraron resultados';
+      o.disabled = true;
+      sel.appendChild(o);
+    }
+  }
+  
+  function filtrarProductosVenta() {
+    const filtro = document.getElementById('buscar-producto-venta').value;
+    renderProductosSelect(filtro);
   }
 
   async function cargarClientesSelect() {
