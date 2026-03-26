@@ -492,65 +492,87 @@
 
 <!-- Modal nueva venta -->
 <div class="modal-overlay" id="modal-venta">
-  <div class="modal" style="max-width:700px">
-    <div class="modal-header">
-      <h3>Nueva venta</h3>
-      <button class="btn-close" onclick="Modal.close('modal-venta')">×</button>
+  <div class="modal" style="max-width:800px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--rosa-500) 0%, var(--rosa-600) 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0">
+      <div>
+        <h3 style="margin:0;color:white">🛍️ Nueva venta</h3>
+        <p style="margin:4px 0 0 0;font-size:13px;opacity:0.9">Agrega productos o arreglos al carrito</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-venta')" style="color:white;opacity:0.9">×</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="padding:20px">
       <div class="form-stack">
-        <!-- Buscador de productos y arreglos -->
-        <div class="form-group">
-          <label class="form-label">🔍 Buscar producto o arreglo</label>
+        <!-- Buscador mejorado -->
+        <div style="position:relative">
           <input 
             class="form-control" 
             type="text" 
             id="buscar-producto-venta" 
-            placeholder="Escribe para buscar..." 
+            placeholder="🔍 Buscar por nombre de producto o arreglo..." 
             oninput="filtrarProductosVenta()"
+            onkeydown="handleBuscarKeydown(event)"
             autocomplete="off"
+            style="padding-left:40px;font-size:15px;border:2px solid var(--rosa-200);transition:all 0.2s"
+            onfocus="this.style.borderColor='var(--rosa-400)'"
+            onblur="this.style.borderColor='var(--rosa-200)'"
           />
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--rosa-400)">🔍</span>
+          <div id="resultados-busqueda" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:2px solid var(--rosa-200);border-top:none;border-radius:0 0 var(--radius-md) var(--radius-md);max-height:300px;overflow-y:auto;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
         </div>
         
-        <!-- Lista de productos agregados -->
-        <div id="productos-venta" style="border:1px solid var(--rosa-100);border-radius:var(--radius-md);padding:12px;min-height:80px;max-height:220px;overflow-y:auto">
-          <div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Agrega productos a la venta</div>
+        <!-- Carrito de compras -->
+        <div style="background:var(--gris-25);border:2px dashed var(--rosa-200);border-radius:var(--radius-lg);padding:16px;min-height:120px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h4 style="margin:0;font-size:14px;font-weight:600;color:var(--gris-700)">🛒 Carrito de compras</h4>
+            <span id="contador-items" style="background:var(--rosa-500);color:white;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600">0 items</span>
+          </div>
+          <div id="productos-venta" style="max-height:280px;overflow-y:auto">
+            <div style="color:var(--gris-400);font-size:14px;text-align:center;padding:2rem">
+              <div style="font-size:48px;margin-bottom:8px;opacity:0.3">🛒</div>
+              <p style="margin:0">El carrito está vacío</p>
+              <p style="margin:4px 0 0 0;font-size:12px">Busca y agrega productos arriba</p>
+            </div>
+          </div>
         </div>
         
-        <!-- Selector de productos con cantidad -->
-        <div style="display:flex;gap:8px">
-          <select class="form-control" id="sel-producto">
-            <option value="">Seleccionar producto...</option>
-          </select>
-          <input class="form-control" type="number" id="cant-producto" value="1" min="1" style="max-width:80px" placeholder="Cant." />
-          <button class="btn btn-outline btn-sm" onclick="agregarProductoVenta()">Agregar</button>
-        </div>
-        
+        <!-- Información adicional -->
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label">Método de pago <span class="req">*</span></label>
-            <select class="form-control" id="metodo-pago" required>
-              <option>Efectivo</option><option>Yape</option><option>Plin</option>
-              <option>Tarjeta</option><option>Transferencia bancaria</option>
+            <label class="form-label">💳 Método de pago <span class="req">*</span></label>
+            <select class="form-control" id="metodo-pago" required style="border:2px solid var(--gris-200)">
+              <option>Efectivo</option>
+              <option>Yape</option>
+              <option>Plin</option>
+              <option>Tarjeta</option>
+              <option>Transferencia bancaria</option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Cliente (opcional)</label>
-            <select class="form-control" id="venta-cliente">
+            <label class="form-label">👤 Cliente (opcional)</label>
+            <select class="form-control" id="venta-cliente" style="border:2px solid var(--gris-200)">
               <option value="">Sin cliente</option>
             </select>
           </div>
         </div>
         
-        <div style="background:var(--rosa-50);border-radius:var(--radius-md);padding:12px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:14px;font-weight:500">Total de la venta:</span>
-          <span style="font-size:22px;font-weight:700;color:var(--rosa-600);font-family:var(--font-display)" id="total-venta">S/ 0.00</span>
+        <!-- Total destacado -->
+        <div style="background:linear-gradient(135deg, var(--rosa-50) 0%, var(--rosa-100) 100%);border:2px solid var(--rosa-300);border-radius:var(--radius-lg);padding:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(236,72,153,0.1)">
+          <div>
+            <span style="font-size:13px;color:var(--gris-600);display:block;margin-bottom:4px">Total de la venta</span>
+            <span style="font-size:32px;font-weight:800;color:var(--rosa-600);font-family:var(--font-display);line-height:1" id="total-venta">S/ 0.00</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:var(--gris-500)">Items: <span id="total-items-count" style="font-weight:600">0</span></div>
+            <div style="font-size:12px;color:var(--gris-500)">Unidades: <span id="total-unidades-count" style="font-weight:600">0</span></div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-venta')">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="registrarVenta()">Registrar venta</button>
+    <div class="modal-footer" style="background:var(--gris-25);padding:16px 20px">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-venta')" style="padding:10px 20px">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="registrarVenta()" style="padding:10px 24px;font-weight:600">
+        <span style="font-size:16px;margin-right:6px">✓</span> Registrar venta
+      </button>
     </div>
   </div>
 </div>
@@ -867,68 +889,95 @@
     }
   }
 
-  function agregarProductoVenta() {
-    const sel = document.getElementById('sel-producto');
-    const cant = parseInt(document.getElementById('cant-producto').value) || 1;
-    const valorSel = sel.value; // Formato: "producto-123" o "arreglo-456"
-    
-    if (!valorSel) { 
-      Toast.warning('Selecciona un producto o arreglo'); 
-      return; 
-    }
-    
-    // Parsear el valor seleccionado
-    const [tipo, idStr] = valorSel.split('-');
-    const id = parseInt(idStr);
-    
-    // Buscar el item en todosLosItems
-    const item = todosLosItems.find(i => i.id === id && i.tipo === tipo);
-    if (!item) {
-      Toast.error('Item no encontrado');
-      return;
-    }
-    
-    // Verificar si ya existe en el carrito
-    const existing = itemsVenta.find(i => i.id === id && i.tipo === tipo);
-    if (existing) {
-      existing.cantidad += cant;
-    } else {
-      itemsVenta.push({ ...item, cantidad: cant });
-    }
-    
-    renderItemsVenta();
-    sel.value = '';
-    document.getElementById('cant-producto').value = 1;
-    document.getElementById('buscar-producto-venta').value = '';
-  }
-
   function renderItemsVenta() {
     const el = document.getElementById('productos-venta');
+    const contadorEl = document.getElementById('contador-items');
+    const totalItemsEl = document.getElementById('total-items-count');
+    const totalUnidadesEl = document.getElementById('total-unidades-count');
+    
     if (!itemsVenta.length) { 
-      el.innerHTML = '<div style="color:var(--gris-400);font-size:13px;text-align:center;padding:1rem">Agrega productos a la venta</div>'; 
-      document.getElementById('total-venta').textContent = 'S/ 0.00'; 
+      el.innerHTML = `
+        <div style="color:var(--gris-400);font-size:14px;text-align:center;padding:2rem">
+          <div style="font-size:48px;margin-bottom:8px;opacity:0.3">🛒</div>
+          <p style="margin:0">El carrito está vacío</p>
+          <p style="margin:4px 0 0 0;font-size:12px">Busca y agrega productos arriba</p>
+        </div>
+      `; 
+      document.getElementById('total-venta').textContent = 'S/ 0.00';
+      if (contadorEl) contadorEl.textContent = '0 items';
+      if (totalItemsEl) totalItemsEl.textContent = '0';
+      if (totalUnidadesEl) totalUnidadesEl.textContent = '0';
       return; 
     }
     
     el.innerHTML = itemsVenta.map((i,idx) => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--gris-50)">
-        <div style="flex:1">
-          <span style="font-size:13px">${i.tipo_label || ''} ${i.nombre}</span>
-          ${i.tipo === 'arreglo' ? '<span class="badge badge-dorado" style="font-size:10px;margin-left:6px">Arreglo</span>' : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;margin-bottom:8px;background:white;border:1px solid var(--gris-100);border-radius:var(--radius-md);transition:all 0.2s" onmouseover="this.style.borderColor='var(--rosa-300)'" onmouseout="this.style.borderColor='var(--gris-100)'">
+        <div style="flex:1;display:flex;align-items:center;gap:12px">
+          <div style="font-size:28px;line-height:1">${i.tipo_label || '🌸'}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;color:var(--gris-800);margin-bottom:2px">${i.nombre}</div>
+            <div style="font-size:12px;color:var(--gris-500)">
+              ${Fmt.moneda(i.precio)} × ${i.cantidad} = ${Fmt.moneda(i.precio * i.cantidad)}
+            </div>
+          </div>
+          ${i.tipo === 'arreglo' ? '<span class="badge badge-dorado" style="font-size:10px">Arreglo</span>' : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="number" min="1" value="${i.cantidad}" style="width:50px;padding:4px 6px;border:1px solid var(--gris-200);border-radius:6px;font-size:12px" onchange="cambiarCant(${idx},this.value)" />
-          <span style="font-size:13px;font-weight:500;min-width:60px;text-align:right">${Fmt.moneda(i.precio*i.cantidad)}</span>
-          <button style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px" onclick="quitarItem(${idx})">×</button>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:4px;background:var(--gris-50);border-radius:var(--radius-md);padding:4px">
+            <button 
+              onclick="cambiarCant(${idx}, ${i.cantidad - 1})" 
+              style="background:white;border:1px solid var(--gris-200);color:var(--gris-700);cursor:pointer;font-size:16px;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:600;transition:all 0.2s"
+              onmouseover="this.style.background='var(--rosa-50)';this.style.borderColor='var(--rosa-300)'"
+              onmouseout="this.style.background='white';this.style.borderColor='var(--gris-200)'"
+              ${i.cantidad <= 1 ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ''}
+            >−</button>
+            <input 
+              type="number" 
+              min="1" 
+              value="${i.cantidad}" 
+              style="width:50px;padding:6px;border:1px solid var(--gris-200);border-radius:6px;font-size:14px;font-weight:600;text-align:center" 
+              onchange="cambiarCant(${idx},this.value)"
+              onfocus="this.select()"
+            />
+            <button 
+              onclick="cambiarCant(${idx}, ${i.cantidad + 1})" 
+              style="background:white;border:1px solid var(--gris-200);color:var(--gris-700);cursor:pointer;font-size:16px;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:600;transition:all 0.2s"
+              onmouseover="this.style.background='var(--rosa-50)';this.style.borderColor='var(--rosa-300)'"
+              onmouseout="this.style.background='white';this.style.borderColor='var(--gris-200)'"
+            >+</button>
+          </div>
+          <button 
+            style="background:var(--danger-50);border:1px solid var(--danger-200);color:var(--danger);cursor:pointer;font-size:18px;width:32px;height:32px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;transition:all 0.2s" 
+            onclick="quitarItem(${idx})"
+            onmouseover="this.style.background='var(--danger)';this.style.color='white'"
+            onmouseout="this.style.background='var(--danger-50)';this.style.color='var(--danger)'"
+            title="Eliminar del carrito"
+          >🗑️</button>
         </div>
-      </div>`).join('');
+      </div>
+    `).join('');
     
     const total = itemsVenta.reduce((s,i) => s + i.precio*i.cantidad, 0);
+    const totalUnidades = itemsVenta.reduce((s,i) => s + i.cantidad, 0);
+    
     document.getElementById('total-venta').textContent = Fmt.moneda(total);
+    if (contadorEl) contadorEl.textContent = `${itemsVenta.length} item${itemsVenta.length !== 1 ? 's' : ''}`;
+    if (totalItemsEl) totalItemsEl.textContent = itemsVenta.length;
+    if (totalUnidadesEl) totalUnidadesEl.textContent = totalUnidades;
   }
 
-  function cambiarCant(idx, val) { itemsVenta[idx].cantidad = Math.max(1, parseInt(val)||1); renderItemsVenta(); }
-  function quitarItem(idx) { itemsVenta.splice(idx,1); renderItemsVenta(); }
+  function cambiarCant(idx, val) { 
+    const newVal = Math.max(1, parseInt(val)||1);
+    itemsVenta[idx].cantidad = newVal;
+    renderItemsVenta();
+  }
+  
+  function quitarItem(idx) { 
+    const item = itemsVenta[idx];
+    itemsVenta.splice(idx,1);
+    Toast.info(`${item.tipo_label} ${item.nombre} eliminado del carrito`);
+    renderItemsVenta();
+  }
 
   async function registrarVenta() {
     if (!itemsVenta.length) { 
@@ -982,6 +1031,8 @@
       renderItemsVenta();
       document.getElementById('metodo-pago').value = 'Efectivo';
       document.getElementById('venta-cliente').value = '';
+      document.getElementById('buscar-producto-venta').value = '';
+      document.getElementById('resultados-busqueda').style.display = 'none';
       
       Modal.close('modal-venta');
       
@@ -996,6 +1047,7 @@
   }
 
   let todosLosItems = []; // Array combinado de productos y arreglos
+  let itemSeleccionadoIndex = -1; // Para navegación con teclado
   
   async function cargarProductosSelect() {
     try {
@@ -1011,79 +1063,168 @@
       
       // Combinar productos y arreglos en un solo array
       todosLosItems = [
-        ...productos.map(p => ({ ...p, tipo: 'producto', tipo_label: '🌸' })),
-        ...arreglos.map(a => ({ ...a, tipo: 'arreglo', tipo_label: '💐' }))
+        ...productos.map(p => {
+          const precio = parseFloat(p.precio) || 0;
+          return { 
+            ...p, 
+            tipo: 'producto', 
+            tipo_label: '🌸',
+            tipo_nombre: 'Producto',
+            precio: precio
+          };
+        }),
+        ...arreglos.map(a => {
+          const precio = parseFloat(a.precio_venta) || 0;
+          return { 
+            ...a, 
+            tipo: 'arreglo', 
+            tipo_label: '💐',
+            tipo_nombre: 'Arreglo',
+            precio: precio
+          };
+        })
       ];
       
-      // Mantener productosDisp para compatibilidad
-      productosDisp = todosLosItems;
-      
-      console.log(`Items cargados: ${productos.length} productos + ${arreglos.length} arreglos = ${todosLosItems.length} total`);
-      
-      renderProductosSelect();
+      console.log(`✅ Items cargados: ${productos.length} productos + ${arreglos.length} arreglos = ${todosLosItems.length} total`);
     } catch (error) {
-      console.error('Error al cargar items:', error);
+      console.error('❌ Error al cargar items:', error);
+      Toast.error('Error al cargar productos');
       todosLosItems = [];
-      productosDisp = [];
-    }
-  }
-  
-  function renderProductosSelect(filtro = '') {
-    const sel = document.getElementById('sel-producto');
-    sel.innerHTML = '<option value="">Seleccionar producto o arreglo...</option>';
-    
-    // Filtrar items si hay texto de búsqueda
-    let itemsFiltrados = todosLosItems;
-    if (filtro) {
-      const filtroLower = filtro.toLowerCase();
-      itemsFiltrados = todosLosItems.filter(item => 
-        item.nombre.toLowerCase().includes(filtroLower)
-      );
-    }
-    
-    // Agrupar por tipo
-    const productos = itemsFiltrados.filter(i => i.tipo === 'producto');
-    const arreglos = itemsFiltrados.filter(i => i.tipo === 'arreglo');
-    
-    // Agregar productos
-    if (productos.length > 0) {
-      const optgroupProductos = document.createElement('optgroup');
-      optgroupProductos.label = '🌸 Productos';
-      productos.forEach(p => {
-        const o = document.createElement('option');
-        o.value = `producto-${p.id}`;
-        o.textContent = `${p.nombre} — ${Fmt.moneda(p.precio)}`;
-        optgroupProductos.appendChild(o);
-      });
-      sel.appendChild(optgroupProductos);
-    }
-    
-    // Agregar arreglos
-    if (arreglos.length > 0) {
-      const optgroupArreglos = document.createElement('optgroup');
-      optgroupArreglos.label = '💐 Arreglos';
-      arreglos.forEach(a => {
-        const o = document.createElement('option');
-        o.value = `arreglo-${a.id}`;
-        o.textContent = `${a.nombre} — ${Fmt.moneda(a.precio)}`;
-        optgroupArreglos.appendChild(o);
-      });
-      sel.appendChild(optgroupArreglos);
-    }
-    
-    // Mostrar mensaje si no hay resultados
-    if (itemsFiltrados.length === 0 && filtro) {
-      const o = document.createElement('option');
-      o.value = '';
-      o.textContent = 'No se encontraron resultados';
-      o.disabled = true;
-      sel.appendChild(o);
     }
   }
   
   function filtrarProductosVenta() {
-    const filtro = document.getElementById('buscar-producto-venta').value;
-    renderProductosSelect(filtro);
+    const input = document.getElementById('buscar-producto-venta');
+    const resultadosDiv = document.getElementById('resultados-busqueda');
+    
+    if (!input || !resultadosDiv) return;
+    
+    const filtro = input.value.trim();
+    
+    // Si está vacío, ocultar resultados
+    if (!filtro) {
+      resultadosDiv.style.display = 'none';
+      itemSeleccionadoIndex = -1;
+      return;
+    }
+    
+    // Filtrar items
+    const filtroLower = filtro.toLowerCase();
+    const itemsFiltrados = todosLosItems.filter(item => 
+      item.nombre.toLowerCase().includes(filtroLower)
+    );
+    
+    // Mostrar resultados
+    if (itemsFiltrados.length === 0) {
+      resultadosDiv.innerHTML = `
+        <div style="padding:16px;text-align:center;color:var(--gris-400)">
+          <div style="font-size:32px;margin-bottom:8px">🔍</div>
+          <p style="margin:0;font-size:14px">No se encontraron resultados para "${filtro}"</p>
+        </div>
+      `;
+      resultadosDiv.style.display = 'block';
+    } else {
+      resultadosDiv.innerHTML = itemsFiltrados.map((item, idx) => `
+        <div 
+          class="resultado-item" 
+          data-index="${idx}"
+          onclick="agregarItemDesdeResultado('${item.tipo}', ${item.id})"
+          style="padding:12px 16px;border-bottom:1px solid var(--gris-100);cursor:pointer;transition:all 0.2s;display:flex;justify-content:space-between;align-items:center"
+          onmouseover="this.style.background='var(--rosa-50)'"
+          onmouseout="this.style.background='white'"
+        >
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:18px">${item.tipo_label}</span>
+              <span style="font-weight:600;font-size:14px;color:var(--gris-800)">${item.nombre}</span>
+              <span class="badge badge-${item.tipo === 'arreglo' ? 'dorado' : 'rosa'}" style="font-size:10px">${item.tipo_nombre}</span>
+            </div>
+            <div style="font-size:12px;color:var(--gris-500)">Stock disponible</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:18px;font-weight:700;color:var(--rosa-600)">${Fmt.moneda(item.precio)}</div>
+            <div style="font-size:11px;color:var(--gris-400)">por unidad</div>
+          </div>
+        </div>
+      `).join('');
+      resultadosDiv.style.display = 'block';
+      itemSeleccionadoIndex = -1;
+    }
+  }
+  
+  function handleBuscarKeydown(event) {
+    const resultadosDiv = document.getElementById('resultados-busqueda');
+    const items = resultadosDiv.querySelectorAll('.resultado-item');
+    
+    if (items.length === 0) return;
+    
+    // Enter: agregar item seleccionado
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (itemSeleccionadoIndex >= 0 && itemSeleccionadoIndex < items.length) {
+        items[itemSeleccionadoIndex].click();
+      } else if (items.length === 1) {
+        items[0].click();
+      }
+      return;
+    }
+    
+    // Escape: cerrar resultados
+    if (event.key === 'Escape') {
+      resultadosDiv.style.display = 'none';
+      itemSeleccionadoIndex = -1;
+      return;
+    }
+    
+    // Flechas: navegar
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      itemSeleccionadoIndex = Math.min(itemSeleccionadoIndex + 1, items.length - 1);
+      actualizarSeleccionResultado(items);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      itemSeleccionadoIndex = Math.max(itemSeleccionadoIndex - 1, 0);
+      actualizarSeleccionResultado(items);
+    }
+  }
+  
+  function actualizarSeleccionResultado(items) {
+    items.forEach((item, idx) => {
+      if (idx === itemSeleccionadoIndex) {
+        item.style.background = 'var(--rosa-100)';
+        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        item.style.background = 'white';
+      }
+    });
+  }
+  
+  function agregarItemDesdeResultado(tipo, id) {
+    const item = todosLosItems.find(i => i.id === id && i.tipo === tipo);
+    if (!item) {
+      Toast.error('Item no encontrado');
+      return;
+    }
+    
+    // Verificar si ya existe en el carrito
+    const existing = itemsVenta.find(i => i.id === id && i.tipo === tipo);
+    if (existing) {
+      existing.cantidad += 1;
+      Toast.success(`${item.tipo_label} ${item.nombre} +1 (${existing.cantidad} total)`);
+    } else {
+      itemsVenta.push({ ...item, cantidad: 1 });
+      Toast.success(`${item.tipo_label} ${item.nombre} agregado al carrito`);
+    }
+    
+    renderItemsVenta();
+    
+    // Limpiar búsqueda
+    document.getElementById('buscar-producto-venta').value = '';
+    document.getElementById('resultados-busqueda').style.display = 'none';
+    itemSeleccionadoIndex = -1;
+    
+    // Enfocar de nuevo en el buscador
+    document.getElementById('buscar-producto-venta').focus();
   }
 
   async function cargarClientesSelect() {
@@ -1130,8 +1271,29 @@
     renderItemsVenta();
     document.getElementById('metodo-pago').value = 'Efectivo';
     document.getElementById('venta-cliente').value = '';
+    document.getElementById('buscar-producto-venta').value = '';
+    document.getElementById('resultados-busqueda').style.display = 'none';
+    itemSeleccionadoIndex = -1;
     Modal.open('modal-venta');
+    
+    // Enfocar en el buscador después de abrir
+    setTimeout(() => {
+      document.getElementById('buscar-producto-venta').focus();
+    }, 100);
   }
+  
+  // Cerrar resultados al hacer click fuera
+  document.addEventListener('click', function(e) {
+    const resultadosDiv = document.getElementById('resultados-busqueda');
+    const inputBuscar = document.getElementById('buscar-producto-venta');
+    
+    if (resultadosDiv && inputBuscar && 
+        !resultadosDiv.contains(e.target) && 
+        e.target !== inputBuscar) {
+      resultadosDiv.style.display = 'none';
+      itemSeleccionadoIndex = -1;
+    }
+  });
 
   cargarVentas();
   cargarProductosSelect();
