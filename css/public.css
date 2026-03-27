@@ -2793,3 +2793,21 @@ body.dark-mode {
   font-size: 30px;
   color:  rgb(192, 70, 70);
 }
+/* 📱 MÓVIL (por defecto) */
+.footer-copyright span {
+  display: block;
+  max-width: 280px;
+  margin: 0 auto;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* 💻 PANTALLAS GRANDES */
+@media (min-width: 768px) {
+  .footer-copyright span {
+    display: inline;     /* vuelve a una sola línea */
+    max-width: none;     /* sin límite */
+    margin: 0;
+    text-align: left;
+  }
+}
