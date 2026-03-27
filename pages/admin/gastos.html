@@ -19,6 +19,162 @@
       #tabla-gastos-wrap { display: none; }
       #gastos-cards { display: grid; }
     }
+    
+    /* Estilos para el modal de detalle de gasto */
+    .modal-detalle-gasto {
+      max-width: 600px;
+      width: 95%;
+    }
+    
+    .detalle-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .detalle-icon {
+      font-size: 48px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+    
+    .detalle-tipo {
+      flex: 1;
+    }
+    
+    .detalle-tipo-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--gris-500);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .detalle-tipo-nombre {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+    
+    .detalle-section {
+      margin-bottom: 20px;
+    }
+    
+    .detalle-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gris-500);
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    .detalle-value {
+      font-size: 15px;
+      color: var(--text-primary);
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      line-height: 1.5;
+    }
+    
+    .detalle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    @media (max-width: 480px) {
+      .detalle-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .detalle-monto {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--danger);
+      text-align: center;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      border: 2px solid var(--danger);
+      letter-spacing: -0.5px;
+    }
+    
+    .detalle-merma-box {
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.12) 100%);
+      border-left: 4px solid var(--danger);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .detalle-merma-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    
+    .detalle-merma-icon {
+      font-size: 24px;
+    }
+    
+    .detalle-merma-title {
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    .detalle-merma-item {
+      margin-bottom: 16px;
+    }
+    
+    .detalle-merma-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .detalle-merma-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--danger);
+      margin-bottom: 6px;
+      display: block;
+    }
+    
+    .detalle-merma-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding-left: 8px;
+    }
+    
+    .detalle-timestamp {
+      font-size: 13px;
+      color: var(--gris-500);
+      text-align: center;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+    
+    .detalle-timestamp-icon {
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -29,8 +185,26 @@
     <div class="topbar" id="topbar"></div>
     <div class="admin-content">
       <div class="page-header">
-        <div><h2>Gastos</h2><p>Registra los gastos del negocio para calcular la ganancia real</p></div>
-        <button class="btn btn-primary" onclick="Modal.open('modal-gasto')">+ Registrar gasto</button>
+        <div>
+          <h2>Gastos</h2>
+          <p>Registra los gastos del negocio para calcular la ganancia real</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" onclick="Modal.open('modal-gasto')">+ Registrar gasto</button>
+        </div>
+      </div>
+
+      <!-- Mensaje informativo sobre compras de inventario -->
+      <div class="alert alert-success" style="margin-bottom: 1.5rem; display: flex; align-items: start; gap: 12px;">
+        <span style="font-size: 24px;">✨</span>
+        <div style="flex: 1;">
+          <strong>Gestión de inventario y productos</strong>
+          <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">
+            <strong>Compras:</strong> Al registrar gastos de <strong>"Compra de flores"</strong> o <strong>"Materiales"</strong>, 
+            puedes seleccionar un ítem existente o crear uno nuevo. El stock se <strong>aumentará</strong> automáticamente.<br>
+            <strong>Merma/Pérdida:</strong> Registra productos dañados o perdidos. El stock se <strong>reducirá</strong> y se calculará el valor perdido.
+          </p>
+        </div>
       </div>
 
       <!-- Resumen -->
@@ -47,6 +221,7 @@
           <span class="chip" onclick="filtrarCat(this,'transporte')">Transporte</span>
           <span class="chip" onclick="filtrarCat(this,'materiales')">Materiales</span>
           <span class="chip" onclick="filtrarCat(this,'mantenimiento')">Mantenimiento</span>
+          <span class="chip" onclick="filtrarCat(this,'merma')">Merma/Pérdida</span>
           <span class="chip" onclick="filtrarCat(this,'otros')">Otros</span>
         </div>
         <input class="form-control mes-control" type="month" id="mes-gasto" onchange="cargarGastos()" />
@@ -75,21 +250,36 @@
           <div class="form-group">
             <label class="form-label">Categoría</label>
             <select class="form-control" id="gasto-cat" onchange="toggleInventarioFields()">
-              <option value="flores">Compra de flores</option><option value="transporte">Transporte</option>
-              <option value="materiales">Materiales</option><option value="mantenimiento">Mantenimiento</option>
+              <option value="flores">Compra de flores</option>
+              <option value="transporte">Transporte</option>
+              <option value="materiales">Materiales</option>
+              <option value="mantenimiento">Mantenimiento</option>
+              <option value="merma">Merma/Pérdida</option>
               <option value="otros">Otros</option>
             </select>
           </div>
-          <div class="form-group"><label class="form-label">Monto (S/) <span class="req">*</span></label><input class="form-control" type="number" id="gasto-monto" step="0.01" min="0" required /></div>
+          <div class="form-group">
+            <label class="form-label">Método de pago</label>
+            <select class="form-control" id="gasto-metodo-pago">
+              <option value="efectivo_caja">Efectivo de caja</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="no_aplica">No aplica</option>
+            </select>
+            <small style="color: var(--gris-500); font-size: 11px; margin-top: 4px;">
+              💡 Solo "Efectivo de caja" afecta el cuadre diario
+            </small>
+          </div>
         </div>
+        <div class="form-group"><label class="form-label">Monto (S/) <span class="req">*</span></label><input class="form-control" type="number" id="gasto-monto" step="0.01" min="0" required /></div>
         
-        <!-- Campos de inventario (solo para flores y materiales) -->
+        <!-- Campos de inventario (solo para flores, materiales y merma) -->
         <div id="inventario-fields" style="display:block">
-          <div class="alert alert-info" style="font-size:12px;padding:10px;margin-bottom:12px">
-            💡 Al registrar este gasto, el stock del ítem seleccionado se actualizará automáticamente
+          <div class="alert alert-info" id="inventario-alert" style="font-size:12px;padding:10px;margin-bottom:12px">
+            💡 Selecciona un ítem existente o crea uno nuevo. El stock se actualizará al guardar.
           </div>
           <div class="form-group">
-            <label class="form-label">Ítem de inventario</label>
+            <label class="form-label" id="inventario-label">Ítem de inventario</label>
             <select class="form-control" id="gasto-inventario-id" onchange="toggleNuevoItem()">
               <option value="">-- No actualizar inventario --</option>
               <option value="nuevo">➕ Crear nuevo ítem</option>
@@ -123,11 +313,25 @@
             </div>
           </div>
           
-          <!-- Campo de cantidad (siempre visible cuando hay inventario) -->
+          <!-- Selector de productos (solo para merma) -->
+          <div id="productos-field" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Producto</label>
+              <select class="form-control" id="gasto-producto-id" onchange="onProductoSeleccionado()">
+                <option value="">-- Seleccionar producto --</option>
+              </select>
+              <small style="color: var(--gris-500); font-size: 11px; margin-top: 4px;">
+                💡 Selecciona SOLO inventario O producto, no ambos
+              </small>
+            </div>
+          </div>
+          
+          <!-- Campo de cantidad (siempre visible cuando hay inventario o producto) -->
           <div id="cantidad-field" style="display:none">
             <div class="form-group">
-              <label class="form-label">Cantidad a agregar <span class="req">*</span></label>
+              <label class="form-label" id="cantidad-label">Cantidad a agregar <span class="req">*</span></label>
               <input class="form-control" type="number" id="gasto-cantidad" min="1" placeholder="Ej: 50" />
+              <small id="stock-disponible-msg" style="display:none; color: var(--gris-500); font-size: 11px; margin-top: 4px;"></small>
             </div>
           </div>
         </div>
@@ -142,20 +346,36 @@
   </div>
 </div>
 
+<!-- Modal para ver detalle de gasto -->
+<div class="modal-overlay" id="modal-detalle-gasto">
+  <div class="modal modal-detalle-gasto">
+    <div class="modal-header">
+      <h3>Detalle del gasto</h3>
+      <button class="btn-close" onclick="Modal.close('modal-detalle-gasto')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detalle-gasto-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="Modal.close('modal-detalle-gasto')" style="width: 100%;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
   initAdminLayout('gastos', 'Gastos', 'Negocio');
   let gastos = [];
   let catFiltro = '';
+  let inventarioItems = [];
+  let productosItems = [];
 
   const now = new Date();
   document.getElementById('mes-gasto').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
-  const CAT_LABELS = { flores:'Compra flores', transporte:'Transporte', materiales:'Materiales', mantenimiento:'Mantenimiento', otros:'Otros' };
-  const CAT_BADGE = { flores:'badge-rosa', transporte:'badge-info', materiales:'badge-dorado', mantenimiento:'badge-warning', otros:'badge-gray' };
-
-  let inventarioItems = [];
+  const CAT_LABELS = { flores:'Compra flores', transporte:'Transporte', materiales:'Materiales', mantenimiento:'Mantenimiento', merma:'Merma/Pérdida', otros:'Otros' };
+  const CAT_BADGE = { flores:'badge-rosa', transporte:'badge-info', materiales:'badge-dorado', mantenimiento:'badge-warning', merma:'badge-danger', otros:'badge-gray' };
 
   // Cargar ítems del inventario al iniciar
   async function cargarInventario() {
@@ -169,6 +389,38 @@
       console.error('Error al cargar inventario:', error);
       inventarioItems = [];
     }
+  }
+
+  // Cargar productos
+  async function cargarProductos() {
+    try {
+      const response = await API.get('/productos');
+      const result = response.data || response;
+      productosItems = result.data || result || [];
+      console.log('Productos cargados:', productosItems.length, 'productos');
+      renderProductosSelect();
+    } catch (error) {
+      console.error('Error al cargar productos:', error);
+      productosItems = [];
+    }
+  }
+
+  function renderProductosSelect() {
+    const select = document.getElementById('gasto-producto-id');
+    
+    // Filtrar solo productos con stock > 0
+    const productosConStock = productosItems.filter(p => p.stock > 0);
+    
+    select.innerHTML = '<option value="">-- Seleccionar producto --</option>' +
+      productosConStock.map(prod => 
+        `<option value="${prod.id}" data-stock="${prod.stock}" data-costo="${prod.costo || 0}">${prod.nombre} (Stock: ${prod.stock})</option>`
+      ).join('');
+  }
+
+  function onProductoSeleccionado() {
+    // Esta función se llama cuando cambia el select de productos
+    // Reutilizamos la lógica de toggleNuevoItem para mantener consistencia
+    toggleNuevoItem();
   }
 
   function renderInventarioSelect() {
@@ -191,49 +443,235 @@
   }
 
   function toggleNuevoItem() {
+    const categoria = document.getElementById('gasto-cat').value;
     const inventarioId = document.getElementById('gasto-inventario-id').value;
+    const productoId = document.getElementById('gasto-producto-id').value;
     const nuevoItemFields = document.getElementById('nuevo-item-fields');
     const cantidadField = document.getElementById('cantidad-field');
+    const stockMsg = document.getElementById('stock-disponible-msg');
+    const montoInput = document.getElementById('gasto-monto');
+    const cantidadInput = document.getElementById('gasto-cantidad');
     
-    if (inventarioId === 'nuevo') {
-      // Mostrar campos para crear nuevo ítem
-      nuevoItemFields.style.display = 'block';
-      cantidadField.style.display = 'block';
+    // Resetear campos
+    cantidadField.style.display = 'none';
+    stockMsg.style.display = 'none';
+    nuevoItemFields.style.display = 'none';
+    cantidadInput.value = '';
+    cantidadInput.removeAttribute('max');
+    cantidadInput.removeAttribute('min');
+    cantidadInput.oninput = null;
+    
+    if (categoria === 'merma') {
+      // === LÓGICA PARA MERMA ===
       
-      // Pre-llenar el tipo según la categoría
-      const categoria = document.getElementById('gasto-cat').value;
-      // El tipo se asignará automáticamente según la categoría
-    } else if (inventarioId) {
-      // Ítem existente seleccionado
-      nuevoItemFields.style.display = 'none';
-      cantidadField.style.display = 'block';
+      // Limpiar el otro selector cuando se selecciona uno
+      if (inventarioId && inventarioId !== '' && inventarioId !== 'nuevo') {
+        document.getElementById('gasto-producto-id').value = '';
+        
+        // Seleccionó un ítem de inventario
+        const item = inventarioItems.find(i => i.id == inventarioId);
+        if (item) {
+          cantidadField.style.display = 'block';
+          stockMsg.style.display = 'block';
+          stockMsg.textContent = `📦 Stock disponible: ${item.stock} ${item.unidad}`;
+          stockMsg.style.color = '#f59e0b';
+          
+          // Establecer límites
+          cantidadInput.setAttribute('max', item.stock);
+          cantidadInput.setAttribute('min', '1');
+          cantidadInput.setAttribute('step', '1');
+          
+          // Calcular monto automáticamente cuando cambie la cantidad
+          cantidadInput.oninput = function() {
+            const cantidad = parseInt(this.value) || 0;
+            if (cantidad > item.stock) {
+              this.value = item.stock;
+              Toast.warning(`Máximo disponible: ${item.stock} ${item.unidad}`);
+            }
+            const valorPerdido = (parseInt(this.value) || 0) * (parseFloat(item.costo) || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          };
+          
+          // Calcular monto inicial si ya hay cantidad
+          if (cantidadInput.value) {
+            const cantidad = parseInt(cantidadInput.value) || 0;
+            const valorPerdido = cantidad * (parseFloat(item.costo) || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          }
+        }
+        
+      } else if (productoId && productoId !== '') {
+        document.getElementById('gasto-inventario-id').value = '';
+        
+        // Seleccionó un producto
+        const producto = productosItems.find(p => p.id == productoId);
+        if (producto) {
+          cantidadField.style.display = 'block';
+          stockMsg.style.display = 'block';
+          stockMsg.textContent = `📦 Stock disponible: ${producto.stock} unidades`;
+          stockMsg.style.color = '#f59e0b';
+          
+          // Establecer límites
+          cantidadInput.setAttribute('max', producto.stock);
+          cantidadInput.setAttribute('min', '1');
+          cantidadInput.setAttribute('step', '1');
+          
+          // Calcular monto automáticamente cuando cambie la cantidad
+          cantidadInput.oninput = function() {
+            const cantidad = parseInt(this.value) || 0;
+            if (cantidad > producto.stock) {
+              this.value = producto.stock;
+              Toast.warning(`Máximo disponible: ${producto.stock} unidades`);
+            }
+            const valorPerdido = (parseInt(this.value) || 0) * (parseFloat(producto.costo) || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          };
+          
+          // Calcular monto inicial si ya hay cantidad
+          if (cantidadInput.value) {
+            const cantidad = parseInt(cantidadInput.value) || 0;
+            const valorPerdido = cantidad * (parseFloat(producto.costo) || 0);
+            montoInput.value = valorPerdido.toFixed(2);
+          }
+        }
+        
+      } else {
+        // No seleccionó nada
+        montoInput.value = '0.00';
+      }
+      
     } else {
-      // No actualizar inventario
-      nuevoItemFields.style.display = 'none';
-      cantidadField.style.display = 'none';
-      
-      // Limpiar campos
-      document.getElementById('nuevo-item-nombre').value = '';
-      document.getElementById('nuevo-item-costo').value = '';
-      document.getElementById('gasto-cantidad').value = '';
+      // === LÓGICA PARA COMPRAS (original) ===
+      if (inventarioId === 'nuevo') {
+        nuevoItemFields.style.display = 'block';
+        cantidadField.style.display = 'block';
+        cantidadInput.setAttribute('min', '1');
+        cantidadInput.setAttribute('step', '1');
+        cantidadInput.removeAttribute('max');
+      } else if (inventarioId && inventarioId !== '') {
+        nuevoItemFields.style.display = 'none';
+        cantidadField.style.display = 'block';
+        cantidadInput.setAttribute('min', '1');
+        cantidadInput.setAttribute('step', '1');
+        cantidadInput.removeAttribute('max');
+        
+        // Mostrar stock actual para referencia
+        const item = inventarioItems.find(i => i.id == inventarioId);
+        if (item) {
+          stockMsg.style.display = 'block';
+          stockMsg.textContent = `📦 Stock actual: ${item.stock} ${item.unidad}`;
+          stockMsg.style.color = '#6b7280';
+        }
+      } else {
+        // Limpiar campos
+        document.getElementById('nuevo-item-nombre').value = '';
+        document.getElementById('nuevo-item-costo').value = '';
+      }
     }
   }
 
   function toggleInventarioFields() {
     const categoria = document.getElementById('gasto-cat').value;
     const inventarioFields = document.getElementById('inventario-fields');
+    const productosField = document.getElementById('productos-field');
+    const inventarioAlert = document.getElementById('inventario-alert');
+    const inventarioLabel = document.getElementById('inventario-label');
+    const cantidadLabel = document.getElementById('cantidad-label');
+    const montoInput = document.getElementById('gasto-monto');
+    const metodoPagoSelect = document.getElementById('gasto-metodo-pago');
     
-    // Mostrar campos solo para flores y materiales
-    if (categoria === 'flores' || categoria === 'materiales') {
+    // Resetear todos los campos
+    document.getElementById('gasto-inventario-id').value = '';
+    document.getElementById('gasto-producto-id').value = '';
+    document.getElementById('gasto-cantidad').value = '';
+    document.getElementById('nuevo-item-fields').style.display = 'none';
+    document.getElementById('cantidad-field').style.display = 'none';
+    document.getElementById('stock-disponible-msg').style.display = 'none';
+    
+    if (categoria === 'merma') {
+      // === MODO MERMA/PÉRDIDA ===
       inventarioFields.style.display = 'block';
+      productosField.style.display = 'block';
+      
+      inventarioAlert.className = 'alert alert-warning';
+      inventarioAlert.innerHTML = '⚠️ El stock se <strong>REDUCIRÁ</strong> según la cantidad perdida. El monto se calculará automáticamente.';
+      
+      inventarioLabel.textContent = 'Ítem de inventario (opcional)';
+      cantidadLabel.innerHTML = 'Cantidad perdida <span class="req">*</span>';
+      
+      // Configurar select de inventario (solo ítems con stock > 0, sin opción "nuevo")
+      const selectInv = document.getElementById('gasto-inventario-id');
+      selectInv.innerHTML = '<option value="">-- No aplica --</option>' +
+        inventarioItems.filter(i => i.stock > 0).map(item => 
+          `<option value="${item.id}" data-costo="${item.costo || 0}" data-stock="${item.stock}" data-unidad="${item.unidad}">${item.nombre} (Stock: ${item.stock} ${item.unidad})</option>`
+        ).join('');
+      
+      // Bloquear monto (se calculará automáticamente)
+      montoInput.setAttribute('readonly', 'true');
+      montoInput.style.backgroundColor = '#f5f5f5';
+      montoInput.style.cursor = 'not-allowed';
+      montoInput.value = '0.00';
+      montoInput.placeholder = 'Se calculará automáticamente';
+      
+      // Establecer método de pago en "no_aplica" para merma
+      metodoPagoSelect.value = 'no_aplica';
+      metodoPagoSelect.setAttribute('readonly', 'true');
+      metodoPagoSelect.style.backgroundColor = '#f5f5f5';
+      metodoPagoSelect.style.cursor = 'not-allowed';
+      
+      // Cargar productos con stock
+      renderProductosSelect();
+      
+    } else if (categoria === 'flores' || categoria === 'materiales') {
+      // === MODO COMPRA ===
+      inventarioFields.style.display = 'block';
+      productosField.style.display = 'none';
+      
+      inventarioAlert.className = 'alert alert-info';
+      inventarioAlert.innerHTML = '💡 El stock del ítem seleccionado <strong>AUMENTARÁ</strong> según la cantidad ingresada.';
+      
+      inventarioLabel.textContent = 'Ítem de inventario';
+      cantidadLabel.innerHTML = 'Cantidad a agregar <span class="req">*</span>';
+      
+      // Habilitar monto
+      montoInput.removeAttribute('readonly');
+      montoInput.style.backgroundColor = '';
+      montoInput.style.cursor = '';
+      montoInput.value = '';
+      montoInput.placeholder = '';
+      
+      // Habilitar método de pago y sugerir transferencia para compras grandes
+      metodoPagoSelect.removeAttribute('readonly');
+      metodoPagoSelect.style.backgroundColor = '';
+      metodoPagoSelect.style.cursor = '';
+      metodoPagoSelect.value = 'transferencia'; // Sugerir transferencia para compras
+      
+      // Renderizar select normal con opción de crear nuevo
       renderInventarioSelect();
-      toggleNuevoItem(); // Actualizar visibilidad de campos internos
+      
     } else {
+      // === OTRAS CATEGORÍAS ===
       inventarioFields.style.display = 'none';
-      document.getElementById('gasto-inventario-id').value = '';
-      document.getElementById('gasto-cantidad').value = '';
-      document.getElementById('nuevo-item-nombre').value = '';
-      document.getElementById('nuevo-item-costo').value = '';
+      productosField.style.display = 'none';
+      
+      // Habilitar monto
+      montoInput.removeAttribute('readonly');
+      montoInput.style.backgroundColor = '';
+      montoInput.style.cursor = '';
+      montoInput.value = '';
+      montoInput.placeholder = '';
+      
+      // Habilitar método de pago
+      metodoPagoSelect.removeAttribute('readonly');
+      metodoPagoSelect.style.backgroundColor = '';
+      metodoPagoSelect.style.cursor = '';
+      
+      // Sugerir método según categoría
+      if (categoria === 'transporte') {
+        metodoPagoSelect.value = 'efectivo_caja'; // Transporte suele ser efectivo
+      } else {
+        metodoPagoSelect.value = 'transferencia'; // Otros gastos suelen ser transferencia
+      }
     }
   }
 
@@ -292,7 +730,10 @@
       <td style="font-weight:500">${g.descripcion}</td>
       <td><span class="badge ${CAT_BADGE[g.categoria]||'badge-gray'}">${CAT_LABELS[g.categoria]||g.categoria}</span></td>
       <td style="font-weight:600;color:var(--danger)">${Fmt.moneda(g.monto)}</td>
-      <td><button class="btn-tbl btn-tbl-delete" onclick="eliminarGasto(${g.id})">Eliminar</button></td>
+      <td>
+        <button class="btn-tbl btn-tbl-view" onclick="verDetalleGasto(${g.id})">Ver</button>
+        <button class="btn-tbl btn-tbl-delete" onclick="eliminarGasto(${g.id})">Eliminar</button>
+      </td>
     </tr>`).join('');
 
     cardsEl.innerHTML = lista.map(g => `
@@ -309,6 +750,7 @@
           <div class="prod-card-dato"><span class="prod-card-dato-label">Fecha</span><span class="prod-card-dato-val">${Fmt.fecha(g.fecha)}</span></div>
         </div>
         <div class="prod-card-actions">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="verDetalleGasto(${g.id})">👁️ Ver</button>
           <button class="btn btn-ghost btn-sm" style="color:var(--danger);flex:1" onclick="eliminarGasto(${g.id})">🗑️ Eliminar</button>
         </div>
       </div>`).join('');
@@ -322,26 +764,198 @@
   }
 
   async function guardarGasto() {
-    const payload = {
-      descripcion: document.getElementById('gasto-desc').value.trim(),
-      categoria: document.getElementById('gasto-cat').value,
-      monto: parseFloat(document.getElementById('gasto-monto').value) || 0,
-      fecha: document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0]
-    };
+    const categoria = document.getElementById('gasto-cat').value;
+    const descripcion = document.getElementById('gasto-desc').value.trim();
+    const monto = parseFloat(document.getElementById('gasto-monto').value) || 0;
+    const fecha = document.getElementById('gasto-fecha').value || new Date().toISOString().split('T')[0];
     
     // Validaciones básicas
-    if (!payload.descripcion) {
+    if (!descripcion) {
       Toast.warning('La descripción es obligatoria');
       return;
     }
-    if (!payload.monto || payload.monto <= 0) {
+    
+    if (!categoria) {
+      Toast.warning('Selecciona una categoría');
+      return;
+    }
+    
+    // === MANEJO DE MERMA/PÉRDIDA ===
+    if (categoria === 'merma') {
+      const inventarioId = document.getElementById('gasto-inventario-id').value;
+      const productoId = document.getElementById('gasto-producto-id').value;
+      const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
+      
+      // Validar que se seleccionó algo
+      if (!inventarioId && !productoId) {
+        Toast.warning('Selecciona un ítem de inventario o un producto para la merma');
+        return;
+      }
+      
+      // Validar cantidad
+      if (!cantidad || cantidad <= 0) {
+        Toast.warning('Ingresa la cantidad perdida (debe ser mayor a 0)');
+        return;
+      }
+      
+      try {
+        let montoCalculado = 0;
+        let descripcionFinal = descripcion;
+        
+        if (inventarioId && inventarioId !== '' && inventarioId !== 'nuevo') {
+          // === MERMA DE INVENTARIO ===
+          const item = inventarioItems.find(i => i.id == inventarioId);
+          if (!item) {
+            Toast.error('Ítem de inventario no encontrado');
+            return;
+          }
+          
+          // Validar stock disponible
+          if (cantidad > item.stock) {
+            Toast.error(`No puedes dar de baja ${cantidad} ${item.unidad}. Stock disponible: ${item.stock} ${item.unidad}`);
+            return;
+          }
+          
+          // Calcular valor perdido
+          montoCalculado = cantidad * (parseFloat(item.costo) || 0);
+          descripcionFinal = descripcion || `Merma/Pérdida: ${item.nombre} (${cantidad} ${item.unidad})`;
+          
+          // Actualizar stock en inventario (RESTAR)
+          const nuevoStock = item.stock - cantidad;
+          console.log(`Actualizando inventario ${inventarioId}: ${item.stock} -> ${nuevoStock}`);
+          
+          await API.put(`/inventario/${inventarioId}`, { 
+            stock: nuevoStock 
+          });
+          
+          Toast.success(`Stock reducido: ${item.nombre} -${cantidad} ${item.unidad}`);
+          
+        } else if (productoId && productoId !== '') {
+          // === MERMA DE PRODUCTO ===
+          const producto = productosItems.find(p => p.id == productoId);
+          if (!producto) {
+            Toast.error('Producto no encontrado');
+            return;
+          }
+          
+          // Validar stock disponible
+          if (cantidad > producto.stock) {
+            Toast.error(`No puedes dar de baja ${cantidad} unidades. Stock disponible: ${producto.stock} unidades`);
+            return;
+          }
+          
+          // Calcular valor perdido
+          montoCalculado = cantidad * (parseFloat(producto.costo) || 0);
+          descripcionFinal = descripcion || `Merma/Pérdida: ${producto.nombre} (${cantidad} unidades)`;
+          
+          // Actualizar stock en productos (RESTAR)
+          const nuevoStock = producto.stock - cantidad;
+          console.log(`Actualizando producto ${productoId}: ${producto.stock} -> ${nuevoStock}`);
+          
+          await API.put(`/productos/${productoId}`, { 
+            stock: nuevoStock 
+          });
+          
+          Toast.success(`Stock reducido: ${producto.nombre} -${cantidad} unidades`);
+        }
+        
+        // Crear el payload para el gasto
+        const payload = {
+          descripcion: descripcionFinal,
+          categoria: 'merma',
+          monto: montoCalculado,
+          fecha: fecha,
+          metodo_pago: 'no_aplica' // Merma no es un pago real
+        };
+        
+        // Agregar información del ítem perdido para el historial
+        if (inventarioId && inventarioId !== '' && inventarioId !== 'nuevo') {
+          payload.inventario_id = parseInt(inventarioId);
+          payload.cantidad = cantidad;
+        } else if (productoId && productoId !== '') {
+          payload.producto_id = parseInt(productoId);
+          payload.cantidad = cantidad;
+        }
+        
+        // IMPORTANTE: Para merma ya actualizamos el stock manualmente (restando)
+        // El backend solo debe registrar el gasto con la información del ítem
+        
+        // Validar que el monto calculado sea válido
+        if (montoCalculado < 0) {
+          Toast.error('Error en el cálculo del monto. Verifica los datos.');
+          return;
+        }
+        
+        // Validar formato de fecha
+        if (!fecha || fecha === '') {
+          Toast.error('La fecha es obligatoria');
+          return;
+        }
+        
+        // Validar que la descripción no esté vacía
+        if (!descripcionFinal || descripcionFinal.trim() === '') {
+          Toast.error('La descripción es obligatoria');
+          return;
+        }
+        
+        console.log('Payload para merma:', JSON.stringify(payload, null, 2));
+        
+        // Registrar el gasto de merma
+        const response = await API.post('/gastos', payload);
+        console.log('Respuesta del servidor:', response);
+        
+        Toast.success(`Merma registrada: S/ ${montoCalculado.toFixed(2)}`);
+        
+        // Cerrar modal y recargar datos
+        Modal.close('modal-gasto');
+        limpiarFormularioGasto();
+        await cargarGastos();
+        await cargarInventario();
+        await cargarProductos();
+        return;
+        
+      } catch (error) {
+        console.error('Error completo al registrar merma:', error);
+        console.error('Error response:', error.response);
+        console.error('Error data:', error.response?.data);
+        
+        // Mostrar error más específico
+        let errorMsg = 'Error al registrar la merma';
+        if (error.response && error.response.data) {
+          if (error.response.data.detalles && Array.isArray(error.response.data.detalles)) {
+            errorMsg = `Errores de validación:\n${error.response.data.detalles.join('\n')}`;
+          } else if (error.response.data.message) {
+            errorMsg = error.response.data.message;
+          } else if (error.response.data.mensaje) {
+            errorMsg = error.response.data.mensaje;
+          }
+        } else if (error.message) {
+          errorMsg = error.message;
+        }
+        
+        Toast.error(errorMsg);
+        return;
+      }
+    }
+    
+    // === MANEJO DE COMPRAS (LÓGICA ORIGINAL) ===
+    if (!monto || monto <= 0) {
       Toast.warning('El monto debe ser mayor a 0');
       return;
     }
     
-    // Manejar inventario
     const inventarioId = document.getElementById('gasto-inventario-id').value;
     const cantidad = parseInt(document.getElementById('gasto-cantidad').value) || 0;
+    const metodoPago = document.getElementById('gasto-metodo-pago').value;
+    
+    // Crear payload base para compras
+    const payload = {
+      descripcion: descripcion,
+      categoria: categoria,
+      monto: monto,
+      fecha: fecha,
+      metodo_pago: metodoPago
+    };
     
     if (inventarioId === 'nuevo') {
       // Crear nuevo ítem de inventario
@@ -359,10 +973,8 @@
       }
       
       try {
-        // Determinar el tipo según la categoría
         const tipo = payload.categoria === 'flores' ? 'flores' : 'materiales';
         
-        // Crear el nuevo ítem en el inventario
         const nuevoItem = await API.post('/inventario', {
           nombre: nuevoItemNombre,
           tipo: tipo,
@@ -374,29 +986,27 @@
         
         console.log('✅ Nuevo ítem creado:', nuevoItem);
         Toast.success(`Ítem "${nuevoItemNombre}" creado con ${cantidad} ${nuevoItemUnidad}`);
-        
-        // Recargar inventario
         await cargarInventario();
         
       } catch (error) {
         console.error('Error al crear ítem:', error);
-        Toast.error('Error al crear el ítem de inventario: ' + error.message);
+        Toast.error('Error al crear el ítem de inventario: ' + (error.message || 'Error desconocido'));
         return;
       }
       
     } else if (inventarioId && cantidad > 0) {
-      // Actualizar ítem existente
+      // Actualizar ítem existente (SUMAR stock)
       payload.inventario_id = parseInt(inventarioId);
       payload.cantidad = cantidad;
     }
     
-    // Validar que si se seleccionó un ítem existente, también se ingresó la cantidad
     if (inventarioId && inventarioId !== 'nuevo' && !cantidad) {
       Toast.warning('Ingresa la cantidad a agregar al inventario');
       return;
     }
     
     try {
+      console.log('Payload para compra:', payload);
       const response = await API.post('/gastos', payload);
       
       if (payload.inventario_id && payload.cantidad) {
@@ -407,20 +1017,207 @@
       }
       
       Modal.close('modal-gasto');
-      // Limpiar formulario
-      document.getElementById('gasto-desc').value = '';
-      document.getElementById('gasto-monto').value = '';
-      document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
-      document.getElementById('gasto-inventario-id').value = '';
-      document.getElementById('gasto-cantidad').value = '';
-      document.getElementById('nuevo-item-nombre').value = '';
-      document.getElementById('nuevo-item-costo').value = '';
-      toggleNuevoItem(); // Ocultar campos de nuevo ítem
-      await cargarGastos(); // Recargar desde el backend
+      limpiarFormularioGasto();
+      await cargarGastos();
     } catch (error) {
       console.error('Error al guardar gasto:', error);
-      Toast.error(error.message || 'Error al guardar el gasto');
+      
+      let errorMsg = 'Error al guardar el gasto';
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      Toast.error(errorMsg);
     }
+  }
+  
+  function limpiarFormularioGasto() {
+    document.getElementById('gasto-desc').value = '';
+    document.getElementById('gasto-monto').value = '';
+    document.getElementById('gasto-cat').value = 'flores';
+    document.getElementById('gasto-metodo-pago').value = 'efectivo_caja';
+    document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('gasto-inventario-id').value = '';
+    document.getElementById('gasto-producto-id').value = '';
+    document.getElementById('gasto-cantidad').value = '';
+    document.getElementById('nuevo-item-nombre').value = '';
+    document.getElementById('nuevo-item-costo').value = '';
+    
+    // Resetear estilos del monto
+    const montoInput = document.getElementById('gasto-monto');
+    montoInput.removeAttribute('readonly');
+    montoInput.style.backgroundColor = '';
+    montoInput.style.cursor = '';
+    montoInput.placeholder = '';
+    
+    // Resetear estilos del método de pago
+    const metodoPagoSelect = document.getElementById('gasto-metodo-pago');
+    metodoPagoSelect.removeAttribute('readonly');
+    metodoPagoSelect.style.backgroundColor = '';
+    metodoPagoSelect.style.cursor = '';
+    
+    toggleInventarioFields();
+  }
+
+  // Función auxiliar para abrir modal con merma preseleccionada
+  function abrirModalMerma() {
+    limpiarFormularioGasto();
+    document.getElementById('gasto-cat').value = 'merma';
+    toggleInventarioFields();
+    Modal.open('modal-gasto');
+  }
+
+  function verDetalleGasto(id) {
+    const gasto = gastos.find(g => g.id === id);
+    if (!gasto) {
+      Toast.error('Gasto no encontrado');
+      return;
+    }
+    
+    const categoriaBadge = CAT_BADGE[gasto.categoria] || 'badge-gray';
+    const categoriaLabel = CAT_LABELS[gasto.categoria] || gasto.categoria;
+    
+    // Determinar el tipo y emoji según la categoría
+    let tipoInfo = '';
+    let emoji = '💸';
+    switch(gasto.categoria) {
+      case 'flores':
+        tipoInfo = 'Compra de flores para inventario';
+        emoji = '🌹';
+        break;
+      case 'materiales':
+        tipoInfo = 'Compra de materiales';
+        emoji = '📦';
+        break;
+      case 'transporte':
+        tipoInfo = 'Gasto de transporte';
+        emoji = '🚛';
+        break;
+      case 'mantenimiento':
+        tipoInfo = 'Gasto de mantenimiento';
+        emoji = '🔧';
+        break;
+      case 'merma':
+        tipoInfo = 'Pérdida o merma de productos';
+        emoji = '📉';
+        break;
+      default:
+        tipoInfo = 'Otro tipo de gasto';
+        emoji = '💰';
+    }
+    
+    const content = `
+      <!-- Encabezado con tipo de gasto -->
+      <div class="detalle-header">
+        <div class="detalle-icon">${emoji}</div>
+        <div class="detalle-tipo">
+          <div class="detalle-tipo-label">Tipo de gasto</div>
+          <div class="detalle-tipo-nombre">${tipoInfo}</div>
+        </div>
+      </div>
+      
+      <!-- Descripción -->
+      <div class="detalle-section">
+        <label class="detalle-label">Descripción</label>
+        <div class="detalle-value">${gasto.descripcion}</div>
+      </div>
+      
+      <!-- Grid: Categoría y Fecha -->
+      <div class="detalle-grid">
+        <div class="detalle-section">
+          <label class="detalle-label">Categoría</label>
+          <div class="detalle-value">
+            <span class="badge ${categoriaBadge}">${categoriaLabel}</span>
+          </div>
+        </div>
+        <div class="detalle-section">
+          <label class="detalle-label">Fecha del gasto</label>
+          <div class="detalle-value">${Fmt.fecha(gasto.fecha)}</div>
+        </div>
+      </div>
+      
+      <!-- Monto destacado -->
+      <div class="detalle-section">
+        <label class="detalle-label">Monto total</label>
+        <div class="detalle-monto">${Fmt.moneda(gasto.monto)}</div>
+      </div>
+      
+      ${gasto.categoria === 'merma' ? `
+      <!-- Información específica de merma -->
+      <div class="detalle-merma-box">
+        <div class="detalle-merma-header">
+          <span class="detalle-merma-icon">⚠️</span>
+          <span class="detalle-merma-title">Detalle de la pérdida</span>
+        </div>
+        ${(() => {
+          // Usar los campos de la base de datos si están disponibles
+          if (gasto.item_nombre) {
+            return `
+              <div class="detalle-merma-item">
+                <span class="detalle-merma-label">Producto/Ítem perdido</span>
+                <div class="detalle-merma-value">${gasto.item_nombre}</div>
+              </div>
+              ${gasto.cantidad ? `
+              <div class="detalle-merma-item">
+                <span class="detalle-merma-label">Cantidad perdida</span>
+                <div class="detalle-merma-value">${gasto.cantidad} ${gasto.item_unidad || 'unidades'}</div>
+              </div>
+              ` : ''}
+            `;
+          } else {
+            // Fallback: intentar extraer de la descripción (para gastos antiguos)
+            const desc = gasto.descripcion;
+            if (desc.includes('Merma/Pérdida:')) {
+              const parts = desc.replace('Merma/Pérdida: ', '').split(' (');
+              const item = parts[0];
+              const cantidadMatch = parts[1] ? parts[1].match(/(\d+)\s*(.+)\)/) : null;
+              const cantidad = cantidadMatch ? cantidadMatch[1] : '';
+              const unidad = cantidadMatch ? cantidadMatch[2] : '';
+              
+              return `
+                <div class="detalle-merma-item">
+                  <span class="detalle-merma-label">Producto/Ítem perdido</span>
+                  <div class="detalle-merma-value">${item}</div>
+                </div>
+                ${cantidad ? `
+                <div class="detalle-merma-item">
+                  <span class="detalle-merma-label">Cantidad perdida</span>
+                  <div class="detalle-merma-value">${cantidad} ${unidad}</div>
+                </div>
+                ` : ''}
+              `;
+            } else {
+              return `
+                <div class="detalle-merma-item">
+                  <span class="detalle-merma-label">Descripción de la pérdida</span>
+                  <div class="detalle-merma-value">${desc}</div>
+                </div>
+              `;
+            }
+          }
+        })()}
+      </div>
+      ` : ''}
+      
+      ${gasto.created_at ? `
+      <!-- Timestamp de registro -->
+      <div class="detalle-timestamp">
+        <span class="detalle-timestamp-icon">🕐</span>
+        Registrado el ${new Date(gasto.created_at).toLocaleString('es-PE', { 
+          day: '2-digit', 
+          month: 'long', 
+          year: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })}
+      </div>
+      ` : ''}
+    `;
+    
+    document.getElementById('detalle-gasto-content').innerHTML = content;
+    Modal.open('modal-detalle-gasto');
   }
 
   async function eliminarGasto(id) {
@@ -440,6 +1237,7 @@
   document.getElementById('gasto-fecha').value = new Date().toISOString().split('T')[0];
   cargarGastos();
   cargarInventario();
+  cargarProductos();
   toggleInventarioFields();
 </script>
 </body>

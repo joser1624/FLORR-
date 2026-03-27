@@ -41,6 +41,119 @@ class CajaService {
   }
 
   /**
+   * Close cash register for a specific date (admin only)
+   * Allows closing registers from previous days
+   */
+  async cierreFecha(trabajadorId, fecha, montoCierre = null) {
+    // Validar formato de fecha
+    if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      const error = new Error('Formato de fecha inválido. Use YYYY-MM-DD');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Validar que existe una caja abierta para esa fecha
+    const cajaResult = await query(
+      "SELECT * FROM caja WHERE fecha = $1 AND estado = 'abierta'",
+      [fecha]
+    );
+
+    if (cajaResult.rows.length === 0) {
+      const error = new Error(`No hay caja abierta para la fecha ${fecha}`);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const cajaActual = cajaResult.rows[0];
+    const montoApertura = parseFloat(cajaActual.monto_apertura);
+
+    // Calculate totals by payment method from that day's sales
+    const totalsResult = await query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN metodo_pago = 'Efectivo' THEN total ELSE 0 END), 0) AS total_efectivo,
+         COALESCE(SUM(CASE WHEN metodo_pago IN ('Yape', 'Plin') THEN total ELSE 0 END), 0) AS total_digital,
+         COALESCE(SUM(CASE WHEN metodo_pago IN ('Tarjeta', 'Transferencia bancaria') THEN total ELSE 0 END), 0) AS total_tarjeta,
+         COALESCE(SUM(total), 0) AS total_ventas
+       FROM ventas
+       WHERE DATE(fecha) = $1`,
+      [fecha]
+    );
+
+    const totals = totalsResult.rows[0];
+
+    // Calculate total expenses for that day (solo efectivo de caja para el cuadre)
+    const gastosResult = await query(
+      `SELECT COALESCE(SUM(monto), 0) AS total_gastos 
+       FROM gastos 
+       WHERE fecha = $1 AND metodo_pago = 'efectivo_caja'`,
+      [fecha]
+    );
+
+    const totalEfectivo = parseFloat(totals.total_efectivo);
+    const totalDigital = parseFloat(totals.total_digital);
+    const totalTarjeta = parseFloat(totals.total_tarjeta);
+    const totalVentas = parseFloat(totals.total_ventas);
+    const totalGastos = parseFloat(gastosResult.rows[0].total_gastos);
+
+    // Calcular efectivo esperado (monto apertura + ventas efectivo - gastos)
+    const efectivoEsperado = montoApertura + totalEfectivo - totalGastos;
+
+    // Calcular diferencia y estado de cuadre
+    let diferencia = 0;
+    let estadoCuadre = 'sin_cuadre';
+    let mensaje = 'Caja cerrada sin cuadre de efectivo';
+
+    if (montoCierre !== null && montoCierre !== undefined) {
+      const montoCierreNum = parseFloat(montoCierre);
+      diferencia = montoCierreNum - efectivoEsperado;
+      
+      if (diferencia === 0) {
+        estadoCuadre = 'cuadrado';
+        mensaje = 'Caja cuadrada correctamente';
+      } else if (diferencia < 0) {
+        estadoCuadre = 'faltante';
+        mensaje = `Faltante de S/ ${Math.abs(diferencia).toFixed(2)}`;
+      } else {
+        estadoCuadre = 'sobrante';
+        mensaje = `Sobrante de S/ ${diferencia.toFixed(2)}`;
+      }
+    }
+
+    // Update caja: set estado to "cerrada" and record trabajador_cierre_id
+    const result = await query(
+      `UPDATE caja
+       SET total_efectivo = $1,
+           total_digital = $2,
+           total_tarjeta = $3,
+           total_ventas = $4,
+           total_gastos = $5,
+           trabajador_cierre_id = $6,
+           monto_cierre = $7,
+           estado = 'cerrada',
+           updated_at = NOW()
+       WHERE fecha = $8 AND estado = 'abierta'
+       RETURNING *`,
+      [totalEfectivo, totalDigital, totalTarjeta, totalVentas, totalGastos, trabajadorId, montoCierre, fecha]
+    );
+
+    const caja = result.rows[0];
+    return {
+      ...caja,
+      monto_apertura: parseFloat(caja.monto_apertura),
+      monto_cierre: caja.monto_cierre !== null ? parseFloat(caja.monto_cierre) : null,
+      total_efectivo: parseFloat(caja.total_efectivo),
+      total_digital: parseFloat(caja.total_digital),
+      total_tarjeta: parseFloat(caja.total_tarjeta),
+      total_ventas: parseFloat(caja.total_ventas),
+      total_gastos: parseFloat(caja.total_gastos),
+      efectivo_esperado: efectivoEsperado,
+      diferencia: diferencia,
+      estado_cuadre: estadoCuadre,
+      mensaje: mensaje
+    };
+  }
+
+  /**
    * Close cash register for today
    * Requirements: 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13
    */
@@ -74,9 +187,11 @@ class CajaService {
 
     const totals = totalsResult.rows[0];
 
-    // Calculate total expenses for today (solo efectivo para el cuadre)
+    // Calculate total expenses for today (solo efectivo de caja para el cuadre)
     const gastosResult = await query(
-      'SELECT COALESCE(SUM(monto), 0) AS total_gastos FROM gastos WHERE fecha = CURRENT_DATE',
+      `SELECT COALESCE(SUM(monto), 0) AS total_gastos 
+       FROM gastos 
+       WHERE fecha = CURRENT_DATE AND metodo_pago = 'efectivo_caja'`,
       []
     );
 
@@ -187,9 +302,11 @@ class CajaService {
       []
     );
     
-    // Obtener total de gastos del día
+    // Obtener total de gastos del día (solo efectivo de caja)
     const gastosResult = await query(
-      'SELECT COALESCE(SUM(monto), 0) as total FROM gastos WHERE fecha = CURRENT_DATE',
+      `SELECT COALESCE(SUM(monto), 0) as total 
+       FROM gastos 
+       WHERE fecha = CURRENT_DATE AND metodo_pago = 'efectivo_caja'`,
       []
     );
     
@@ -333,9 +450,11 @@ class CajaService {
 
     const totals = totalsResult.rows[0];
 
-    // Calcular gastos del día
+    // Calcular gastos del día (solo efectivo de caja)
     const gastosResult = await query(
-      'SELECT COALESCE(SUM(monto), 0) AS total_gastos FROM gastos WHERE fecha = CURRENT_DATE',
+      `SELECT COALESCE(SUM(monto), 0) AS total_gastos 
+       FROM gastos 
+       WHERE fecha = CURRENT_DATE AND metodo_pago = 'efectivo_caja'`,
       []
     );
 

@@ -48,12 +48,33 @@ const API = {
     });
     if (!r.ok) {
       const errorData = await r.json();
+      
+      // Crear un error más detallado que preserve la respuesta
+      const error = new Error('Errores de validación');
+      error.response = {
+        status: r.status,
+        statusText: r.statusText,
+        data: errorData
+      };
+      
       // Si hay errores de validación detallados, mostrarlos
       if (errorData.errores && Array.isArray(errorData.errores)) {
         const detalles = errorData.errores.map(e => e.msg).join(', ');
-        throw new Error(`Errores de validación: ${detalles}`);
+        error.message = `Errores de validación: ${detalles}`;
+      } else if (errorData.detalles && Array.isArray(errorData.detalles)) {
+        // Manejar diferentes formatos de detalles
+        const detalles = errorData.detalles.map(d => {
+          if (typeof d === 'string') return d;
+          if (d.msg) return d.msg;
+          if (d.message) return d.message;
+          return JSON.stringify(d);
+        }).join(', ');
+        error.message = `Errores de validación: ${detalles}`;
+      } else if (errorData.mensaje || errorData.error) {
+        error.message = errorData.mensaje || errorData.error;
       }
-      throw new Error(errorData.mensaje || errorData.error || 'Error en la solicitud');
+      
+      throw error;
     }
     return r.json();
   },
@@ -156,6 +177,27 @@ const Modal = {
       onConfirm(); m.remove();
     });
     m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  },
+  alert(title, content) {
+    const id = 'modal-alert-' + Date.now();
+    const m = document.createElement('div');
+    m.className = 'modal-overlay active';
+    m.id = id;
+    m.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-header">
+          <h3>${title}</h3>
+          <button class="btn-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+        </div>
+        <div class="modal-body" style="padding:1.5rem">
+          ${content}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary btn-sm" onclick="this.closest('.modal-overlay').remove()">Entendido</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    m.addEventListener('click', e => { if (e.target === m) m.remove(); });
   }
 };
 
@@ -230,11 +272,13 @@ document.addEventListener('click', e => {
 window.addEventListener("load", function() {
   setTimeout(function() {
     const splash = document.getElementById("splash");
-    splash.style.opacity = "0";
-    splash.style.transition = "opacity 0.5s ease";
+    if (splash) {
+      splash.style.opacity = "0";
+      splash.style.transition = "opacity 0.5s ease";
 
-    setTimeout(function() {
-      splash.style.display = "none";
-    }, 500);
+      setTimeout(function() {
+        splash.style.display = "none";
+      }, 500);
+    }
   }, 1500);
 });

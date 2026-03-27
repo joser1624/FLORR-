@@ -1205,6 +1205,39 @@
   </div>
 </div>
 
+<!-- Modal Cajas Anteriores Abiertas -->
+<div class="modal-overlay" id="modal-cajas-anteriores">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header" style="background:linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%);color:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.5rem">
+      <div>
+        <h3 style="margin:0;color:white;font-size:1.5rem">⚠️ Cajas Anteriores Abiertas</h3>
+        <p style="margin:0.25rem 0 0 0;font-size:13px;opacity:0.9">Debes cerrar las cajas anteriores antes de abrir la de hoy</p>
+      </div>
+      <button class="btn-close" onclick="Modal.close('modal-cajas-anteriores')" style="color:white;opacity:0.9">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.5rem">
+      <div class="alert alert-warning" style="margin-bottom:1.5rem">
+        <strong>📋 Encontramos cajas sin cerrar</strong><br>
+        <span style="font-size:13px">Para mantener el control correcto, cierra primero las cajas anteriores.</span>
+      </div>
+      
+      <div id="lista-cajas-anteriores" style="display:flex;flex-direction:column;gap:12px;margin-bottom:1.5rem"></div>
+      
+      <div style="background:var(--bg-secondary);padding:16px;border-radius:8px;border-left:4px solid var(--info)">
+        <div style="font-weight:600;margin-bottom:8px;font-size:14px">💡 ¿Qué significa cada opción?</div>
+        <div style="font-size:12px;color:var(--gris-600);line-height:1.6">
+          <strong>Cerrar sin cuadre:</strong> Registra las ventas y gastos pero no verifica el efectivo físico. Útil si no recuerdas cuánto había.<br>
+          <strong>Cerrar con cuadre:</strong> Te permite ingresar el monto físico que había para calcular diferencias.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="Modal.close('modal-cajas-anteriores')">Cancelar</button>
+      <button class="btn btn-warning btn-sm" onclick="cerrarTodasCajasAnterioresSinCuadre()">Cerrar todas sin cuadre</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../js/main.js"></script>
 <script src="../../js/admin-layout.js"></script>
 <script>
@@ -1440,6 +1473,17 @@
     }
     
     try {
+      // NUEVO: Verificar si hay cajas anteriores abiertas antes de abrir
+      const cajasAnteriores = await verificarCajasAnteriores();
+      
+      if (cajasAnteriores && cajasAnteriores.length > 0) {
+        // Hay cajas anteriores abiertas, mostrar modal de advertencia
+        Modal.close('modal-apertura');
+        mostrarModalCajasAnteriores(cajasAnteriores, monto);
+        return;
+      }
+      
+      // No hay cajas anteriores, proceder normalmente
       await API.post('/caja/apertura', { monto_apertura: monto });
       Toast.success(`Caja abierta con ${Fmt.moneda(monto)}`);
       Modal.close('modal-apertura');
@@ -2514,6 +2558,197 @@
     } catch (error) {
       console.error('Error al rechazar solicitud:', error);
       Toast.error(error.message || 'Error al rechazar la solicitud');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // FUNCIONES PARA MANEJO DE CAJAS ANTERIORES ABIERTAS
+  // ═══════════════════════════════════════════════════════════════
+  
+  let montoAperturaGuardado = 0;
+  
+  /**
+   * Verifica si hay cajas anteriores abiertas (días anteriores al actual)
+   * Retorna un array con las cajas abiertas o null si no hay
+   */
+  async function verificarCajasAnteriores() {
+    try {
+      // Obtener historial de cajas
+      const response = await API.get('/caja/historial?limit=30');
+      const result = response.data || response;
+      const cajas = result.data || result || [];
+      
+      // Filtrar solo cajas abiertas de días anteriores
+      const hoy = new Date().toISOString().split('T')[0];
+      const cajasAnteriores = cajas.filter(c => c.estado === 'abierta' && c.fecha < hoy);
+      
+      return cajasAnteriores.length > 0 ? cajasAnteriores : null;
+    } catch (error) {
+      console.error('Error al verificar cajas anteriores:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Muestra el modal con las cajas anteriores abiertas
+   */
+  function mostrarModalCajasAnteriores(cajas, montoApertura) {
+    montoAperturaGuardado = montoApertura;
+    
+    const lista = document.getElementById('lista-cajas-anteriores');
+    lista.innerHTML = cajas.map(caja => {
+      const fecha = new Date(caja.fecha).toLocaleDateString('es-PE', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      return `
+        <div style="background:var(--bg-card);border:2px solid var(--warning);border-radius:12px;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px">
+            <div>
+              <div style="font-weight:700;font-size:16px;color:var(--text-primary);margin-bottom:4px">
+                📅 ${fecha}
+              </div>
+              <div style="font-size:12px;color:var(--gris-600)">
+                Apertura: ${Fmt.moneda(caja.monto_apertura)} • 
+                Abierta por: ${caja.trabajador_apertura_nombre || 'N/A'}
+              </div>
+            </div>
+            <span class="badge badge-warning" style="font-size:11px">Abierta</span>
+          </div>
+          
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-outline btn-sm" style="flex:1" onclick="cerrarCajaAnteriorSinCuadre('${caja.fecha}')">
+              Cerrar sin cuadre
+            </button>
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="cerrarCajaAnteriorConCuadre('${caja.fecha}')">
+              Cerrar con cuadre
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    Modal.open('modal-cajas-anteriores');
+  }
+  
+  /**
+   * Cierra una caja anterior sin cuadre (monto_cierre = null)
+   */
+  async function cerrarCajaAnteriorSinCuadre(fecha) {
+    try {
+      await API.post('/caja/cierre-fecha', {
+        fecha: fecha,
+        monto_cierre: null
+      });
+      
+      Toast.success(`Caja del ${new Date(fecha).toLocaleDateString('es-PE')} cerrada sin cuadre`);
+      
+      // Verificar si quedan más cajas abiertas
+      const cajasRestantes = await verificarCajasAnteriores();
+      
+      if (!cajasRestantes) {
+        // No quedan más cajas abiertas, cerrar modal y abrir caja de hoy
+        Modal.close('modal-cajas-anteriores');
+        await abrirCajaHoyDespuesDeResolver();
+      } else {
+        // Actualizar la lista de cajas
+        mostrarModalCajasAnteriores(cajasRestantes, montoAperturaGuardado);
+      }
+    } catch (error) {
+      console.error('Error al cerrar caja anterior:', error);
+      Toast.error(error.message || 'Error al cerrar la caja anterior');
+    }
+  }
+  
+  /**
+   * Cierra una caja anterior con cuadre (pide monto físico)
+   */
+  async function cerrarCajaAnteriorConCuadre(fecha) {
+    const monto = prompt(`¿Cuánto efectivo había al final del día ${new Date(fecha).toLocaleDateString('es-PE')}?`);
+    
+    if (monto === null) return; // Usuario canceló
+    
+    const montoNum = parseFloat(monto);
+    if (isNaN(montoNum) || montoNum < 0) {
+      Toast.warning('Ingresa un monto válido');
+      return;
+    }
+    
+    try {
+      const response = await API.post('/caja/cierre-fecha', {
+        fecha: fecha,
+        monto_cierre: montoNum
+      });
+      
+      const data = response.data || response;
+      const diferencia = data.diferencia || 0;
+      
+      let mensaje = `Caja del ${new Date(fecha).toLocaleDateString('es-PE')} cerrada`;
+      if (diferencia === 0) {
+        mensaje += ' ✅ Cuadrada perfectamente';
+      } else if (diferencia < 0) {
+        mensaje += ` ⚠️ Faltante: ${Fmt.moneda(Math.abs(diferencia))}`;
+      } else {
+        mensaje += ` ⚠️ Sobrante: ${Fmt.moneda(diferencia)}`;
+      }
+      
+      Toast.success(mensaje);
+      
+      // Verificar si quedan más cajas abiertas
+      const cajasRestantes = await verificarCajasAnteriores();
+      
+      if (!cajasRestantes) {
+        // No quedan más cajas abiertas, cerrar modal y abrir caja de hoy
+        Modal.close('modal-cajas-anteriores');
+        await abrirCajaHoyDespuesDeResolver();
+      } else {
+        // Actualizar la lista de cajas
+        mostrarModalCajasAnteriores(cajasRestantes, montoAperturaGuardado);
+      }
+    } catch (error) {
+      console.error('Error al cerrar caja anterior:', error);
+      Toast.error(error.message || 'Error al cerrar la caja anterior');
+    }
+  }
+  
+  /**
+   * Cierra todas las cajas anteriores sin cuadre
+   */
+  async function cerrarTodasCajasAnterioresSinCuadre() {
+    const cajasAnteriores = await verificarCajasAnteriores();
+    if (!cajasAnteriores) return;
+    
+    try {
+      for (const caja of cajasAnteriores) {
+        await API.post('/caja/cierre-fecha', {
+          fecha: caja.fecha,
+          monto_cierre: null
+        });
+      }
+      
+      Toast.success(`${cajasAnteriores.length} caja(s) cerrada(s) sin cuadre`);
+      Modal.close('modal-cajas-anteriores');
+      await abrirCajaHoyDespuesDeResolver();
+    } catch (error) {
+      console.error('Error al cerrar cajas:', error);
+      Toast.error(error.message || 'Error al cerrar las cajas');
+    }
+  }
+  
+  /**
+   * Abre la caja de hoy después de resolver las cajas anteriores
+   */
+  async function abrirCajaHoyDespuesDeResolver() {
+    try {
+      await API.post('/caja/apertura', { monto_apertura: montoAperturaGuardado });
+      Toast.success(`Caja de hoy abierta con ${Fmt.moneda(montoAperturaGuardado)}`);
+      await cargarCaja();
+    } catch (error) {
+      console.error('Error al abrir caja de hoy:', error);
+      Toast.error(error.message || 'Error al abrir la caja de hoy');
     }
   }
 

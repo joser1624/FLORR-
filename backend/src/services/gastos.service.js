@@ -1,6 +1,7 @@
 const { query } = require('../config/database');
 
-const ALLOWED_CATEGORIAS = ['flores', 'transporte', 'materiales', 'mantenimiento', 'otros'];
+const ALLOWED_CATEGORIAS = ['flores', 'transporte', 'materiales', 'mantenimiento', 'merma', 'otros'];
+const ALLOWED_METODOS_PAGO = ['efectivo_caja', 'transferencia', 'tarjeta', 'no_aplica'];
 
 class GastosService {
   /**
@@ -64,6 +65,17 @@ class GastosService {
     if (!data.fecha || data.fecha.toString().trim() === '') {
       errors.push('La fecha no puede estar vacía');
     }
+    
+    // Validar método de pago
+    const metodoPago = data.metodo_pago || 'efectivo_caja';
+    if (!ALLOWED_METODOS_PAGO.includes(metodoPago)) {
+      errors.push(`El método de pago debe ser uno de: ${ALLOWED_METODOS_PAGO.join(', ')}`);
+    }
+    
+    // Si es merma, forzar método de pago a 'no_aplica'
+    if (data.categoria === 'merma') {
+      data.metodo_pago = 'no_aplica';
+    }
 
     // Validar datos de inventario si se proporcionan
     if (data.inventario_id && data.cantidad) {
@@ -79,11 +91,14 @@ class GastosService {
       throw error;
     }
 
-    // Si se proporciona inventario_id y cantidad, actualizar el stock
-    if (data.inventario_id && data.cantidad) {
+    let itemNombre = null;
+    let itemUnidad = null;
+
+    // Si se proporciona inventario_id y cantidad, actualizar el stock SOLO si NO es merma
+    if (data.inventario_id && data.cantidad && data.categoria !== 'merma') {
       // Verificar que el ítem existe
       const itemResult = await query(
-        'SELECT id, nombre, stock FROM inventario WHERE id = $1',
+        'SELECT id, nombre, stock, unidad FROM inventario WHERE id = $1',
         [data.inventario_id]
       );
 
@@ -93,21 +108,58 @@ class GastosService {
         throw error;
       }
 
-      // Actualizar el stock del inventario
+      itemNombre = itemResult.rows[0].nombre;
+      itemUnidad = itemResult.rows[0].unidad;
+
+      // Actualizar el stock del inventario (SUMAR para compras)
       await query(
         'UPDATE inventario SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [data.cantidad, data.inventario_id]
       );
 
-      console.log(`✅ Stock actualizado: ${itemResult.rows[0].nombre} +${data.cantidad} unidades`);
+      console.log(`✅ Stock actualizado: ${itemNombre} +${data.cantidad} ${itemUnidad}`);
     }
 
-    // Crear el gasto
+    // Si es merma, solo obtener el nombre del ítem para el historial (sin actualizar stock)
+    if (data.categoria === 'merma') {
+      if (data.inventario_id) {
+        const itemResult = await query(
+          'SELECT nombre, unidad FROM inventario WHERE id = $1',
+          [data.inventario_id]
+        );
+        if (itemResult.rows.length > 0) {
+          itemNombre = itemResult.rows[0].nombre;
+          itemUnidad = itemResult.rows[0].unidad;
+        }
+      } else if (data.producto_id) {
+        const prodResult = await query(
+          'SELECT nombre FROM productos WHERE id = $1',
+          [data.producto_id]
+        );
+        if (prodResult.rows.length > 0) {
+          itemNombre = prodResult.rows[0].nombre;
+          itemUnidad = 'unidad';
+        }
+      }
+    }
+
+    // Crear el gasto con los campos adicionales
     const result = await query(
-      `INSERT INTO gastos (descripcion, categoria, monto, fecha) 
-       VALUES ($1, $2, $3, $4) 
+      `INSERT INTO gastos (descripcion, categoria, monto, fecha, metodo_pago, inventario_id, producto_id, cantidad, item_nombre, item_unidad) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
        RETURNING *`,
-      [data.descripcion.trim(), data.categoria, data.monto, data.fecha]
+      [
+        data.descripcion.trim(), 
+        data.categoria, 
+        data.monto, 
+        data.fecha,
+        data.metodo_pago || 'efectivo_caja',
+        data.inventario_id || null,
+        data.producto_id || null,
+        data.cantidad || null,
+        itemNombre,
+        itemUnidad
+      ]
     );
     
     return result.rows[0];
